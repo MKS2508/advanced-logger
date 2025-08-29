@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger-styling",
-  "version": "alpha-0.4.0",
+  "version": "alpha-0.5.0",
   "type": "module",
   "description": "Advanced CSS styling system for Better Logger - Console styling with gradients, animations and SVG support",
   "main": "dist/index.js",
@@ -36,6 +36,6 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@mks2508/better-logger-core": "^alpha-0.4.0"
+    "@mks2508/better-logger-core": "^alpha-0.5.0"
   }
 }

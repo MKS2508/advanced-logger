@@ -469,13 +469,22 @@ class AutoReleaseManagerAI {
   }
 
   private parseVersion(version: string): ReleaseInfo {
-    // Formatos soportados: 0.3.1, 0.4.0-alpha.1, 0.4.0-beta.2, etc.
-    const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-(\w+)(?:\.(\d+))?)?$/);
-    if (!match) {
-      throw new Error(`Formato de versión inválido: ${version}. Formato esperado: X.Y.Z o X.Y.Z-alpha.N`);
+    // Formatos soportados: 0.3.1, 0.4.0-alpha.1, alpha-0.4.0, etc.
+    let match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-(\w+)(?:\.(\d+))?)?$/);
+    let major: string, minor: string, patch: string, prefix: string | undefined;
+    
+    if (match) {
+      // Formato: X.Y.Z-prefix
+      [, major, minor, patch, prefix] = match;
+    } else {
+      // Intentar formato: prefix-X.Y.Z
+      match = version.match(/^(\w+)-(\d+)\.(\d+)\.(\d+)$/);
+      if (match) {
+        [, prefix, major, minor, patch] = match;
+      } else {
+        throw new Error(`Formato de versión inválido: ${version}. Formatos esperados: X.Y.Z, X.Y.Z-alpha, o alpha-X.Y.Z`);
+      }
     }
-
-    const [, major, minor, patch, prefix] = match;
 
     return {
       version: version,
