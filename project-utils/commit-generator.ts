@@ -461,18 +461,122 @@ class CommitGenerator {
   /**
    * Parsea propuestas de commit de la respuesta de Gemini
    */
-  private parseCommitProposals(aiResponse: string): CommitProposal[] {
+  private parseCommitProposals(aiResponse: string, allFiles: FileChange[]): CommitProposal[] {
     // Usar el parser estandarizado
     const parsedProposals = GeminiResponseParser.parseCommitProposals(aiResponse);
     
-    // Convertir al formato interno
+    // Si hay múltiples commits, dividir archivos inteligentemente
+    if (parsedProposals.length > 1) {
+      return this.distributeFilesAcrossCommits(parsedProposals, allFiles);
+    }
+    
+    // Commit único usa todos los archivos
     return parsedProposals.map(proposal => ({
       title: proposal.title,
       description: proposal.description,
       technical: proposal.technical,
       changelog: proposal.changelog,
-      files: [] // Usar todos los archivos disponibles
+      files: allFiles.map(f => f.path).filter(path => 
+        !path.includes('.temp/') && 
+        !path.startsWith('.release-notes-') &&
+        !path.includes(' -> ')
+      )
     }));
+  }
+
+  /**
+   * Distribuye archivos entre múltiples commits basado en patrones
+   */
+  private distributeFilesAcrossCommits(
+    parsedProposals: any[], 
+    allFiles: FileChange[]
+  ): CommitProposal[] {
+    const availableFiles = allFiles
+      .map(f => f.path)
+      .filter(path => 
+        !path.includes('.temp/') && 
+        !path.startsWith('.release-notes-') &&
+        !path.includes(' -> ')
+      );
+
+    const fileDistribution = new Map<string, string[]>();
+    const usedFiles = new Set<string>();
+
+    // Patterns para clasificar archivos por tipo de commit
+    const patterns = {
+      ci: ['.github/workflows/', 'project-utils/', '.yml'],
+      architecture: ['package.json', 'packages/', 'vite.config.ts', 'tsconfig.json'],
+      core: ['src/core', 'src/Logger.ts', 'src/constants.ts'],
+      styling: ['src/styling', 'src/style'],
+      exports: ['src/exports', 'src/handlers/'],
+      docs: ['README.md', 'docs/', '.md'],
+      config: ['vite.config', 'tsconfig', '.json']
+    };
+
+    // Asignar archivos a commits basado en contenido/título
+    parsedProposals.forEach((proposal, index) => {
+      const commitFiles: string[] = [];
+      const title = proposal.title.toLowerCase();
+      const description = (proposal.description || '').toLowerCase();
+      
+      // Detectar tipo de commit por título/descripción
+      let commitType = 'misc';
+      if (title.includes('ci') || title.includes('workflow') || title.includes('bun')) {
+        commitType = 'ci';
+      } else if (title.includes('arquitectura') || title.includes('monorepo') || title.includes('modular')) {
+        commitType = 'architecture';
+      } else if (title.includes('core') || title.includes('logger')) {
+        commitType = 'core';
+      } else if (title.includes('styling') || title.includes('style')) {
+        commitType = 'styling';
+      } else if (title.includes('export') || title.includes('handler')) {
+        commitType = 'exports';
+      }
+
+      // Asignar archivos que coincidan con el patrón
+      if (patterns[commitType]) {
+        availableFiles.forEach(file => {
+          if (!usedFiles.has(file)) {
+            const matchesPattern = patterns[commitType].some(pattern => 
+              file.includes(pattern)
+            );
+            if (matchesPattern) {
+              commitFiles.push(file);
+              usedFiles.add(file);
+            }
+          }
+        });
+      }
+
+      fileDistribution.set(`commit_${index}`, commitFiles);
+    });
+
+    // Asignar archivos restantes al primer commit (fallback)
+    const remainingFiles = availableFiles.filter(file => !usedFiles.has(file));
+    if (remainingFiles.length > 0) {
+      const firstCommitFiles = fileDistribution.get('commit_0') || [];
+      firstCommitFiles.push(...remainingFiles);
+      fileDistribution.set('commit_0', firstCommitFiles);
+    }
+
+    // Crear propuestas finales
+    return parsedProposals.map((proposal, index) => {
+      const commitFiles = fileDistribution.get(`commit_${index}`) || [];
+      
+      // Log de asignación (solo en modo debug)
+      if (!this.quiet) {
+        console.log(`📋 Commit ${index + 1}: "${proposal.title}" → ${commitFiles.length} archivos`);
+        commitFiles.forEach(file => console.log(`  - ${file}`));
+      }
+      
+      return {
+        title: proposal.title,
+        description: proposal.description,
+        technical: proposal.technical,
+        changelog: proposal.changelog,
+        files: commitFiles
+      };
+    });
   }
 
   /**
@@ -490,23 +594,43 @@ class CommitGenerator {
             .filter(path => !path.includes('.temp/') && !path.startsWith('.release-notes-'))
             .filter(path => !path.includes(' -> ')); // Filtrar sintaxis de rename "file.yml -> backup/file.yml"
       
+      // Validación pre-commit: verificar que hay archivos para procesar
+      if (targetFiles.length === 0) {
+        console.warn(`  ⚠️ No hay archivos asignados a este commit`);
+        return false;
+      }
+
+      this.log(`  📋 Procesando ${targetFiles.length} archivos asignados`);
+
       // Agregar archivos específicos al staging area
+      let stagedFiles = 0;
       for (const file of targetFiles) {
         try {
           await this.gitCommand(['add', file]);
+          stagedFiles++;
           this.log(`  ✓ Agregado: ${file}`);
         } catch (error) {
           console.warn(`  ⚠️ No se pudo agregar ${file}:`, error);
         }
       }
       
+      // Validación: verificar que se staged al menos un archivo
+      if (stagedFiles === 0) {
+        console.warn(`  ⚠️ No se pudo agregar ningún archivo al staging area`);
+        return false;
+      }
+      
       // Verificar que hay algo para commitear
       try {
         const statusResult = await this.gitCommand(['diff', '--cached', '--name-only']);
         if (!statusResult.trim()) {
-          console.warn(`  ⚠️ No hay cambios staged para este commit`);
+          console.warn(`  ⚠️ No hay cambios staged para este commit (staged files: ${stagedFiles})`);
           return false;
         }
+        
+        const stagedFilesList = statusResult.trim().split('\n');
+        this.log(`  📦 ${stagedFilesList.length} archivos listos para commit`);
+        
       } catch (error) {
         // Fallback si diff --cached no funciona
         this.log(`  🔍 Verificando staging area...`);
@@ -593,7 +717,10 @@ class CommitGenerator {
     
     try {
       const proposalContent = readFileSync(proposalPath, 'utf-8');
-      const proposals = this.parseCommitProposals(proposalContent);
+      
+      // Obtener archivos disponibles
+      const analysis = await this.generateAnalysisContext();
+      const proposals = this.parseCommitProposals(proposalContent, analysis.files);
       
       if (proposals.length === 0) {
         console.error('❌ No se encontraron commits válidos en el archivo de propuesta');
@@ -746,7 +873,7 @@ class CommitGenerator {
         
         // Parsear y ejecutar commits
         this.log('\n🤖 Ejecutando commits automáticamente...');
-        const proposals = this.parseCommitProposals(commitProposal);
+        const proposals = this.parseCommitProposals(commitProposal, analysis.files);
         
         if (proposals.length === 0) {
           console.warn('⚠️ No se encontraron commits válidos para ejecutar');
@@ -755,10 +882,15 @@ class CommitGenerator {
           return;
         }
         
-        this.log(`📦 Encontrados ${proposals.length} commits para ejecutar:`);
-        proposals.forEach((p, i) => {
-          this.log(`  ${i + 1}. ${p.title}`);
-        });
+        // En modo quiet, mostrar progreso compacto
+        if (this.quiet) {
+          console.log(`🚀 Ejecutando ${proposals.length} commits propuestos...`);
+        } else {
+          this.log(`📦 Encontrados ${proposals.length} commits para ejecutar:`);
+          proposals.forEach((p, i) => {
+            this.log(`  ${i + 1}. ${p.title}`);
+          });
+        }
         
         let successfulCommits = 0;
         
@@ -768,13 +900,19 @@ class CommitGenerator {
           const success = await this.executeCommit(proposal, analysis.files);
           if (success) {
             successfulCommits++;
+            // Mostrar éxito incluso en modo quiet
+            const status = this.quiet ? `✅ Commit ${i + 1}/${proposals.length}: "${proposal.title}"` 
+                                      : `✅ Commit ${i + 1} exitoso`;
+            console.log(status);
           } else {
-            console.error(`❌ Falló commit ${i + 1}: ${proposal.title}`);
+            // Mostrar errores siempre (incluso en quiet)
+            console.error(`❌ Commit ${i + 1}/${proposals.length}: "${proposal.title}" - No hay cambios staged`);
             // Continuar con los siguientes commits
           }
         }
         
-        this.log(`\n📊 Resultados: ${successfulCommits}/${proposals.length} commits exitosos`);
+        // Mostrar resultados finales (siempre visible)
+        console.log(`\n📊 Resultado: ${successfulCommits}/${proposals.length} commits exitosos`);
         
         if (successfulCommits > 0) {
           await this.pushCommits();

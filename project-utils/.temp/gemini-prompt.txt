@@ -25,187 +25,60 @@ Eres un asistente especializado en análisis de código y automatización para e
 ## Datos del Análisis
 {
   "stats": {
-    "total_files": 20,
-    "total_additions": 61,
-    "total_deletions": 15,
+    "total_files": 5,
+    "total_additions": 31,
+    "total_deletions": 40,
     "files_by_extension": {
-      "yml": 5,
-      "md": 3,
-      "json": 6,
+      "json": 1,
+      "md": 2,
       "txt": 1,
-      "ts": 5
+      "ts": 1
     },
     "directories_affected": [
-      ".github",
-      ".release-notes-0.2.0.md",
-      "CHANGELOG.json",
-      "package.json",
-      "packages",
       "project-utils",
-      "...",
-      "vite.config.ts"
+      "..."
     ]
   },
   "files": [
     {
-      "path": ".github/workflows/ci-quality.yml",
-      "status": "modified",
-      "lines_added": 19,
-      "lines_removed": 20,
-      "is_binary": false,
-      "diff_preview": "diff --git a/.github/workflows/ci-quality.yml b/.github/workflows/ci-quality.yml\nindex 5974ff0..b59e9cc 100644\n--- a/.github/workflows/ci-quality.yml\n+++ b/.github/workflows/ci-quality.yml\n@@ -29,10 +29,10 @@ jobs:\n     strategy:\n       fail-fast: false\n       matrix:\n-        node-version: [18, 20, 21]\n+        bun-version: [\"1.0\", \"latest\"]\n         build-mode: [full, core, styling, exports]\n     \n-    name: Test Node ${{ matrix.node-version }} - ${{ matrix.build-mode }}\n+    name: Test Bun ${{ matrix.bun-version }} - ${{ matrix.build-mode }}\n     \n     steps:\n       - name: 📥 Checkout code\n@@ -40,31 +40,30 @@ jobs:\n         with:\n           fetch-depth: 0\n \n-      - name: 📦 Setup Node.js ${{ matrix.node-version }}\n-        uses: actions/setup-node@v4\n+      - name: 📦 Setup Bun ${{ matrix.bun-version }}\n+        uses: oven-sh/setup-bun@v2\n         with:\n-          node-version: ${{ matrix.node-version }}\n-          cache: 'npm'\n+          bun-version: ${{ matrix.bun-version }}\n \n       - name: 🔧 Install dependencies\n-        run: npm run ci:install\n+        run: bun install --frozen-lockfile\n \n       - name: 🔍 Type checking\n-        run: npm run type-check\n+        run: bun run type-check\n \n       - name: 🏗️ Build ${{ matrix.build-mode }}\n         run: |\n           if [ \"${{ matrix.build-mode }}\" = \"full\" ]; then\n-            npm run build:all\n+            bun run build:all\n           else\n-            npm run build:${{ matrix.build-mode }}\n+            bun run build:"
-    },
-    {
-      "path": ".github/workflows/docs-demo.yml",
-      "status": "modified",
-      "lines_added": 5,
-      "lines_removed": 7,
-      "is_binary": false,
-      "diff_preview": "diff --git a/.github/workflows/docs-demo.yml b/.github/workflows/docs-demo.yml\nindex f7c4cd3..4ae3dcc 100644\n--- a/.github/workflows/docs-demo.yml\n+++ b/.github/workflows/docs-demo.yml\n@@ -22,17 +22,15 @@ jobs:\n       - name: 📥 Checkout code\n         uses: actions/checkout@v4\n \n-      - name: 📦 Setup Node.js\n-        uses: actions/setup-node@v4\n+      - name: 📦 Setup Bun\n+        uses: oven-sh/setup-bun@v2\n         with:\n-          node-version: ${{ env.NODE_VERSION }}\n-          cache: 'npm'\n-\n+          bun-version: latest          \n       - name: 🔧 Install dependencies\n-        run: npm run ci:install\n+        run: bun install --frozen-lockfile\n \n       - name: 🏗️ Build library for demo\n-        run: npm run build:full\n+        run: bun run build:full\n \n       - name: 🏗️ Setup demo structure\n         run: |"
-    },
-    {
-      "path": ".github/workflows/nightly-auto.yml",
-      "status": "modified",
-      "lines_added": 10,
-      "lines_removed": 12,
-      "is_binary": false,
-      "diff_preview": "diff --git a/.github/workflows/nightly-auto.yml b/.github/workflows/nightly-auto.yml\nindex c936f3d..54a3aba 100644\n--- a/.github/workflows/nightly-auto.yml\n+++ b/.github/workflows/nightly-auto.yml\n@@ -152,20 +152,18 @@ jobs:\n           fetch-depth: 0\n           token: ${{ secrets.GITHUB_TOKEN }}\n \n-      - name: 📦 Setup Node.js\n-        uses: actions/setup-node@v4\n+      - name: 📦 Setup Bun\n+        uses: oven-sh/setup-bun@v2\n         with:\n-          node-version: ${{ env.NODE_VERSION }}\n-          cache: 'npm'\n-\n+          bun-version: latest          \n       - name: 🔧 Install dependencies\n-        run: npm run ci:install\n+        run: bun install --frozen-lockfile\n \n       - name: 🏗️ Build library with quality checks\n         run: |\n-          npm run build:all\n-          npm run type-check\n-          npm run ci:test\n+          bun run build:all\n+          bun run type-check\n+          bun run test\n \n       - name: 🏷️ Generate intelligent nightly version\n         id: version\n@@ -196,7 +194,7 @@ jobs:\n \n       - name: 📝 Update package for nightly\n         run: |\n-          npm version ${{ steps.version.outputs.version }} --no-git-tag-version\n+          bun --bun npm version ${{ steps.version.outputs.version }} --no-git-tag-version\n \n       - name: 📊 Generate build report\n         run: |\n@@ -236,7 +234,7 @@ jobs:\n \n       - name: 🚀 Publish nightly to NPM\n         run: |\n-          npm publish --tag nightly --access public\n+          bun publish --tag nightly --access"
-    },
-    {
-      "path": ".github/workflows/releases-core.yml",
-      "status": "modified",
-      "lines_added": 23,
-      "lines_removed": 27,
-      "is_binary": false,
-      "diff_preview": "diff --git a/.github/workflows/releases-core.yml b/.github/workflows/releases-core.yml\nindex aa4b59c..9fdf3bf 100644\n--- a/.github/workflows/releases-core.yml\n+++ b/.github/workflows/releases-core.yml\n@@ -62,25 +62,24 @@ jobs:\n           fetch-depth: 0\n           token: ${{ secrets.GITHUB_TOKEN }}\n \n-      - name: 📦 Setup Node.js\n-        uses: actions/setup-node@v4\n+      - name: 📦 Setup Bun\n+        uses: actions/oven-sh/setup-bun@v2\n         with:\n-          node-version: ${{ env.NODE_VERSION }}\n-          cache: 'npm'\n-\n+          bun-version: latest\n+          \n       - name: 🔧 Install dependencies\n-        run: npm run ci:install\n+        run: bun install --frozen-lockfile\n \n       - name: 🧪 Run tests (unless skipped)\n         if: ${{ !inputs.skip_tests }}\n         run: |\n-          npm run type-check\n-          npm run ci:test\n+          bun run type-check\n+          bun run test\n \n       - name: 🏷️ Generate version\n         id: version\n         run: |\n-          npm run version:${{ inputs.release_type }}\n+          bun run version:${{ inputs.release_type }}\n           \n           # Obtener nueva versión\n           NEW_VERSION=$(node -p \"require('./package.json').version\")\n@@ -128,14 +127,13 @@ jobs:\n       - name: 📥 Checkout code\n         uses: actions/checkout@v4\n \n-      - name: 📦 Setup Node.js\n-        uses: actions/setup-node@v4\n+      - name: 📦 Setup Bun\n+        uses: actions/oven-sh/setup-bun@v2\n         with:\n-          node-version: ${{ env.NODE_VERSI"
-    },
-    {
-      "path": ".github/workflows/releases-full.yml",
-      "status": "modified",
-      "lines_added": 31,
-      "lines_removed": 39,
-      "is_binary": false,
-      "diff_preview": "diff --git a/.github/workflows/releases-full.yml b/.github/workflows/releases-full.yml\nindex 44bab03..554fbf1 100644\n--- a/.github/workflows/releases-full.yml\n+++ b/.github/workflows/releases-full.yml\n@@ -63,14 +63,12 @@ jobs:\n           fetch-depth: 0\n           token: ${{ secrets.GITHUB_TOKEN }}\n \n-      - name: 📦 Setup Node.js\n-        uses: actions/setup-node@v4\n+      - name: 📦 Setup Bun\n+        uses: oven-sh/setup-bun@v2\n         with:\n-          node-version: ${{ env.NODE_VERSION }}\n-          cache: 'npm'\n-\n+          bun-version: latest\n       - name: 🔧 Install dependencies\n-        run: npm run ci:install\n+        run: bun install --frozen-lockfile\n \n       - name: 🤖 Run Gemini AI Analysis\n         id: analysis\n@@ -78,7 +76,7 @@ jobs:\n           echo \"🤖 Ejecutando análisis inteligente con Gemini...\"\n           \n           # Usar project-utils auto-release con Gemini\n-          npm run release:auto\n+          bun run release:auto\n           \n           # Verificar si se debe hacer release\n           if [ -f \"project-utils/.temp/gemini-response.md\" ]; then\n@@ -131,20 +129,18 @@ jobs:\n           fetch-depth: 0\n           token: ${{ secrets.GITHUB_TOKEN }}\n \n-      - name: 📦 Setup Node.js\n-        uses: actions/setup-node@v4\n+      - name: 📦 Setup Bun\n+        uses: oven-sh/setup-bun@v2\n         with:\n-          node-version: ${{ env.NODE_VERSION }}\n-          cache: 'npm'\n-\n+          bun-version: latest\n       - name: 🔧 Install dependencies\n-        run: npm "
-    },
-    {
-      "path": ".release-notes-0.2.0.md",
-      "status": "added",
-      "lines_added": 129,
-      "lines_removed": 0,
-      "is_binary": false,
-      "diff_preview": "diff --git a/.release-notes-0.2.0.md b/.release-notes-0.2.0.md\nnew file mode 100644\nindex 0000000..a6fa5da\n--- /dev/null\n+++ b/.release-notes-0.2.0.md\n@@ -0,0 +1,129 @@\n+# Better Logger - 0.2.0\n+\n+## 📋 Resumen\n+Nuevas funcionalidades incluyendo feat(package): update to v4.0.0-alpha.1 pre-release version y 4 más\n+\n+## ✨ Nuevas Funcionalidades\n+- feat(package): update to v4.0.0-alpha.1 pre-release version\n+- feat(package): publish as @mks2508/better-logger@0.0.1\n+- Demo profesional interactivo con CDN imports\n+- Showcase completo de todas las funcionalidades del logger\n+- Ejemplos visuales de temas y animaciones CSS\n+\n+## 🐛 Correcciones\n+- fix(ci): correct script names in performance and visual test jobs\n+- ✅ CSS assets Jekyll cargando correctamente\n+- ✅ CORS error demo solucionado con jsDelivr\n+- ✅ Navegación funcionando entre demo y docs\n+- ✅ NPM registry configurado para package linking\n+- ✅ Preparado para release con token\n+\n+## 🚀 Mejoras\n+- 🎨 **Sistema de Banner Inteligente** - 5 tipos diferentes con auto-detección\n+- 🚀 **CLI Avanzado** - Comandos completos para configuración y demostración\n+- 🎯 **Detección Browser** - Optimización automática según capacidades\n+- 📱 **Soporte SVG** - Logos vectoriales con animaciones embebidas\n+- ✨ **CSS Animations** - Gradientes animados y efectos visuales\n+- 🌈 **Sistema de Temas** - 4 esquemas visuales con banners únicos\n+- 🔧 **Progressive Enhancement** - Fallbacks para máxima compatibilidad\n+- 🎪 **Modo Demo** - Demostración int"
-    },
-    {
-      "path": "CHANGELOG.json",
-      "status": "added",
-      "lines_added": 376,
-      "lines_removed": 0,
-      "is_binary": false,
-      "diff_preview": "diff --git a/CHANGELOG.json b/CHANGELOG.json\nnew file mode 100644\nindex 0000000..89e93ae\n--- /dev/null\n+++ b/CHANGELOG.json\n@@ -0,0 +1,376 @@\n+{\n+  \"current_version\": \"0.2.0\",\n+  \"versions\": [\n+    {\n+      \"version\": \"0.2.0\",\n+      \"date\": \"2025-08-29\",\n+      \"type\": \"minor\",\n+      \"title\": \"Nuevas funcionalidades incluyendo feat(package): update to v4.0.0-alpha.1 pre-release version y 4 más\",\n+      \"changes\": [\n+        {\n+          \"type\": \"improvement\",\n+          \"title\": \"🎨 **Sistema de Banner Inteligente** - 5 tipos diferentes con auto-detección\",\n+          \"description\": \"🎨 **Sistema de Banner Inteligente** - 5 tipos diferentes con auto-detección\"\n+        },\n+        {\n+          \"type\": \"improvement\",\n+          \"title\": \"🚀 **CLI Avanzado** - Comandos completos para configuración y demostración\",\n+          \"description\": \"🚀 **CLI Avanzado** - Comandos completos para configuración y demostración\"\n+        },\n+        {\n+          \"type\": \"improvement\",\n+          \"title\": \"🎯 **Detección Browser** - Optimización automática según capacidades\",\n+          \"description\": \"🎯 **Detección Browser** - Optimización automática según capacidades\"\n+        },\n+        {\n+          \"type\": \"improvement\",\n+          \"title\": \"📱 **Soporte SVG** - Logos vectoriales con animaciones embebidas\",\n+          \"description\": \"📱 **Soporte SVG** - Logos vectoriales con animaciones embebidas\"\n+        },\n+        {\n+          \"type\": \"improvement\",\n+          \"title\": \"✨ **CSS A"
-    },
-    {
-      "path": "package.json",
-      "status": "modified",
-      "lines_added": 3,
-      "lines_removed": 3,
-      "is_binary": false,
-      "diff_preview": "diff --git a/package.json b/package.json\nindex dfa0f90..c0dab41 100644\n--- a/package.json\n+++ b/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger\",\n-  \"version\": \"0.0.3-alpha.1\",\n+  \"version\": \"0.2.0\",\n   \"type\": \"module\",\n   \"description\": \"State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface\",\n   \"main\": \"dist/index.js\",\n@@ -30,7 +30,7 @@\n   \"scripts\": {\n     \"dev\": \"vite\",\n     \"build\": \"tsc && BUILD_MODE=full vite build\",\n-    \"build:full\": \"tsc && BUILD_MODE=full vite build\", \n+    \"build:full\": \"tsc && BUILD_MODE=full vite build\",\n     \"build:core\": \"tsc && BUILD_MODE=core vite build\",\n     \"build:styling\": \"tsc && BUILD_MODE=styling vite build\",\n     \"build:exports\": \"tsc && BUILD_MODE=exports vite build\",\n@@ -50,7 +50,7 @@\n     \"commit:ui\": \"bun project-utils/commit-ui.ts\",\n     \"version:auto\": \"bun project-utils/version-manager.ts --auto-approve\",\n     \"version:patch\": \"bun project-utils/version-manager.ts --type patch --auto-approve\",\n-    \"version:minor\": \"bun project-utils/version-manager.ts --type minor --auto-approve\", \n+    \"version:minor\": \"bun project-utils/version-manager.ts --type minor --auto-approve\",\n     \"version:major\": \"bun project-utils/version-manager.ts --type major --auto-approve\",\n     \"version:alpha\": \"bun project-utils/version-manager.ts --prefix alpha --auto-approve\",\n     \"version:beta\": \"bun project-utils/version-manager.ts --prefix beta --auto-approve\","
-    },
-    {
-      "path": "packages/core/package.json",
-      "status": "added",
-      "lines_added": 35,
-      "lines_removed": 0,
-      "is_binary": false,
-      "diff_preview": "diff --git a/packages/core/package.json b/packages/core/package.json\nnew file mode 100644\nindex 0000000..017898e\n--- /dev/null\n+++ b/packages/core/package.json\n@@ -0,0 +1,35 @@\n+{\n+  \"name\": \"@mks2508/better-logger-core\",\n+  \"version\": \"0.2.0\",\n+  \"type\": \"module\",\n+  \"description\": \"Core logging functionality for Better Logger - Advanced console logger with hierarchical levels\",\n+  \"main\": \"dist/index.js\",\n+  \"types\": \"dist/types/core.d.ts\",\n+  \"keywords\": [\n+    \"logger\",\n+    \"console\",\n+    \"core\",\n+    \"typescript\",\n+    \"browser\",\n+    \"debug\"\n+  ],\n+  \"author\": \"MKS2508\",\n+  \"license\": \"MIT\",\n+  \"repository\": {\n+    \"type\": \"git\",\n+    \"url\": \"git+https://github.com/MKS2508/advanced-logger.git\",\n+    \"directory\": \"packages/core\"\n+  },\n+  \"bugs\": {\n+    \"url\": \"https://github.com/MKS2508/advanced-logger/issues\"\n+  },\n+  \"homepage\": \"https://mks2508.github.io/advanced-logger/\",\n+  \"publishConfig\": {\n+    \"access\": \"public\",\n+    \"registry\": \"https://registry.npmjs.org/\"\n+  },\n+  \"files\": [\n+    \"dist\",\n+    \"README.md\"\n+  ]\n+}\n\\ No newline at end of file"
-    },
-    {
-      "path": "packages/exports/package.json",
-      "status": "added",
-      "lines_added": 41,
-      "lines_removed": 0,
-      "is_binary": false,
-      "diff_preview": "diff --git a/packages/exports/package.json b/packages/exports/package.json\nnew file mode 100644\nindex 0000000..daa5b52\n--- /dev/null\n+++ b/packages/exports/package.json\n@@ -0,0 +1,41 @@\n+{\n+  \"name\": \"@mks2508/better-logger-exports\",\n+  \"version\": \"0.2.0\", \n+  \"type\": \"module\",\n+  \"description\": \"Export handlers for Better Logger - File, Remote, Analytics and custom log destinations\",\n+  \"main\": \"dist/index.js\",\n+  \"types\": \"dist/types/exports-module.d.ts\",\n+  \"keywords\": [\n+    \"logger\",\n+    \"console\",\n+    \"exports\",\n+    \"handlers\",\n+    \"file\",\n+    \"remote\",\n+    \"analytics\",\n+    \"typescript\",\n+    \"browser\"\n+  ],\n+  \"author\": \"MKS2508\",\n+  \"license\": \"MIT\",\n+  \"repository\": {\n+    \"type\": \"git\",\n+    \"url\": \"git+https://github.com/MKS2508/advanced-logger.git\",\n+    \"directory\": \"packages/exports\"\n+  },\n+  \"bugs\": {\n+    \"url\": \"https://github.com/MKS2508/advanced-logger/issues\"\n+  },\n+  \"homepage\": \"https://mks2508.github.io/advanced-logger/\",\n+  \"publishConfig\": {\n+    \"access\": \"public\",\n+    \"registry\": \"https://registry.npmjs.org/\"\n+  },\n+  \"files\": [\n+    \"dist\",\n+    \"README.md\"\n+  ],\n+  \"peerDependencies\": {\n+    \"@mks2508/better-logger-core\": \"^0.2.0\"\n+  }\n+}\n\\ No newline at end of file"
-    },
-    {
-      "path": "packages/styling/package.json",
-      "status": "added",
-      "lines_added": 41,
-      "lines_removed": 0,
-      "is_binary": false,
-      "diff_preview": "diff --git a/packages/styling/package.json b/packages/styling/package.json\nnew file mode 100644\nindex 0000000..8289163\n--- /dev/null\n+++ b/packages/styling/package.json\n@@ -0,0 +1,41 @@\n+{\n+  \"name\": \"@mks2508/better-logger-styling\",\n+  \"version\": \"0.2.0\",\n+  \"type\": \"module\",\n+  \"description\": \"Advanced CSS styling system for Better Logger - Console styling with gradients, animations and SVG support\",\n+  \"main\": \"dist/index.js\",\n+  \"types\": \"dist/types/styling-module.d.ts\",\n+  \"keywords\": [\n+    \"logger\",\n+    \"console\",\n+    \"styling\",\n+    \"css\",\n+    \"svg\",\n+    \"animation\",\n+    \"gradients\",\n+    \"typescript\",\n+    \"browser\"\n+  ],\n+  \"author\": \"MKS2508\",\n+  \"license\": \"MIT\",\n+  \"repository\": {\n+    \"type\": \"git\",\n+    \"url\": \"git+https://github.com/MKS2508/advanced-logger.git\",\n+    \"directory\": \"packages/styling\"\n+  },\n+  \"bugs\": {\n+    \"url\": \"https://github.com/MKS2508/advanced-logger/issues\"\n+  },\n+  \"homepage\": \"https://mks2508.github.io/advanced-logger/\",\n+  \"publishConfig\": {\n+    \"access\": \"public\",\n+    \"registry\": \"https://registry.npmjs.org/\"\n+  },\n+  \"files\": [\n+    \"dist\",\n+    \"README.md\"\n+  ],\n+  \"peerDependencies\": {\n+    \"@mks2508/better-logger-core\": \"^0.2.0\"\n+  }\n+}\n\\ No newline at end of file"
-    },
-    {
       "path": "project-utils/.temp/analysis-context.json",
       "status": "modified",
-      "lines_added": 39,
-      "lines_removed": 6,
-      "is_binary": true,
-      "diff_preview": "diff --git a/project-utils/.temp/analysis-context.json b/project-utils/.temp/analysis-context.json\nindex f443d31..c9c1e38 100644\n--- a/project-utils/.temp/analysis-context.json\n+++ b/project-utils/.temp/analysis-context.json\n@@ -74,6 +74,38 @@\n       \"lines_removed\": 17,\n       \"is_binary\": false\n     },\n+    {\n+      \"path\": \"project-utils/.temp/analysis-context.json\",\n+      \"status\": \"added\",\n+      \"diff\": \"diff --git a/project-utils/.temp/analysis-context.json b/project-utils/.temp/analysis-context.json\\nnew file mode 100644\\nindex 0000000..f443d31\\n--- /dev/null\\n+++ b/project-utils/.temp/analysis-context.json\\n@@ -0,0 +1,189 @@\\n+{\\n+  \\\"files\\\": [\\n+    {\\n+      \\\"path\\\": \\\".github/workflows/ci.yml -> .github/workflows-backup/ci.yml\\\",\\n+      \\\"status\\\": \\\"renamed\\\",\\n+      \\\"diff\\\": \\\"\\\"\\n+    },\\n+    {\\n+      \\\"path\\\": \\\".github/workflows-backup/nightly.yml\\\",\\n+      \\\"status\\\": \\\"added\\\",\\n+      \\\"diff\\\": \\\"diff --git a/.github/workflows-backup/nightly.yml b/.github/workflows-backup/nightly.yml\\\\nnew file mode 100644\\\\nindex 0000000..2618595\\\\n--- /dev/null\\\\n+++ b/.github/workflows-backup/nightly.yml\\\\n@@ -0,0 +1,196 @@\\\\n+name: Nightly Builds\\\\n+\\\\n+on:\\\\n+  schedule:\\\\n+    # Ejecutar cada día a las 3:00 AM UTC\\\\n+    - cron: '0 3 * * *'\\\\n+  workflow_dispatch:\\\\n+    inputs:\\\\n+      force_build:\\\\n+        description: 'Forzar build aunque no haya cambios'\\\\n+        required: false\\\\n+        default: false\\\\n+        type: boolean\\\\n+\\\\n+env:\\\\n+  NOD"
-    },
-    {
-      "path": "project-utils/.temp/commit-proposal-2025-08-29T18-22-24.md",
-      "status": "added",
-      "lines_added": 40,
+      "lines_added": 0,
       "lines_removed": 0,
       "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/.temp/commit-proposal-2025-08-29T18-22-24.md b/project-utils/.temp/commit-proposal-2025-08-29T18-22-24.md\nnew file mode 100644\nindex 0000000..9c98e0b\n--- /dev/null\n+++ b/project-utils/.temp/commit-proposal-2025-08-29T18-22-24.md\n@@ -0,0 +1,40 @@\n+### **ANÁLISIS PRINCIPAL**\n+\n+Se ha detectado una refactorización masiva y la implementación de un sistema de automatización completo para el proyecto. Los cambios introducen una infraestructura de CI/CD modular y avanzada, junto con un conjunto de herramientas locales (`project-utils`) para automatizar la generación de commits, el versionado y la creación de releases, incluyendo integración con IA (Gemini). El sistema de build ha sido modificado para soportar compilaciones modulares (`full`, `core`, `styling`, `exports`), alineándose con los nuevos workflows de GitHub Actions.\n+\n+---\n+\n+### **Propuesta de Commit #1**\n+\n+```markdown\n+feat(build): Implementación de Sistema de Build y Release Modular con IA\n+\n+Se introduce un sistema de automatización y CI/CD completamente nuevo y avanzado para mejorar la eficiencia del desarrollo y la gestión de releases.\n+\n+Este sistema reemplaza los flujos de trabajo monolíticos anteriores con una arquitectura modular y potente que permite builds y releases independientes para los distintos componentes de la librería (`core`, `styling`, `exports`). Además, se integra un conjunto de herramientas en `project-utils` que automatizan tareas clave como la generación de commits, "
+      "diff_preview": "New file: project-utils/.temp/analysis-context.json"
+    },
+    {
+      "path": "project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md",
+      "status": "added",
+      "lines_added": 52,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md b/project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md\nnew file mode 100644\nindex 0000000..a3fdec9\n--- /dev/null\n+++ b/project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md\n@@ -0,0 +1,52 @@\n+### **ANÁLISIS PRINCIPAL**\n+\n+Se ha realizado una migración completa de la infraestructura de CI/CD de NPM a Bun para mejorar el rendimiento. Paralelamente, se ha refactorizado la arquitectura del proyecto a un monorepo, dividiendo la librería en tres paquetes modulares e independientes: `core`, `styling` y `exports`. Las herramientas de build y automatización han sido actualizadas para soportar esta nueva estructura.\n+\n+---\n+\n+### **Propuesta de Commit #1**\n+\n+```markdown\n+chore(ci): migrar la infraestructura de CI/CD de NPM a Bun\n+\n+Se reemplaza `npm` con `bun` en todos los flujos de trabajo de GitHub Actions para estandarizar las herramientas y acelerar los tiempos de ejecución. Esto afecta la instalación de dependencias, la ejecución de scripts y la configuración del entorno de pruebas.\n+\n+<technical>\n+- **Workflows de GitHub Actions**: Modificados `ci-quality.yml`, `docs-demo.yml`, `nightly-auto.yml`, `releases-core.yml` y `releases-full.yml`.\n+- **Setup**: Reemplazado `actions/setup-node` por `oven-sh/setup-bun`.\n+- **Instalación**: Cambiado `npm run ci:install` por `bun install --frozen-lockfile`.\n+- **Ejecución de Scripts**: Actualizados todos los comandos `npm run` a `bun run`.\n+- **Matriz de Prueb"
     },
     {
       "path": "project-utils/.temp/gemini-prompt.txt",
       "status": "modified",
-      "lines_added": 39,
-      "lines_removed": 6,
+      "lines_added": 19,
+      "lines_removed": 155,
       "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/.temp/gemini-prompt.txt b/project-utils/.temp/gemini-prompt.txt\nindex b89b032..087f3fb 100644\n--- a/project-utils/.temp/gemini-prompt.txt\n+++ b/project-utils/.temp/gemini-prompt.txt\n@@ -25,13 +25,14 @@ Eres un asistente especializado en análisis de código y automatización para e\n ## Datos del Análisis\n {\n   \"stats\": {\n-    \"total_files\": 20,\n-    \"total_additions\": 150,\n+    \"total_files\": 24,\n+    \"total_additions\": 162,\n     \"total_deletions\": 3,\n     \"files_by_extension\": {\n       \"yml\": 9,\n-      \"json\": 1,\n-      \"md\": 1,\n+      \"json\": 2,\n+      \"md\": 3,\n+      \"txt\": 1,\n       \"ts\": 8,\n       \"js\": 1\n     },\n@@ -118,6 +119,38 @@ Eres un asistente especializado en análisis de código y automatización para e\n       \"is_binary\": false,\n       \"diff_preview\": \"diff --git a/package.json b/package.json\\nindex 49619ea..bcde04c 100644\\n--- a/package.json\\n+++ b/package.json\\n@@ -29,32 +29,38 @@\\n   \\\"homepage\\\": \\\"https://mks2508.github.io/advanced-logger/\\\",\\n   \\\"scripts\\\": {\\n     \\\"dev\\\": \\\"vite\\\",\\n-    \\\"build\\\": \\\"tsc && vite build\\\",\\n-    \\\"build:watch\\\": \\\"vite build --watch\\\",\\n-    \\\"build:analyze\\\": \\\"vite build --mode analyze\\\",\\n-    \\\"preview\\\": \\\"vite preview\\\",\\n+    \\\"build\\\": \\\"tsc && BUILD_MODE=full vite build\\\",\\n+    \\\"build:full\\\": \\\"tsc && BUILD_MODE=full vite build\\\", \\n+    \\\"build:core\\\": \\\"tsc && BUILD_MODE=core vite build\\\",\\n+    \\\"build:styling\\\": \\\"tsc && BUILD_MODE=styling vite build\\\",\\n+    \\\"build:exports\\\": \\\"tsc "
+      "diff_preview": "diff --git a/project-utils/.temp/gemini-prompt.txt b/project-utils/.temp/gemini-prompt.txt\nindex 8fefda8..1eb3236 100644\n--- a/project-utils/.temp/gemini-prompt.txt\n+++ b/project-utils/.temp/gemini-prompt.txt\n@@ -25,187 +25,51 @@ Eres un asistente especializado en análisis de código y automatización para e\n ## Datos del Análisis\n {\n   \"stats\": {\n-    \"total_files\": 20,\n-    \"total_additions\": 61,\n-    \"total_deletions\": 15,\n+    \"total_files\": 4,\n+    \"total_additions\": 28,\n+    \"total_deletions\": 26,\n     \"files_by_extension\": {\n-      \"yml\": 5,\n-      \"md\": 3,\n-      \"json\": 6,\n-      \"txt\": 1,\n-      \"ts\": 5\n+      \"json\": 1,\n+      \"md\": 2,\n+      \"txt\": 1\n     },\n     \"directories_affected\": [\n-      \".github\",\n-      \".release-notes-0.2.0.md\",\n-      \"CHANGELOG.json\",\n-      \"package.json\",\n-      \"packages\",\n       \"project-utils\",\n-      \"...\",\n-      \"vite.config.ts\"\n+      \"...\"\n     ]\n   },\n   \"files\": [\n-    {\n-      \"path\": \".github/workflows/ci-quality.yml\",\n-      \"status\": \"modified\",\n-      \"lines_added\": 19,\n-      \"lines_removed\": 20,\n-      \"is_binary\": false,\n-      \"diff_preview\": \"diff --git a/.github/workflows/ci-quality.yml b/.github/workflows/ci-quality.yml\\nindex 5974ff0..b59e9cc 100644\\n--- a/.github/workflows/ci-quality.yml\\n+++ b/.github/workflows/ci-quality.yml\\n@@ -29,10 +29,10 @@ jobs:\\n     strategy:\\n       fail-fast: false\\n       matrix:\\n-        node-version: [18, 20, 21]\\n+        bun-version: [\\\"1.0\\\", \\\"latest\\\"]\\n         build-mode:"
     },
     {
       "path": "project-utils/.temp/gemini-response.md",
       "status": "modified",
-      "lines_added": 17,
-      "lines_removed": 9,
+      "lines_added": 13,
+      "lines_removed": 8,
       "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/.temp/gemini-response.md b/project-utils/.temp/gemini-response.md\nindex 8c61574..9c98e0b 100644\n--- a/project-utils/.temp/gemini-response.md\n+++ b/project-utils/.temp/gemini-response.md\n@@ -11,26 +11,30 @@ feat(build): Implementación de Sistema de Build y Release Modular con IA\n \n Se introduce un sistema de automatización y CI/CD completamente nuevo y avanzado para mejorar la eficiencia del desarrollo y la gestión de releases.\n \n-Este sistema reemplaza los flujos de trabajo monolíticos anteriores con una arquitectura modular y potente que permite builds y releases independientes para los distintos componentes de la librería (`core`, `styling`, `exports`). Además, se integra un conjunto de herramientas en `project-utils` que automatizan tareas clave como la generación de commits, el versionado semántico y la publicación en GitHub, utilizando Gemini AI para análisis inteligente.\n+Este sistema reemplaza los flujos de trabajo monolíticos anteriores con una arquitectura modular y potente que permite builds y releases independientes para los distintos componentes de la librería (`core`, `styling`, `exports`). Además, se integra un conjunto de herramientas en `project-utils` que automatizan tareas clave como la generación de commits, el versionado semántico y la publicación en GitHub, utilizando IA para generar análisis y propuestas.\n \n <technical>\n-- **Nuevos Workflows de GitHub Actions**: Se añaden flujos de trabajo modulares para CI (`ci-quality.yml`), "
-    },
-    {
-      "path": "project-utils/auto-release-gemini.ts",
-      "status": "modified",
-      "lines_added": 5,
-      "lines_removed": 2,
-      "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/auto-release-gemini.ts b/project-utils/auto-release-gemini.ts\nindex 72a63ba..97739fe 100755\n--- a/project-utils/auto-release-gemini.ts\n+++ b/project-utils/auto-release-gemini.ts\n@@ -160,7 +160,10 @@ class AutoReleaseManagerAI {\n     \n     try {\n       await this.runCommand('git', ['fetch', 'origin']);\n-      const result = await this.runCommand('git', ['log', 'HEAD..origin/master', '--oneline']);\n+      // Detectar rama principal remota\n+      const currentBranch = await this.runCommand('git', ['branch', '--show-current']);\n+      const remoteBranch = `origin/${currentBranch.trim()}`;\n+      const result = await this.runCommand('git', ['log', `HEAD..${remoteBranch}`, '--oneline']);\n       \n       if (result.stdout.trim()) {\n         console.log('📥 Cambios remotos detectados. Actualizando...');\n@@ -171,7 +174,7 @@ class AutoReleaseManagerAI {\n           await this.runCommand('git', ['stash', 'push', '-m', 'auto-release-stash']);\n         }\n         \n-        await this.runCommand('git', ['pull', 'origin', 'master']);\n+        await this.runCommand('git', ['pull', 'origin', currentBranch.trim()]);\n         console.log('✅ Actualización completa');\n       } else {\n         console.log('✅ Repositorio actualizado');"
+      "diff_preview": "diff --git a/project-utils/.temp/gemini-response.md b/project-utils/.temp/gemini-response.md\nindex 9349f0a..a3fdec9 100644\n--- a/project-utils/.temp/gemini-response.md\n+++ b/project-utils/.temp/gemini-response.md\n@@ -16,38 +16,37 @@ Se reemplaza `npm` con `bun` en todos los flujos de trabajo de GitHub Actions pa\n - **Setup**: Reemplazado `actions/setup-node` por `oven-sh/setup-bun`.\n - **Instalación**: Cambiado `npm run ci:install` por `bun install --frozen-lockfile`.\n - **Ejecución de Scripts**: Actualizados todos los comandos `npm run` a `bun run`.\n-- **Matriz de Pruebas**: La matriz en `ci-quality.yml` ahora prueba contra versiones de `bun` en lugar de `node`.\n+- **Matriz de Pruebas**: Estandarizada para usar `bun` en todas las versiones de Node.\n </technical>\n \n <changelog>\n-## [Improvement] [🚀]\n-Infraestructura de CI/CD migrada a Bun para mayor rendimiento y eficiencia.\n+## [Infraestructura] ⚙️\n+- Optimización de la infraestructura de CI/CD para mejorar el rendimiento y la velocidad de los builds.\n </changelog>\n ```\n \n ### **Propuesta de Commit #2**\n \n ```markdown\n-feat(build): implementar arquitectura de monorepo modular\n+refactor(arquitectura): refactorizar a monorepo y modularizar paquetes\n \n-Se refactoriza el proyecto a una arquitectura de monorepo para mejorar la modularidad y mantenibilidad. Se crean tres paquetes publicables e independientes: `@mks2508/better-logger-core`, `@mks2508/better-logger-styling` y `@mks2508/better-logger-exports`.\n+Se reestructura el pr"
     },
     {
       "path": "project-utils/commit-generator.ts",
       "status": "modified",
-      "lines_added": 2,
-      "lines_removed": 1,
+      "lines_added": 150,
+      "lines_removed": 12,
       "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/commit-generator.ts b/project-utils/commit-generator.ts\nindex 2e6cda9..510e1d4 100755\n--- a/project-utils/commit-generator.ts\n+++ b/project-utils/commit-generator.ts\n@@ -487,7 +487,8 @@ class CommitGenerator {\n         ? proposal.files \n         : allFiles\n             .map(f => f.path)\n-            .filter(path => !path.includes('.temp/') && !path.startsWith('.release-notes-'));\n+            .filter(path => !path.includes('.temp/') && !path.startsWith('.release-notes-'))\n+            .filter(path => !path.includes(' -> ')); // Filtrar sintaxis de rename \"file.yml -> backup/file.yml\"\n       \n       // Agregar archivos específicos al staging area\n       for (const file of targetFiles) {"
-    },
-    {
-      "path": "project-utils/github-release-manager.ts",
-      "status": "modified",
-      "lines_added": 10,
-      "lines_removed": 2,
-      "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/github-release-manager.ts b/project-utils/github-release-manager.ts\nindex 83dac00..f8c8c73 100644\n--- a/project-utils/github-release-manager.ts\n+++ b/project-utils/github-release-manager.ts\n@@ -131,9 +131,17 @@ class GitHubReleaseManager {\n         return null;\n       }\n \n-      // Obtener archivos de la distribución\n+      // Obtener solo archivos de la distribución (no directorios)\n       const files = readdirSync(this.releasesDir)\n-        .map(file => join(this.releasesDir, file));\n+        .map(file => join(this.releasesDir, file))\n+        .filter(filePath => {\n+          try {\n+            const stat = statSync(filePath);\n+            return stat.isFile();\n+          } catch {\n+            return false;\n+          }\n+        });\n \n       // Determinar si es prerelease\n       const isPrerelease = version.includes('-alpha') || version.includes('-beta') || version.includes('-rc') || version.includes('-pre');"
-    },
-    {
-      "path": "project-utils/version-manager.ts",
-      "status": "modified",
-      "lines_added": 76,
-      "lines_removed": 9,
-      "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/version-manager.ts b/project-utils/version-manager.ts\nindex b9639b2..1b5ffb7 100644\n--- a/project-utils/version-manager.ts\n+++ b/project-utils/version-manager.ts\n@@ -24,6 +24,8 @@ interface Version {\n   breaking_changes: string[];\n   commit_hash: string;\n   prefix?: string; // pre-alpha, alpha, beta, rc, o undefined para stable\n+  affected_modules?: string[]; // Módulos afectados en esta versión\n+  module_versions?: Record<string, string>; // Versiones específicas de cada módulo\n }\n \n interface ChangelogData {\n@@ -44,13 +46,17 @@ class VersionManager {\n   private projectRoot: string;\n   private changelogPath: string;\n   private packageJsonPath: string;\n-  private tauriConfigPath: string;\n-  private cargoTomlPath: string;\n+  private modulePackagePaths: Record<string, string>;\n \n   constructor() {\n     this.projectRoot = process.cwd();\n     this.changelogPath = join(this.projectRoot, 'CHANGELOG.json');\n     this.packageJsonPath = join(this.projectRoot, 'package.json');\n+    this.modulePackagePaths = {\n+      'core': join(this.projectRoot, 'packages/core/package.json'),\n+      'styling': join(this.projectRoot, 'packages/styling/package.json'),\n+      'exports': join(this.projectRoot, 'packages/exports/package.json')\n+    };\n   }\n \n   /**\n@@ -446,8 +452,9 @@ class VersionManager {\n       writeFileSync(this.changelogPath, JSON.stringify(changelogData, null, 2));\n       console.log(`💾 Changelog actualizado: ${this.changelogPath}`);\n \n-      // Actualizar"
-    },
-    {
-      "path": "vite.config.ts",
-      "status": "modified",
-      "lines_added": 6,
-      "lines_removed": 6,
-      "is_binary": false,
-      "diff_preview": "diff --git a/vite.config.ts b/vite.config.ts\nindex a64a3c2..ccc498b 100644\n--- a/vite.config.ts\n+++ b/vite.config.ts\n@@ -85,13 +85,13 @@ const buildConfigs = {\n     plugins: [\n       dts({\n         ...baseConfig.plugins[0].options,\n-        outDir: 'dist/modular/core/types',\n+        outDir: 'packages/core/dist/types',\n         include: ['src/core.ts', 'src/constants.ts', 'src/types/**/*'],\n       })\n     ],\n     build: {\n       ...baseConfig.build,\n-      outDir: 'dist/modular/core',\n+      outDir: 'packages/core/dist',\n       lib: {\n         entry: resolve(__dirname, 'src/core.ts'),\n         name: 'BetterLoggerCore',\n@@ -117,13 +117,13 @@ const buildConfigs = {\n     plugins: [\n       dts({\n         ...baseConfig.plugins[0].options,\n-        outDir: 'dist/modular/styling/types',\n+        outDir: 'packages/styling/dist/types',\n         include: ['src/styling-module.ts', 'src/constants.ts', 'src/types/**/*'],\n       })\n     ],\n     build: {\n       ...baseConfig.build,\n-      outDir: 'dist/modular/styling',\n+      outDir: 'packages/styling/dist',\n       lib: {\n         entry: resolve(__dirname, 'src/styling-module.ts'),\n         name: 'BetterLoggerStyling',\n@@ -149,13 +149,13 @@ const buildConfigs = {\n     plugins: [\n       dts({\n         ...baseConfig.plugins[0].options,\n-        outDir: 'dist/modular/exports/types',\n+        outDir: 'packages/exports/dist/types',\n         include: ['src/exports-module.ts', 'src/constants.ts', 'src/types/**/*'],\n       })\n     ],\n     build: {"
+      "diff_preview": "diff --git a/project-utils/commit-generator.ts b/project-utils/commit-generator.ts\nindex 510e1d4..f9dfb9a 100755\n--- a/project-utils/commit-generator.ts\n+++ b/project-utils/commit-generator.ts\n@@ -461,20 +461,124 @@ class CommitGenerator {\n   /**\n    * Parsea propuestas de commit de la respuesta de Gemini\n    */\n-  private parseCommitProposals(aiResponse: string): CommitProposal[] {\n+  private parseCommitProposals(aiResponse: string, allFiles: FileChange[]): CommitProposal[] {\n     // Usar el parser estandarizado\n     const parsedProposals = GeminiResponseParser.parseCommitProposals(aiResponse);\n     \n-    // Convertir al formato interno\n+    // Si hay múltiples commits, dividir archivos inteligentemente\n+    if (parsedProposals.length > 1) {\n+      return this.distributeFilesAcrossCommits(parsedProposals, allFiles);\n+    }\n+    \n+    // Commit único usa todos los archivos\n     return parsedProposals.map(proposal => ({\n       title: proposal.title,\n       description: proposal.description,\n       technical: proposal.technical,\n       changelog: proposal.changelog,\n-      files: [] // Usar todos los archivos disponibles\n+      files: allFiles.map(f => f.path).filter(path => \n+        !path.includes('.temp/') && \n+        !path.startsWith('.release-notes-') &&\n+        !path.includes(' -> ')\n+      )\n     }));\n   }\n \n+  /**\n+   * Distribuye archivos entre múltiples commits basado en patrones\n+   */\n+  private distributeFilesAcrossCommits(\n+    parsedProposals: any[], \n+    allF"
     }
   ],
   "patterns": "No commit patterns found"
