@@ -1,3 +1,4 @@
+---
 name: Full Release Pipeline - Granular AI Steps
 
 on:
@@ -43,7 +44,7 @@ on:
         default: false
         type: boolean
   push:
-    branches: [ main ]
+    branches: [main]
     paths-ignore:
       - 'docs/**'
       - '*.md'
@@ -56,30 +57,30 @@ jobs:
   # ===== STEP 1: AI VERSION ANALYSIS & GENERATION =====
   ai-version-generation:
     runs-on: ubuntu-latest
-    
+
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
       release_channel: ${{ steps.version.outputs.release_channel }}
       should_skip: ${{ steps.version.outputs.should_skip }}
-    
+
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Setup Bun
+      - name: "📦 Setup Bun"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-          
-      - name: 🔧 Install dependencies
+
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 🤖 Setup Gemini CLI
+      - name: "🤖 Setup Gemini CLI"
         run: |
           echo "🤖 Configurando Gemini CLI..."
           # Install Gemini CLI
@@ -89,7 +90,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: 🤖 Step 1: AI Version Analysis & Generation
+      - name: "🤖 Step 1: AI Version Analysis & Generation"
         id: version
         env:
           VERSION_TYPE: ${{ inputs.version_type || 'auto' }}
@@ -98,28 +99,28 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
           echo "🤖 === PASO 1: ANÁLISIS Y GENERACIÓN DE VERSIÓN CON AI ==="
-          
+
           # Mostrar contexto de ejecución
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "📝 Ejecutando en modo manual con parámetros especificados"
           else
             echo "🔄 Ejecutando automáticamente desde push - usando defaults"
           fi
-          
+
           # Preparar argumentos para version-manager usando variables de entorno
           ARGS="--auto-approve"
-          
+
           if [ "$VERSION_TYPE" != "auto" ]; then
             ARGS="$ARGS --type $VERSION_TYPE"
           fi
-          
+
           if [ "$VERSION_PREFIX" != "stable" ]; then
             ARGS="$ARGS --prefix $VERSION_PREFIX"
           fi
-          
+
           # Mostrar comando que se ejecutará
           echo "📋 Ejecutando: bun project-utils/version-manager.ts $ARGS"
-          
+
           if [ "$DRY_RUN" = "true" ]; then
             echo "🔍 [DRY RUN] Se generaría nueva versión con: $ARGS"
             echo "should_skip=true" >> $GITHUB_OUTPUT
@@ -131,12 +132,12 @@ jobs:
             # Ejecutar version-manager con AI
             echo "🚀 Ejecutando version-manager con análisis AI..."
             bun project-utils/version-manager.ts $ARGS
-            
+
             # Obtener nueva versión del package.json
             NEW_VERSION=$(node -p "require('./package.json').version")
             echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
             echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
-            
+
             # Determinar si es prerelease y canal
             if [[ "$NEW_VERSION" == *"alpha"* ]]; then
               echo "is_prerelease=true" >> $GITHUB_OUTPUT
@@ -151,12 +152,12 @@ jobs:
               echo "is_prerelease=false" >> $GITHUB_OUTPUT
               echo "release_channel=latest" >> $GITHUB_OUTPUT
             fi
-            
+
             echo "should_skip=false" >> $GITHUB_OUTPUT
             echo "✅ Nueva versión generada: $NEW_VERSION"
           fi
 
-      - name: 🏷️ Commit and push version changes
+      - name: "🏷️ Commit and push version changes"
         if: steps.version.outputs.should_skip != 'true'
         run: |
           echo "🏷️ Commiteando cambios de versión..."
@@ -166,7 +167,7 @@ jobs:
           git commit -m "chore: release ${{ steps.version.outputs.version }}" || echo "No changes to commit"
           git push origin main
 
-      - name: 📤 Upload version artifacts
+      - name: "📤 Upload version artifacts"
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -182,27 +183,27 @@ jobs:
     runs-on: ubuntu-latest
     needs: ai-version-generation
     if: needs.ai-version-generation.outputs.should_skip != 'true'
-    
+
     steps:
-      - name: 📥 Checkout code with version changes
+      - name: "📥 Checkout code with version changes"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: main
-          
-      - name: 🔄 Pull latest changes
+
+      - name: "🔄 Pull latest changes"
         run: git pull origin main
 
-      - name: 📦 Setup Bun
+      - name: "📦 Setup Bun"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-          
-      - name: 🔧 Install dependencies
+
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 🧪 Step 2: Run tests (unless skipped)
+      - name: "🧪 Step 2: Run tests (unless skipped)"
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_tests != 'true'
         run: |
           echo "🧪 === PASO 2: EJECUTANDO TESTS Y VALIDACIONES ==="
@@ -210,17 +211,17 @@ jobs:
           bun run test
           echo "✅ Tests completados exitosamente"
 
-      - name: 🏗️ Step 3: Build all modules
+      - name: "🏗️ Step 3: Build all modules"
         run: |
           echo "🏗️ === PASO 3: COMPILANDO TODOS LOS MÓDULOS ==="
           bun run build:all
           echo "✅ Build completado exitosamente"
-          
+
           # Mostrar archivos generados
           echo "📊 Archivos generados:"
           ls -la dist/
 
-      - name: 📤 Upload build artifacts
+      - name: "📤 Upload build artifacts"
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-${{ needs.ai-version-generation.outputs.version }}
@@ -232,26 +233,26 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ai-version-generation, build-and-prepare]
     if: needs.ai-version-generation.outputs.should_skip != 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'npm' || github.event.inputs.target_registry == 'both')))
-    
+
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
         with:
           ref: main
-          
-      - name: 📦 Setup Bun with NPM registry
+
+      - name: "📦 Setup Bun with NPM registry"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
           registry-url: 'https://registry.npmjs.org'
 
-      - name: 📥 Download build artifacts
+      - name: "📥 Download build artifacts"
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts-${{ needs.ai-version-generation.outputs.version }}
           path: dist/
 
-      - name: 🚀 Step 4: Publish to NPM Registry
+      - name: "🚀 Step 4: Publish to NPM Registry"
         run: |
           echo "🚀 === PASO 4: PUBLICANDO EN NPM REGISTRY ==="
           if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
@@ -270,33 +271,33 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ai-version-generation, build-and-prepare]
     if: needs.ai-version-generation.outputs.should_skip != 'true' && github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'github' || github.event.inputs.target_registry == 'both')
-    
+
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
         with:
           ref: main
-          
-      - name: 📦 Setup Bun with GitHub registry
+
+      - name: "📦 Setup Bun with GitHub registry"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
           registry-url: 'https://npm.pkg.github.com'
 
-      - name: 📥 Download build artifacts
+      - name: "📥 Download build artifacts"
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts-${{ needs.ai-version-generation.outputs.version }}
           path: dist/
 
-      - name: 📦 Step 5: Publish to GitHub Packages
+      - name: "📦 Step 5: Publish to GitHub Packages"
         run: |
           echo "📦 === PASO 5: PUBLICANDO EN GITHUB PACKAGES ==="
           if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
             echo "📦 Publishing prerelease to GitHub Packages with tag: ${{ needs.ai-version-generation.outputs.release_channel }}"
             npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
           else
-            echo "📦 Publishing stable release to GitHub Packages" 
+            echo "📦 Publishing stable release to GitHub Packages"
             npm publish --access public
           fi
           echo "✅ Publicación en GitHub Packages completada"
@@ -308,32 +309,32 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ai-version-generation, build-and-prepare, publish-npm, publish-github]
     if: always() && needs.ai-version-generation.outputs.should_skip != 'true' && needs.build-and-prepare.result == 'success'
-    
+
     permissions:
       contents: write
-    
+
     steps:
-      - name: 📥 Checkout code  
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: main
 
-      - name: 📦 Setup Bun
+      - name: "📦 Setup Bun"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-          
-      - name: 🔧 Install dependencies
+
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 📥 Download build artifacts
+      - name: "📥 Download build artifacts"
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts-${{ needs.ai-version-generation.outputs.version }}
           path: dist/
 
-      - name: 🏷️ Create git tag
+      - name: "🏷️ Create git tag"
         run: |
           echo "🏷️ Creando tag de git..."
           git config user.name "github-actions[bot]"
@@ -341,7 +342,7 @@ jobs:
           git tag -a "${{ needs.ai-version-generation.outputs.tag }}" -m "Release ${{ needs.ai-version-generation.outputs.version }}"
           git push origin --tags
 
-      - name: 🚀 Step 6: Create GitHub Release with AI
+      - name: "🚀 Step 6: Create GitHub Release with AI"
         run: |
           echo "🚀 === PASO 6: CREANDO GITHUB RELEASE CON AI ==="
           bun project-utils/github-release-manager.ts --auto-approve
@@ -354,21 +355,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ai-version-generation, build-and-prepare, publish-npm, publish-github, create-github-release]
     if: always() && needs.ai-version-generation.outputs.should_skip != 'true'
-    
+
     steps:
-      - name: 📊 Comprehensive Release Summary  
+      - name: "📊 Comprehensive Release Summary"
         run: |
           VERSION="${{ needs.ai-version-generation.outputs.version }}"
           TAG="${{ needs.ai-version-generation.outputs.tag }}"
           CHANNEL="${{ needs.ai-version-generation.outputs.release_channel }}"
           IS_PRERELEASE="${{ needs.ai-version-generation.outputs.is_prerelease }}"
-          
+
           echo "## 🎉 Full Release Pipeline Complete!" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- **Channel**: $CHANNEL" >> $GITHUB_STEP_SUMMARY
           echo "- **Prerelease**: $IS_PRERELEASE" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### 📊 Pipeline Steps Results" >> $GITHUB_STEP_SUMMARY
           echo "1. **AI Version Generation**: ✅ $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "2. **Build & Prepare**: ${{ needs.build-and-prepare.result }}" >> $GITHUB_STEP_SUMMARY
@@ -376,22 +377,22 @@ jobs:
           echo "4. **GitHub Packages**: ${{ needs.publish-github.result }}" >> $GITHUB_STEP_SUMMARY
           echo "5. **GitHub Release**: ${{ needs.create-github-release.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
           if [ "${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'npm' || github.event.inputs.target_registry == 'both')) }}" == "true" ]; then
             echo "- **NPM**: https://www.npmjs.com/package/@mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'github' || github.event.inputs.target_registry == 'both') }}" == "true" ]; then
-            echo "- **GitHub Packages**: https://github.com/MKS2508/advanced-logger/packages/" >> $GITHUB_STEP_SUMMARY  
+            echo "- **GitHub Packages**: https://github.com/MKS2508/advanced-logger/packages/" >> $GITHUB_STEP_SUMMARY
           fi
           echo "- **GitHub Release**: https://github.com/MKS2508/advanced-logger/releases/tag/$TAG" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           if [ "$IS_PRERELEASE" == "true" ]; then
             echo "npm install @mks2508/better-logger@$CHANNEL" >> $GITHUB_STEP_SUMMARY
-          else  
+          else
             echo "npm install @mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
           fi
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

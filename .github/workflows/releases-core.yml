@@ -1,3 +1,4 @@
+---
 name: Core Modular Releases - AI Enhanced (Manual Only)
 
 on:
@@ -56,14 +57,14 @@ jobs:
   # ===== STEP 1: AI VERSION ANALYSIS FOR MODULAR RELEASE =====
   ai-modular-version:
     runs-on: ubuntu-latest
-    
+
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
       release_channel: ${{ steps.version.outputs.release_channel }}
       modules_to_build: ${{ steps.modules.outputs.modules }}
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -75,7 +76,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-          
+
       - name: 🔧 Install dependencies
         run: bun install --frozen-lockfile
 
@@ -93,37 +94,37 @@ jobs:
         id: version
         run: |
           echo "🤖 === PASO 1: ANÁLISIS AI PARA RELEASE MODULAR ==="
-          
+
           # Configurar contexto específico para release modular
           WORK_TYPE="modular-release"
           AFFECTED_COMPONENTS="${{ inputs.module }}"
           CONTEXT="Modular release for ${{ inputs.module }} module(s)"
-          
+
           VERSION_TYPE="${{ inputs.version_type }}"
           VERSION_PREFIX="${{ inputs.version_prefix }}"
-          
+
           # Preparar argumentos para version-manager con contexto de módulos
           ARGS="--auto-approve"
-          
+
           if [ "$VERSION_TYPE" != "auto" ]; then
             ARGS="$ARGS --type $VERSION_TYPE"
           fi
-          
+
           if [ "$VERSION_PREFIX" != "stable" ]; then
             ARGS="$ARGS --prefix $VERSION_PREFIX"
           fi
-          
+
           echo "📋 Ejecutando version-manager con contexto modular: $AFFECTED_COMPONENTS"
           echo "🚀 Comando: bun project-utils/version-manager.ts $ARGS"
-          
+
           # Ejecutar version-manager con análisis AI
           bun project-utils/version-manager.ts $ARGS
-          
+
           # Obtener nueva versión
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
-          
+
           # Determinar si es prerelease y canal
           if [[ "$NEW_VERSION" == *"alpha"* ]]; then
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
@@ -138,7 +139,7 @@ jobs:
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
             echo "release_channel=latest" >> $GITHUB_OUTPUT
           fi
-          
+
           echo "✅ Versión generada para release modular: $NEW_VERSION"
 
       - name: 📋 Step 2: Determine modules to build
@@ -146,7 +147,7 @@ jobs:
         run: |
           echo "📋 === PASO 2: DETERMINANDO MÓDULOS A CONSTRUIR ==="
           MODULE_INPUT="${{ inputs.module }}"
-          
+
           case "$MODULE_INPUT" in
             "all")
               MODULES="core,styling,exports,full"
@@ -158,7 +159,7 @@ jobs:
               MODULES="$MODULE_INPUT"
               ;;
           esac
-          
+
           echo "modules=$MODULES" >> $GITHUB_OUTPUT
           echo "✅ Módulos a construir: $MODULES"
 
@@ -185,11 +186,11 @@ jobs:
   build-modular:
     runs-on: ubuntu-latest
     needs: ai-modular-version
-    
+
     strategy:
       matrix:
         module: ${{ fromJson(format('["{0}"]', needs.ai-modular-version.outputs.modules_to_build)) }}
-    
+
     steps:
       - name: 📥 Checkout code with version changes
         uses: actions/checkout@v4
@@ -197,7 +198,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: main
-          
+
       - name: 🔄 Pull latest changes
         run: git pull origin main
 
@@ -205,7 +206,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-          
+
       - name: 🔧 Install dependencies
         run: bun install --frozen-lockfile
 
@@ -220,13 +221,13 @@ jobs:
       - name: 🏗️ Step 3: Build specific module
         run: |
           echo "🏗️ === PASO 3: CONSTRUYENDO MÓDULO: ${{ matrix.module }} ==="
-          
+
           case "${{ matrix.module }}" in
             "core")
               bun run build:core
               echo "✅ Módulo core construido"
               ;;
-            "styling") 
+            "styling")
               bun run build:styling
               echo "✅ Módulo styling construido"
               ;;
@@ -244,7 +245,7 @@ jobs:
               echo "✅ Todos los módulos construidos"
               ;;
           esac
-          
+
           # Mostrar archivos generados
           echo "📊 Archivos generados para ${{ matrix.module }}:"
           if [ "${{ matrix.module }}" == "full" ] || [ "${{ matrix.module }}" == "all" ]; then
@@ -266,13 +267,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ai-modular-version, build-modular]
     if: inputs.target_registry == 'npm' || inputs.target_registry == 'both'
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
           ref: main
-          
+
       - name: 📦 Setup Bun with NPM registry
         uses: oven-sh/setup-bun@v2
         with:
@@ -289,7 +290,7 @@ jobs:
       - name: 🚀 Step 4: Publish modular releases to NPM
         run: |
           echo "🚀 === PASO 4: PUBLICANDO RELEASES MODULARES EN NPM ==="
-          
+
           # Determinar tag de publicación
           if [ "${{ needs.ai-modular-version.outputs.is_prerelease }}" == "true" ]; then
             PUBLISH_TAG="${{ needs.ai-modular-version.outputs.release_channel }}"
@@ -298,7 +299,7 @@ jobs:
             PUBLISH_TAG="latest"
             echo "📦 Publicando como release estable"
           fi
-          
+
           # Publicar dependiendo del módulo seleccionado
           if [ "${{ inputs.module }}" == "all" ] || [ "${{ inputs.module }}" == "full" ]; then
             echo "📦 Publicando paquete completo..."
@@ -308,7 +309,7 @@ jobs:
             # Para releases modulares específicos, publicar como paquete scoped
             npm publish --access public --tag $PUBLISH_TAG
           fi
-          
+
           echo "✅ Publicación modular completada en NPM"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -318,13 +319,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ai-modular-version, build-modular]
     if: inputs.target_registry == 'github' || inputs.target_registry == 'both'
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
           ref: main
-          
+
       - name: 📦 Setup Bun with GitHub registry
         uses: oven-sh/setup-bun@v2
         with:
@@ -341,7 +342,7 @@ jobs:
       - name: 📦 Step 5: Publish to GitHub Packages
         run: |
           echo "📦 === PASO 5: PUBLICANDO EN GITHUB PACKAGES ==="
-          
+
           if [ "${{ needs.ai-modular-version.outputs.is_prerelease }}" == "true" ]; then
             echo "📦 Publishing prerelease to GitHub Packages with tag: ${{ needs.ai-modular-version.outputs.release_channel }}"
             npm publish --access public --tag ${{ needs.ai-modular-version.outputs.release_channel }}
@@ -358,10 +359,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ai-modular-version, build-modular, publish-modular, publish-github-modular]
     if: always() && needs.build-modular.result == 'success'
-    
+
     permissions:
       contents: write
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -373,7 +374,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-          
+
       - name: 🔧 Install dependencies
         run: bun install --frozen-lockfile
 
@@ -396,11 +397,11 @@ jobs:
       - name: 🚀 Step 6: Create Modular GitHub Release with AI
         run: |
           echo "🚀 === PASO 6: CREANDO GITHUB RELEASE MODULAR CON AI ==="
-          
+
           # Agregar contexto de módulo al release
           export RELEASE_CONTEXT="Modular release for ${{ inputs.module }} module(s)"
           export RELEASE_MODULE="${{ inputs.module }}"
-          
+
           bun project-utils/github-release-manager.ts --auto-approve
           echo "✅ GitHub Release modular creado exitosamente"
         env:
@@ -411,7 +412,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ai-modular-version, build-modular, publish-modular, publish-github-modular, create-modular-release]
     if: always()
-    
+
     steps:
       - name: 📊 Modular Release Summary
         run: |
@@ -419,14 +420,14 @@ jobs:
           MODULE="${{ inputs.module }}"
           CHANNEL="${{ needs.ai-modular-version.outputs.release_channel }}"
           IS_PRERELEASE="${{ needs.ai-modular-version.outputs.is_prerelease }}"
-          
+
           echo "## 🎉 Modular Release Pipeline Complete!" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- **Module(s)**: $MODULE" >> $GITHUB_STEP_SUMMARY
           echo "- **Channel**: $CHANNEL" >> $GITHUB_STEP_SUMMARY
           echo "- **Prerelease**: $IS_PRERELEASE" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### 📊 Pipeline Steps Results" >> $GITHUB_STEP_SUMMARY
           echo "1. **AI Version Analysis**: ✅ $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "2. **Module Build**: ${{ needs.build-modular.result }}" >> $GITHUB_STEP_SUMMARY
@@ -434,7 +435,7 @@ jobs:
           echo "4. **GitHub Packages**: ${{ needs.publish-github-modular.result }}" >> $GITHUB_STEP_SUMMARY
           echo "5. **GitHub Release**: ${{ needs.create-modular-release.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### 📦 Module-Specific Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           if [ "$IS_PRERELEASE" == "true" ]; then
