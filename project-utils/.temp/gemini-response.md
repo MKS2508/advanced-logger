@@ -1,30 +1,34 @@
 ### **ANÁLISIS PRINCIPAL**
 
-Se ha realizado una migración del entorno de desarrollo de NPM a Bun, actualizando la documentación principal para reflejar los nuevos comandos y flujos de trabajo. El archivo `DEVELOPMENT.md` ha sido reescrito para usar `bun` como el gestor de paquetes y runtime principal. Adicionalmente, se ha actualizado el `.gitignore` para excluir archivos temporales generados por las utilidades del proyecto.
+El análisis de los cambios muestra una actualización de versión coordinada a `alpha-0.6.0` en todos los archivos de manifiesto del proyecto (`package.json`, `package-lock.json`) y la generación de una nueva entrada en el `CHANGELOG.json`. Estos cambios son consistentes con un proceso de release automatizado para una nueva versión alpha.
 
 ---
 
 ### **Propuesta de Commit #1**
 
 ```markdown
-docs(dev-env): Migrar entorno de desarrollo a Bun y actualizar guía
+release(alpha-0.6.0): Automated release with RPi binaries and AI docs
 
-Se reemplaza NPM por Bun como el runtime y gestor de paquetes principal del proyecto para mejorar la velocidad y la eficiencia del desarrollo. La guía `DEVELOPMENT.md` ha sido actualizada exhaustivamente para reflejar este cambio, incluyendo nuevos comandos para instalación, construcción modular y ejecución.
+This is an automated release for version alpha-0.6.0.
 
-Adicionalmente, se ha añadido el directorio `.project-utils/.temp` al `.gitignore` para evitar que los archivos temporales de análisis de la IA sean rastreados por Git.
+This version introduces automatic updates and core improvements. It includes optimized ARM64 binaries specifically compiled for Raspberry Pi 3B+, along with AI-enhanced documentation to provide better clarity and guidance.
 
 <technical>
-- **Archivo Modificado**: `docs/DEVELOPMENT.md` ha sido reescrito para usar `bun` en lugar de `npm`.
-- **Nuevos Scripts**: Se documentan los nuevos scripts de construcción modular (`build:core`, `build:styling`, etc.).
-- **Archivo Modificado**: `.gitignore` actualizado para excluir la carpeta `/project-utils/.temp`.
+- Version bumped to alpha-0.6.0 across all `package.json` files and `package-lock.json`.
+- `CHANGELOG.json` updated with the new version details.
+- This release includes pre-compiled ARM64 binaries for Raspberry Pi 3B+.
+- AI-generated documentation has been included in the release assets.
 </technical>
 
 <changelog>
-## [Internal] ⚙️
-Se migra el entorno de desarrollo a Bun para mejorar el rendimiento y la experiencia del desarrollador.
+## [Feature] ✨
+### `alpha-0.6.0`
+- **Mejoras Automáticas**: Introducción de funcionalidades para actualizaciones automáticas y mejoras del núcleo.
+- **Soporte Raspberry Pi**: Se incluyen binarios ARM64 optimizados para Raspberry Pi 3B+.
+- **Documentación Mejorada**: La documentación ha sido enriquecida y detallada mediante IA.
 </changelog>
 ```
 
 ---
 
-**DECISIÓN**: Se propone un único commit porque todos los cambios están directamente relacionados con una sola tarea cohesiva: la migración del entorno de desarrollo a Bun y la actualización de su documentación correspondiente.
+**DECISIÓN**: Se propone un único commit, ya que todos los cambios corresponden a una única acción atómica: el release automatizado de la versión `alpha-0.6.0`. Agruparlos en un solo commit mantiene la cohesión y facilita el seguimiento del historial de versiones.

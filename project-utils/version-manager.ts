@@ -266,30 +266,74 @@ class VersionManager {
         newBaseVersion = baseVersion;
     }
 
-    return this.buildVersionString(newPrefix, newBaseVersion);
+    // Determinar incremento de prerelease
+    const prereleaseIncrement = this.calculatePrereleaseIncrement(
+      currentVersion, 
+      newPrefix, 
+      newBaseVersion, 
+      actualType
+    );
+    
+    return this.buildVersionString(newPrefix, newBaseVersion, prereleaseIncrement);
   }
 
   /**
-   * Parsea una versión con posible prefijo
+   * Calcula el incremento de prerelease apropiado
    */
-  private parseVersionString(version: string): { prefix?: string; baseVersion: string } {
-    const prefixMatch = version.match(/^(pre-alpha-|alpha-|beta-|rc-)?(.+)$/);
-    if (prefixMatch) {
+  private calculatePrereleaseIncrement(
+    currentVersion: string, 
+    targetPrefix?: string, 
+    newBaseVersion?: string,
+    versionType?: Version['type']
+  ): number {
+    const { prefix: currentPrefix, baseVersion: currentBaseVersion, prereleaseIncrement } = this.parseVersionString(currentVersion);
+    
+    // Si cambiamos de prefijo o de versión base, resetear a 1
+    if (targetPrefix !== currentPrefix || newBaseVersion !== currentBaseVersion) {
+      return 1;
+    }
+    
+    // Si mantenemos el mismo prefijo y versión base, incrementar
+    return (prereleaseIncrement || 0) + 1;
+  }
+
+  /**
+   * Parsea una versión con posible prefijo (soporta formatos legacy y semver)
+   */
+  private parseVersionString(version: string): { prefix?: string; baseVersion: string; prereleaseIncrement?: number } {
+    // Formato semver: X.Y.Z-prefix.N (ej: 0.6.0-alpha.1)
+    const semverMatch = version.match(/^(\d+\.\d+\.\d+)-(pre-alpha|alpha|beta|rc)\.(\d+)$/);
+    if (semverMatch) {
       return {
-        prefix: prefixMatch[1]?.replace(/-$/, ''), // Remover el guión final
-        baseVersion: prefixMatch[2]
+        baseVersion: semverMatch[1],
+        prefix: semverMatch[2],
+        prereleaseIncrement: parseInt(semverMatch[3])
       };
     }
+    
+    // Formato legacy: prefix-X.Y.Z (ej: alpha-0.6.0) - para compatibilidad temporal
+    const legacyMatch = version.match(/^(pre-alpha-|alpha-|beta-|rc-)?(.+)$/);
+    if (legacyMatch) {
+      return {
+        prefix: legacyMatch[1]?.replace(/-$/, ''), // Remover el guión final
+        baseVersion: legacyMatch[2],
+        prereleaseIncrement: 1 // Default para conversión
+      };
+    }
+    
     return { baseVersion: version };
   }
 
   /**
-   * Construye una versión con prefijo
+   * Construye una versión con prefijo en formato semver compatible con NPM
    */
-  private buildVersionString(prefix?: string, baseVersion?: string): string {
+  private buildVersionString(prefix?: string, baseVersion?: string, prereleaseIncrement?: number): string {
     if (!baseVersion) return '1.0.0';
     if (!prefix) return baseVersion; // Sin prefijo = estable
-    return `${prefix}-${baseVersion}`;
+    
+    // Formato semver: baseVersion-prefix.increment (ej: 0.6.0-alpha.1)
+    const increment = prereleaseIncrement || 1;
+    return `${baseVersion}-${prefix}.${increment}`;
   }
 
   /**

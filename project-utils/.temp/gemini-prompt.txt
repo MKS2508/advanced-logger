@@ -25,68 +25,108 @@ Eres un asistente especializado en análisis de código y automatización para e
 ## Datos del Análisis
 {
   "stats": {
-    "total_files": 5,
-    "total_additions": 32,
-    "total_deletions": 11,
+    "total_files": 6,
+    "total_additions": 26,
+    "total_deletions": 9,
     "files_by_extension": {
-      "gitignore": 1,
-      "md": 2,
-      "json": 1,
-      "txt": 1
+      "json": 6
     },
     "directories_affected": [
-      ".gitignore",
-      "docs",
-      "project-utils"
+      "CHANGELOG.json",
+      "package-lock.json",
+      "package.json",
+      "packages"
     ]
   },
   "files": [
     {
-      "path": ".gitignore",
+      "path": "CHANGELOG.json",
+      "status": "modified",
+      "lines_added": 18,
+      "lines_removed": 1,
+      "is_binary": false,
+      "diff_preview": "diff --git a/CHANGELOG.json b/CHANGELOG.json\nindex 5bf47aa..8ec3c35 100644\n--- a/CHANGELOG.json\n+++ b/CHANGELOG.json\n@@ -1,6 +1,23 @@\n {\n-  \"current_version\": \"alpha-0.5.0\",\n+  \"current_version\": \"alpha-0.6.0\",\n   \"versions\": [\n+    {\n+      \"version\": \"alpha-0.6.0\",\n+      \"date\": \"2025-08-29\",\n+      \"type\": \"minor\",\n+      \"title\": \"Versión Alpha - Nueva funcionalidad: feat(core): mejoras y actualizaciones automáticas\",\n+      \"changes\": [\n+        {\n+          \"type\": \"feature\",\n+          \"title\": \"feat(core): mejoras y actualizaciones automáticas\",\n+          \"description\": \"feat(core): mejoras y actualizaciones automáticas\"\n+        }\n+      ],\n+      \"technical_notes\": \"\",\n+      \"breaking_changes\": [],\n+      \"commit_hash\": \"3f9a76116a5a6dcde8b7e35810c3b155850a2ce1\",\n+      \"prefix\": \"alpha\"\n+    },\n     {\n       \"version\": \"alpha-0.5.0\",\n       \"date\": \"2025-08-29\","
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "lines_added": 2,
+      "lines_removed": 2,
+      "is_binary": false,
+      "diff_preview": "diff --git a/package-lock.json b/package-lock.json\nindex 724031a..985f768 100644\n--- a/package-lock.json\n+++ b/package-lock.json\n@@ -1,12 +1,12 @@\n {\n   \"name\": \"@mks2508/better-logger\",\n-  \"version\": \"alpha-0.4.0\",\n+  \"version\": \"alpha-0.5.0\",\n   \"lockfileVersion\": 3,\n   \"requires\": true,\n   \"packages\": {\n     \"\": {\n       \"name\": \"@mks2508/better-logger\",\n-      \"version\": \"alpha-0.4.0\",\n+      \"version\": \"alpha-0.5.0\",\n       \"license\": \"MIT\",\n       \"devDependencies\": {\n         \"terser\": \"^5.43.1\","
+    },
+    {
+      "path": "package.json",
       "status": "modified",
       "lines_added": 1,
-      "lines_removed": 0,
+      "lines_removed": 1,
       "is_binary": false,
-      "diff_preview": "diff --git a/.gitignore b/.gitignore\nindex a547bf3..5a65f64 100644\n--- a/.gitignore\n+++ b/.gitignore\n@@ -22,3 +22,4 @@ dist-ssr\n *.njsproj\n *.sln\n *.sw?\n+/project-utils/.temp"
+      "diff_preview": "diff --git a/package.json b/package.json\nindex 759fc70..56c9e99 100644\n--- a/package.json\n+++ b/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger\",\n-  \"version\": \"alpha-0.5.0\",\n+  \"version\": \"alpha-0.6.0\",\n   \"type\": \"module\",\n   \"description\": \"State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface\",\n   \"main\": \"dist/index.js\","
     },
     {
-      "path": "docs/DEVELOPMENT.md",
+      "path": "packages/core/package.json",
       "status": "modified",
-      "lines_added": 244,
-      "lines_removed": 58,
+      "lines_added": 1,
+      "lines_removed": 1,
       "is_binary": false,
-      "diff_preview": "diff --git a/docs/DEVELOPMENT.md b/docs/DEVELOPMENT.md\nindex 7667c30..c444fb6 100644\n--- a/docs/DEVELOPMENT.md\n+++ b/docs/DEVELOPMENT.md\n@@ -23,8 +23,8 @@ Complete guide for contributing to Better Logger, including development scripts,\n \n ### Prerequisites\n \n-- **Node.js** 18+ (LTS recommended)\n-- **npm** 8+ or **yarn** 1.22+\n+- **Bun** 1.0+ (Primary runtime - https://bun.sh)\n+- **Node.js** 18+ (Backup compatibility)\n - **Git** 2.30+\n \n ### Initial Setup\n@@ -34,14 +34,24 @@ Complete guide for contributing to Better Logger, including development scripts,\n git clone https://github.com/MKS2508/advanced-logger.git\n cd advanced-logger\n \n-# Install dependencies\n-npm install\n+# Install dependencies with Bun\n+bun install\n \n-# Build the project\n-npm run build\n+# Build all modules\n+bun run build:all\n \n # Run development server\n-npm run dev\n+bun run dev\n+```\n+\n+### Quick Start (Automated)\n+\n+```bash\n+# Complete setup and first commit\n+bun install\n+bun run type-check        # Verify setup\n+bun run build:all         # Build all modules\n+bun run commit:auto       # AI-powered first commit\n ```\n \n ### Environment Variables\n@@ -65,88 +75,233 @@ ENABLE_SOURCE_MAPS=true\n ### 🏗️ Build Scripts\n \n ```bash\n-# Full production build\n-npm run build\n+# Modular build system with Bun runtime\n+bun run build:full     # Complete bundle with all modules\n+bun run build:core     # Core logging only (minimal size)\n+bun run build:styling  # Styling + theming features  \n+bun run build:exports  # Export handlers"
+      "diff_preview": "diff --git a/packages/core/package.json b/packages/core/package.json\nindex 54ce2a7..e9291ab 100644\n--- a/packages/core/package.json\n+++ b/packages/core/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-core\",\n-  \"version\": \"alpha-0.5.0\",\n+  \"version\": \"alpha-0.6.0\",\n   \"type\": \"module\",\n   \"description\": \"Core logging functionality for Better Logger - Advanced console logger with hierarchical levels\",\n   \"main\": \"dist/index.js\","
     },
     {
-      "path": "project-utils/.temp/analysis-context.json",
+      "path": "packages/exports/package.json",
       "status": "modified",
-      "lines_added": 22,
-      "lines_removed": 30,
-      "is_binary": true,
-      "diff_preview": "diff --git a/project-utils/.temp/analysis-context.json b/project-utils/.temp/analysis-context.json\nindex 7adc85e..48cd8d8 100644\n--- a/project-utils/.temp/analysis-context.json\n+++ b/project-utils/.temp/analysis-context.json\n@@ -1,59 +1,51 @@\n {\n   \"files\": [\n     {\n-      \"path\": \"project-utils/.temp/analysis-context.json\",\n+      \"path\": \".gitignore\",\n       \"status\": \"modified\",\n-      \"diff\": \"New file: project-utils/.temp/analysis-context.json\",\n-      \"lines_added\": 0,\n+      \"diff\": \"diff --git a/.gitignore b/.gitignore\\nindex a547bf3..5a65f64 100644\\n--- a/.gitignore\\n+++ b/.gitignore\\n@@ -22,3 +22,4 @@ dist-ssr\\n *.njsproj\\n *.sln\\n *.sw?\\n+/project-utils/.temp\",\n+      \"lines_added\": 1,\n       \"lines_removed\": 0,\n       \"is_binary\": false\n     },\n     {\n-      \"path\": \"project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md\",\n-      \"status\": \"added\",\n-      \"diff\": \"diff --git a/project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md b/project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md\\nnew file mode 100644\\nindex 0000000..a3fdec9\\n--- /dev/null\\n+++ b/project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md\\n@@ -0,0 +1,52 @@\\n+### **ANÁLISIS PRINCIPAL**\\n+\\n+Se ha realizado una migración completa de la infraestructura de CI/CD de NPM a Bun para mejorar el rendimiento. Paralelamente, se ha refactorizado la arquitectura del proyecto a un monorepo, dividiendo la librería en tres paquetes modulares e independientes: `core`, `styling` y `exports`. Las h"
+      "lines_added": 2,
+      "lines_removed": 2,
+      "is_binary": false,
+      "diff_preview": "diff --git a/packages/exports/package.json b/packages/exports/package.json\nindex 6a3323d..773f673 100644\n--- a/packages/exports/package.json\n+++ b/packages/exports/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-exports\",\n-  \"version\": \"alpha-0.5.0\",\n+  \"version\": \"alpha-0.6.0\",\n   \"type\": \"module\",\n   \"description\": \"Export handlers for Better Logger - File, Remote, Analytics and custom log destinations\",\n   \"main\": \"dist/index.js\",\n@@ -36,6 +36,6 @@\n     \"README.md\"\n   ],\n   \"peerDependencies\": {\n-    \"@mks2508/better-logger-core\": \"^alpha-0.5.0\"\n+    \"@mks2508/better-logger-core\": \"^alpha-0.6.0\"\n   }\n }"
     },
     {
-      "path": "project-utils/.temp/gemini-prompt.txt",
+      "path": "packages/styling/package.json",
       "status": "modified",
-      "lines_added": 22,
-      "lines_removed": 30,
+      "lines_added": 2,
+      "lines_removed": 2,
       "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/.temp/gemini-prompt.txt b/project-utils/.temp/gemini-prompt.txt\nindex 85694aa..5fa8a6c 100644\n--- a/project-utils/.temp/gemini-prompt.txt\n+++ b/project-utils/.temp/gemini-prompt.txt\n@@ -25,60 +25,52 @@ Eres un asistente especializado en análisis de código y automatización para e\n ## Datos del Análisis\n {\n   \"stats\": {\n-    \"total_files\": 5,\n-    \"total_additions\": 31,\n-    \"total_deletions\": 40,\n+    \"total_files\": 4,\n+    \"total_additions\": 46,\n+    \"total_deletions\": 32,\n     \"files_by_extension\": {\n+      \"gitignore\": 1,\n       \"json\": 1,\n-      \"md\": 2,\n       \"txt\": 1,\n-      \"ts\": 1\n+      \"md\": 1\n     },\n     \"directories_affected\": [\n-      \"project-utils\",\n-      \"...\"\n+      \".gitignore\",\n+      \"project-utils\"\n     ]\n   },\n   \"files\": [\n     {\n-      \"path\": \"project-utils/.temp/analysis-context.json\",\n+      \"path\": \".gitignore\",\n       \"status\": \"modified\",\n-      \"lines_added\": 0,\n+      \"lines_added\": 1,\n       \"lines_removed\": 0,\n       \"is_binary\": false,\n-      \"diff_preview\": \"New file: project-utils/.temp/analysis-context.json\"\n+      \"diff_preview\": \"diff --git a/.gitignore b/.gitignore\\nindex a547bf3..5a65f64 100644\\n--- a/.gitignore\\n+++ b/.gitignore\\n@@ -22,3 +22,4 @@ dist-ssr\\n *.njsproj\\n *.sln\\n *.sw?\\n+/project-utils/.temp\"\n     },\n     {\n-      \"path\": \"project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md\",\n-      \"status\": \"added\",\n-      \"lines_added\": 52,\n-      \"lines_removed\": 0,\n-      \"is_binary\": false,\n-  "
-    },
-    {
-      "path": "project-utils/.temp/gemini-response.md",
-      "status": "modified",
-      "lines_added": 9,
-      "lines_removed": 3,
-      "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/.temp/gemini-response.md b/project-utils/.temp/gemini-response.md\nindex 9c5d4c4..2449e17 100644\n--- a/project-utils/.temp/gemini-response.md\n+++ b/project-utils/.temp/gemini-response.md\n@@ -14,19 +14,19 @@ Se refactoriza el script `commit-generator.ts` para gestionar de forma más inte\n Este cambio introduce una lógica de asignación basada en patrones y contexto, y mejora el filtrado para excluir archivos temporales o de metadatos (como los de `.temp/` o notas de release) de las propuestas de commit.\n \n <technical>\n-- **Archivo Modificado**: `project-utils/commit-generator.ts`.\n-- **Función `parseCommitProposals`**: Actualizada para aceptar la lista completa de archivos y delegar la distribución si hay múltiples commits.\n-- **Nueva Función `distributeFilesAcrossCommits`**: Implementada para asignar archivos a commits específicos de manera inteligente.\n-- **Filtrado de Archivos**: Añadida lógica para excluir rutas que contengan `.temp/`, `.release-notes-` o `->` de los commits generados.\n-- **Centralización**: Se utiliza `GeminiResponseParser` para el parseo estandarizado de la respuesta de la IA.\n+- **Archivo Principal**: `project-utils/commit-generator.ts` ha sido modificado extensamente.\n+- **Nueva Lógica de Distribución**: Se añade el método `distributeFilesAcrossCommits` para dividir los archivos entre múltiples propuestas de commit.\n+- **Refactorización de Parseo**: La función `parseCommitProposals` se actualiza para utilizar la nueva lógica de "
+      "diff_preview": "diff --git a/packages/styling/package.json b/packages/styling/package.json\nindex 59c3d24..a500b83 100644\n--- a/packages/styling/package.json\n+++ b/packages/styling/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-styling\",\n-  \"version\": \"alpha-0.5.0\",\n+  \"version\": \"alpha-0.6.0\",\n   \"type\": \"module\",\n   \"description\": \"Advanced CSS styling system for Better Logger - Console styling with gradients, animations and SVG support\",\n   \"main\": \"dist/index.js\",\n@@ -36,6 +36,6 @@\n     \"README.md\"\n   ],\n   \"peerDependencies\": {\n-    \"@mks2508/better-logger-core\": \"^alpha-0.5.0\"\n+    \"@mks2508/better-logger-core\": \"^alpha-0.6.0\"\n   }\n }"
     }
   ],
   "patterns": "No commit patterns found"
 }
 
 ## Contexto Adicional
-Ninguno proporcionado
+AUTO-RELEASE CONTEXT - Version alpha-0.6.0
+
+Esto es un auto-release generado automáticamente para la versión alpha-0.6.0.
+Se han compilado y añadido binarios ARM64 optimizados para Raspberry Pi 3B+.
+
+ARCHIVOS INCLUIDOS:
+- Binario ejecutable nativo ARM64
+- Paquete Debian (.deb) para fácil instalación
+- Paquete RPM (.rpm) para distribuciones basadas en RPM
+- README detallado generado con AI
+- Documentación adicional generada por AI
+
+CARACTERÍSTICAS DE ESTA VERSIÓN:
+- feature: feat(core): mejoras y actualizaciones automáticas
+
+NOTAS TÉCNICAS:
+- Compilado nativamente en ARM64 con optimizaciones específicas
+- OpenSSL configurado para cross-compilation
+- Todos los tests pasaron exitosamente
+- Documentación mejorada con inteligencia artificial
+
+Por favor genera un commit tipo 'release(alpha-0.6.0)' que refleje adecuadamente:
+1. Que es un auto-release automatizado
+2. Las características principales de esta versión
+3. Que incluye binarios optimizados para RPi
+4. Que usa AI para documentación mejorada
+
+Mantén el mensaje profesional pero informativo.
+
+## Contexto Estructurado
+
+**Descripción del trabajo**: sistema completo de auto-release con AI y publicación dual NPM
+**Tipo de trabajo**: feature - Nueva funcionalidad o capacidad
+**Componentes afectados**: core,handlers,workflows
+**Impacto en rendimiento**: none - none
 
 ---
 

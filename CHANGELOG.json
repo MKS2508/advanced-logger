@@ -1,6 +1,33 @@
 {
-  "current_version": "alpha-0.6.0",
+  "current_version": "0.7.0-alpha.1",
   "versions": [
+    {
+      "version": "0.7.0-alpha.1",
+      "date": "2025-08-29",
+      "type": "minor",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "**Mejoras Automáticas**: Introducción de funcionalidades para actualizaciones automáticas y mejoras del núcleo",
+          "description": "**Mejoras Automáticas**: Introducción de funcionalidades para actualizaciones automáticas y mejoras del núcleo."
+        },
+        {
+          "type": "improvement",
+          "title": "**Soporte Raspberry Pi**: Se incluyen binarios ARM64 optimizados para Raspberry Pi 3B+",
+          "description": "**Soporte Raspberry Pi**: Se incluyen binarios ARM64 optimizados para Raspberry Pi 3B+."
+        },
+        {
+          "type": "improvement",
+          "title": "**Documentación Mejorada**: La documentación ha sido enriquecida y detallada mediante IA",
+          "description": "**Documentación Mejorada**: La documentación ha sido enriquecida y detallada mediante IA."
+        }
+      ],
+      "technical_notes": "- Version bumped to alpha-0.6.0 across all `package.json` files and `package-lock.json`.\n- `CHANGELOG.json` updated with the new version details.\n- This release includes pre-compiled ARM64 binaries for Raspberry Pi 3B+.\n- AI-generated documentation has been included in the release assets.",
+      "breaking_changes": [],
+      "commit_hash": "553473f61e870e3945c8789a91b69459894392bb",
+      "prefix": "alpha"
+    },
     {
       "version": "alpha-0.6.0",
       "date": "2025-08-29",
