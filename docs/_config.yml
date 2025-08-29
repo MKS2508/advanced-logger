@@ -1,8 +1,8 @@
 title: "Better Logger Documentation"
 description: "State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface"
 theme: minima
-url: "https://mks2508.github.io/advanced-logger"
-baseurl: "/docs"
+url: "https://mks2508.github.io"
+baseurl: "/advanced-logger/docs"
 
 markdown: kramdown
 highlighter: rouge
@@ -29,8 +29,8 @@ header_pages:
 
 navigation:
   - title: API Reference
-    url: /API
+    url: /advanced-logger/docs/API
   - title: Development Guide
-    url: /DEVELOPMENT
+    url: /advanced-logger/docs/DEVELOPMENT
   - title: Live Demo
-    url: /
+    url: /advanced-logger/

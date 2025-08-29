@@ -6,8 +6,15 @@
     <title>Better Logger - Professional Console Logging</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
     
-    <!-- Import Better Logger from NPM CDN -->
-    <script type="module" src="https://unpkg.com/@mks2508/better-logger@latest/dist/index.js"></script>
+    <!-- Import Better Logger from jsDelivr CDN with local fallback -->
+    <script type="module">
+        try {
+            await import('https://cdn.jsdelivr.net/npm/@mks2508/better-logger@latest/dist/index.js');
+        } catch (e) {
+            console.log('Using local fallback');
+            await import('./dist/index.js');
+        }
+    </script>
     
     <style>
         * {
