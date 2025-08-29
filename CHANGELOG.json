@@ -1,6 +1,23 @@
 {
-  "current_version": "0.7.1-alpha.1",
+  "current_version": "0.7.2-alpha.1",
   "versions": [
+    {
+      "version": "0.7.2-alpha.1",
+      "date": "2025-08-29",
+      "type": "patch",
+      "title": "Versión Alpha - Nueva funcionalidad: feat(core): actualizaciones de funcionalidad",
+      "changes": [
+        {
+          "type": "feature",
+          "title": "feat(core): actualizaciones de funcionalidad",
+          "description": "feat(core): actualizaciones de funcionalidad"
+        }
+      ],
+      "technical_notes": "- Actualización de la versión a `0.7.1-alpha.1` en `package.json`, `packages/core/package.json`, `packages/exports/package.json` y `packages/styling/package.json`.\n- Actualización de `CHANGELOG.json` para registrar la nueva versión y sus cambios.\n- Inclusión de binarios ARM64 pre-compilados y optimizados para Raspberry Pi 3B+.\n- Generación de documentación y notas de release asistida por IA.",
+      "breaking_changes": [],
+      "commit_hash": "cbcca2a4507dbe6248ffc0cc113ffbc13607d0a1",
+      "prefix": "alpha"
+    },
     {
       "version": "0.7.1-alpha.1",
       "date": "2025-08-29",
