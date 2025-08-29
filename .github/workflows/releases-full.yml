@@ -96,10 +96,10 @@ jobs:
           
           # Detectar contexto de ejecución y configurar parámetros
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION_TYPE="${{ inputs.version_type || 'auto' }}"
-            VERSION_PREFIX="${{ inputs.version_prefix || 'stable' }}"
-            TARGET_REGISTRY="${{ inputs.target_registry || 'both' }}"
-            DRY_RUN="${{ inputs.dry_run || 'false' }}"
+            VERSION_TYPE="${{ github.event.inputs.version_type || 'auto' }}"
+            VERSION_PREFIX="${{ github.event.inputs.version_prefix || 'stable' }}"
+            TARGET_REGISTRY="${{ github.event.inputs.target_registry || 'both' }}"
+            DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
             echo "📝 Ejecutando en modo manual con parámetros especificados"
           else
             # Defaults para push automático
