@@ -581,7 +581,7 @@ export class ExportLogHandler implements ILogHandler {
             ...baseResult,
             metadata: {
                 ...baseResult.metadata,
-                bufferStats,
+                bufferStats: bufferStats,
                 performance: {
                     memoryUsage: this.estimateMemoryUsage(),
                     processingTime: Date.now()
@@ -591,7 +591,7 @@ export class ExportLogHandler implements ILogHandler {
                     timestamp: new Date().toISOString(),
                     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                 }
-            }
+            } as any
         };
     }
 
