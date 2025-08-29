@@ -161,7 +161,7 @@ jobs:
           fi
 
       - name: 🏷️ Commit and push version changes
-        if: needs.ai-version-generation.outputs.should_skip != 'true'
+        if: steps.version.outputs.should_skip != 'true'
         run: |
           echo "🏷️ Commiteando cambios de versión..."
           git config user.name "github-actions[bot]"
