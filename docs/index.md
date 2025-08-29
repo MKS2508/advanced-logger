@@ -79,7 +79,7 @@ import { ExportLogger } from '@mks2508/better-logger/exports';
 ## 📚 Documentation
 
 ### 🎮 Interactive Demo
-- **[🌟 Live Demo](https://mks2508.github.io/advanced-logger/demo.html)** - Try all features in your browser
+- **[🌟 Live Demo](https://mks2508.github.io/advanced-logger/)** - Try all features in your browser
 
 ### 📖 Complete Documentation
 - **[📋 API Reference](API)** - Complete method documentation

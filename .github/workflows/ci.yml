@@ -105,109 +105,6 @@ jobs:
           path: test-results/
           retention-days: 30
 
-  # ===== NPM PUBLISH =====
-  publish:
-    runs-on: ubuntu-latest
-    needs: [build-and-test, visual-tests]
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: ${{ env.REGISTRY_URL }}
-
-      - name: 🔧 Install dependencies
-        run: npm run ci:install
-
-      - name: 📥 Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-files
-          path: dist/
-
-      - name: 🚀 Publish to NPM Registry
-        run: npm run ci:publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          
-      - name: 📦 Setup GitHub Packages Registry
-        run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
-          echo "@mks2508:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          
-      - name: 📦 Publish to GitHub Packages  
-        run: npm publish --registry=https://npm.pkg.github.com --access=public --ignore-scripts
-
-      - name: 📝 Extract release notes
-        id: extract_release
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag_name=v$VERSION" >> $GITHUB_OUTPUT
-
-  # ===== GITHUB RELEASE =====
-  github-release:
-    runs-on: ubuntu-latest
-    needs: publish
-    if: startsWith(github.ref, 'refs/tags/v')
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📥 Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-files
-          path: dist/
-
-      - name: 📦 Create release archive
-        run: |
-          tar -czf better-logger-dist.tar.gz dist/
-          zip -r better-logger-dist.zip dist/
-
-      - name: 🏷️ Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: Better Logger ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
-          body: |
-            ## 🚀 Better Logger ${{ github.ref_name }}
-            
-            ### 📦 Installation
-            ```bash
-            npm install @mks2508/better-logger@${{ github.ref_name }}
-            ```
-            
-            ### 📊 Bundle Sizes
-            - **Full library**: ~64KB (13KB gzipped)
-            - **Core module**: ~6KB (2KB gzipped)  
-            - **Styling module**: ~26KB (5KB gzipped)
-            - **Exports module**: ~12KB (3KB gzipped)
-            
-            ### 🔗 Links
-            - [📚 Documentation](https://mks2508.github.io/advanced-logger/)
-            - [🧩 Examples](https://github.com/MKS2508/advanced-logger/tree/main/examples)
-            - [📋 Changelog](https://github.com/MKS2508/advanced-logger/blob/main/CHANGELOG.md)
-            
-            ### 📁 Assets
-            - `better-logger-dist.tar.gz` - Distribution files (tar.gz)
-            - `better-logger-dist.zip` - Distribution files (zip)
-          files: |
-            better-logger-dist.tar.gz
-            better-logger-dist.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ===== DEPLOY GITHUB PAGES =====
   deploy-docs:
@@ -243,19 +140,21 @@ jobs:
           name: dist-files
           path: dist/
 
-      - name: 🏗️ Setup Jekyll for documentation
+      - name: 🏗️ Setup site structure
         run: |
-          cp demo.html docs/demo.html
-          cp -r dist/ docs/dist/
-
-      - name: 📤 Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: 📤 Build with Jekyll
+          mkdir -p _site/docs
+          # Copy demo as root
+          cp demo.html _site/index.html
+          cp -r dist/ _site/dist/
+          
+      - name: 📤 Build Jekyll documentation
         uses: actions/jekyll-build-pages@v1
         with:
           source: ./docs
-          destination: ./_site
+          destination: ./_site/docs
+
+      - name: 📤 Setup Pages
+        uses: actions/configure-pages@v4
 
       - name: 📤 Upload to Pages
         uses: actions/upload-pages-artifact@v3
