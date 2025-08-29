@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger",
-  "version": "0.0.2-alpha.0",
+  "version": "0.0.2-alpha.1",
   "type": "module",
   "description": "State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface",
   "main": "dist/index.js",
