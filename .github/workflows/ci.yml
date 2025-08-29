@@ -146,7 +146,7 @@ jobs:
           echo "@mks2508:registry=https://npm.pkg.github.com" >> ~/.npmrc
           
       - name: 📦 Publish to GitHub Packages  
-        run: npm publish --registry=https://npm.pkg.github.com --access=public
+        run: npm publish --registry=https://npm.pkg.github.com --access=public --ignore-scripts
 
       - name: 📝 Extract release notes
         id: extract_release

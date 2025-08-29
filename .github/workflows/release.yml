@@ -185,9 +185,9 @@ jobs:
       - name: 📦 Publish to GitHub Packages
         run: |
           if [[ "${{ inputs.release_type }}" == "alpha" || "${{ inputs.release_type }}" == "beta" ]]; then
-            npm publish --registry=https://npm.pkg.github.com --access=public --tag ${{ inputs.release_type }}
+            npm publish --registry=https://npm.pkg.github.com --access=public --tag ${{ inputs.release_type }} --ignore-scripts
           else
-            npm publish --registry=https://npm.pkg.github.com --access=public
+            npm publish --registry=https://npm.pkg.github.com --access=public --ignore-scripts
           fi
 
       - name: 🏷️ Create GitHub Release
