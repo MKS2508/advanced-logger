@@ -25,60 +25,52 @@ Eres un asistente especializado en análisis de código y automatización para e
 ## Datos del Análisis
 {
   "stats": {
-    "total_files": 5,
-    "total_additions": 31,
-    "total_deletions": 40,
+    "total_files": 4,
+    "total_additions": 46,
+    "total_deletions": 32,
     "files_by_extension": {
+      "gitignore": 1,
       "json": 1,
-      "md": 2,
       "txt": 1,
-      "ts": 1
+      "md": 1
     },
     "directories_affected": [
-      "project-utils",
-      "..."
+      ".gitignore",
+      "project-utils"
     ]
   },
   "files": [
     {
-      "path": "project-utils/.temp/analysis-context.json",
+      "path": ".gitignore",
       "status": "modified",
-      "lines_added": 0,
+      "lines_added": 1,
       "lines_removed": 0,
       "is_binary": false,
-      "diff_preview": "New file: project-utils/.temp/analysis-context.json"
+      "diff_preview": "diff --git a/.gitignore b/.gitignore\nindex a547bf3..5a65f64 100644\n--- a/.gitignore\n+++ b/.gitignore\n@@ -22,3 +22,4 @@ dist-ssr\n *.njsproj\n *.sln\n *.sw?\n+/project-utils/.temp"
     },
     {
-      "path": "project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md",
-      "status": "added",
-      "lines_added": 52,
-      "lines_removed": 0,
-      "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md b/project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md\nnew file mode 100644\nindex 0000000..a3fdec9\n--- /dev/null\n+++ b/project-utils/.temp/commit-proposal-2025-08-29T19-13-29.md\n@@ -0,0 +1,52 @@\n+### **ANÁLISIS PRINCIPAL**\n+\n+Se ha realizado una migración completa de la infraestructura de CI/CD de NPM a Bun para mejorar el rendimiento. Paralelamente, se ha refactorizado la arquitectura del proyecto a un monorepo, dividiendo la librería en tres paquetes modulares e independientes: `core`, `styling` y `exports`. Las herramientas de build y automatización han sido actualizadas para soportar esta nueva estructura.\n+\n+---\n+\n+### **Propuesta de Commit #1**\n+\n+```markdown\n+chore(ci): migrar la infraestructura de CI/CD de NPM a Bun\n+\n+Se reemplaza `npm` con `bun` en todos los flujos de trabajo de GitHub Actions para estandarizar las herramientas y acelerar los tiempos de ejecución. Esto afecta la instalación de dependencias, la ejecución de scripts y la configuración del entorno de pruebas.\n+\n+<technical>\n+- **Workflows de GitHub Actions**: Modificados `ci-quality.yml`, `docs-demo.yml`, `nightly-auto.yml`, `releases-core.yml` y `releases-full.yml`.\n+- **Setup**: Reemplazado `actions/setup-node` por `oven-sh/setup-bun`.\n+- **Instalación**: Cambiado `npm run ci:install` por `bun install --frozen-lockfile`.\n+- **Ejecución de Scripts**: Actualizados todos los comandos `npm run` a `bun run`.\n+- **Matriz de Prueb"
+      "path": "project-utils/.temp/analysis-context.json",
+      "status": "modified",
+      "lines_added": 23,
+      "lines_removed": 15,
+      "is_binary": true,
+      "diff_preview": "diff --git a/project-utils/.temp/analysis-context.json b/project-utils/.temp/analysis-context.json\nindex 7adc85e..ae47b59 100644\n--- a/project-utils/.temp/analysis-context.json\n+++ b/project-utils/.temp/analysis-context.json\n@@ -3,10 +3,10 @@\n     {\n       \"path\": \"project-utils/.temp/analysis-context.json\",\n       \"status\": \"modified\",\n-      \"diff\": \"New file: project-utils/.temp/analysis-context.json\",\n-      \"lines_added\": 0,\n-      \"lines_removed\": 0,\n-      \"is_binary\": false\n+      \"diff\": \"diff --git a/project-utils/.temp/analysis-context.json b/project-utils/.temp/analysis-context.json\\nindex a51e014..7adc85e 100644\\n--- a/project-utils/.temp/analysis-context.json\\n+++ b/project-utils/.temp/analysis-context.json\\n@@ -1,186 +1,59 @@\\n {\\n   \\\"files\\\": [\\n     {\\n-      \\\"path\\\": \\\".github/workflows/ci-quality.yml\\\",\\n-      \\\"status\\\": \\\"modified\\\",\\n-      \\\"diff\\\": \\\"diff --git a/.github/workflows/ci-quality.yml b/.github/workflows/ci-quality.yml\\\\nindex 5974ff0..b59e9cc 100644\\\\n--- a/.github/workflows/ci-quality.yml\\\\n+++ b/.github/workflows/ci-quality.yml\\\\n@@ -29,10 +29,10 @@ jobs:\\\\n     strategy:\\\\n       fail-fast: false\\\\n       matrix:\\\\n-        node-version: [18, 20, 21]\\\\n+        bun-version: [\\\\\\\"1.0\\\\\\\", \\\\\\\"latest\\\\\\\"]\\\\n         build-mode: [full, core, styling, exports]\\\\n     \\\\n-    name: Test Node ${{ matrix.node-version }} - ${{ matrix.build-mode }}\\\\n+    name: Test Bun ${{ matrix.bun-version }} - ${{ matrix.build-mode }}\\\\n     \\\\n     steps:"
     },
     {
       "path": "project-utils/.temp/gemini-prompt.txt",
       "status": "modified",
-      "lines_added": 19,
-      "lines_removed": 155,
+      "lines_added": 23,
+      "lines_removed": 15,
       "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/.temp/gemini-prompt.txt b/project-utils/.temp/gemini-prompt.txt\nindex 8fefda8..1eb3236 100644\n--- a/project-utils/.temp/gemini-prompt.txt\n+++ b/project-utils/.temp/gemini-prompt.txt\n@@ -25,187 +25,51 @@ Eres un asistente especializado en análisis de código y automatización para e\n ## Datos del Análisis\n {\n   \"stats\": {\n-    \"total_files\": 20,\n-    \"total_additions\": 61,\n-    \"total_deletions\": 15,\n+    \"total_files\": 4,\n+    \"total_additions\": 28,\n+    \"total_deletions\": 26,\n     \"files_by_extension\": {\n-      \"yml\": 5,\n-      \"md\": 3,\n-      \"json\": 6,\n-      \"txt\": 1,\n-      \"ts\": 5\n+      \"json\": 1,\n+      \"md\": 2,\n+      \"txt\": 1\n     },\n     \"directories_affected\": [\n-      \".github\",\n-      \".release-notes-0.2.0.md\",\n-      \"CHANGELOG.json\",\n-      \"package.json\",\n-      \"packages\",\n       \"project-utils\",\n-      \"...\",\n-      \"vite.config.ts\"\n+      \"...\"\n     ]\n   },\n   \"files\": [\n-    {\n-      \"path\": \".github/workflows/ci-quality.yml\",\n-      \"status\": \"modified\",\n-      \"lines_added\": 19,\n-      \"lines_removed\": 20,\n-      \"is_binary\": false,\n-      \"diff_preview\": \"diff --git a/.github/workflows/ci-quality.yml b/.github/workflows/ci-quality.yml\\nindex 5974ff0..b59e9cc 100644\\n--- a/.github/workflows/ci-quality.yml\\n+++ b/.github/workflows/ci-quality.yml\\n@@ -29,10 +29,10 @@ jobs:\\n     strategy:\\n       fail-fast: false\\n       matrix:\\n-        node-version: [18, 20, 21]\\n+        bun-version: [\\\"1.0\\\", \\\"latest\\\"]\\n         build-mode:"
+      "diff_preview": "diff --git a/project-utils/.temp/gemini-prompt.txt b/project-utils/.temp/gemini-prompt.txt\nindex 85694aa..1538196 100644\n--- a/project-utils/.temp/gemini-prompt.txt\n+++ b/project-utils/.temp/gemini-prompt.txt\n@@ -25,12 +25,12 @@ Eres un asistente especializado en análisis de código y automatización para e\n ## Datos del Análisis\n {\n   \"stats\": {\n-    \"total_files\": 5,\n-    \"total_additions\": 31,\n-    \"total_deletions\": 40,\n+    \"total_files\": 6,\n+    \"total_additions\": 36,\n+    \"total_deletions\": 42,\n     \"files_by_extension\": {\n       \"json\": 1,\n-      \"md\": 2,\n+      \"md\": 3,\n       \"txt\": 1,\n       \"ts\": 1\n     },\n@@ -43,10 +43,10 @@ Eres un asistente especializado en análisis de código y automatización para e\n     {\n       \"path\": \"project-utils/.temp/analysis-context.json\",\n       \"status\": \"modified\",\n-      \"lines_added\": 0,\n-      \"lines_removed\": 0,\n-      \"is_binary\": false,\n-      \"diff_preview\": \"New file: project-utils/.temp/analysis-context.json\"\n+      \"lines_added\": 22,\n+      \"lines_removed\": 149,\n+      \"is_binary\": true,\n+      \"diff_preview\": \"diff --git a/project-utils/.temp/analysis-context.json b/project-utils/.temp/analysis-context.json\\nindex a51e014..7adc85e 100644\\n--- a/project-utils/.temp/analysis-context.json\\n+++ b/project-utils/.temp/analysis-context.json\\n@@ -1,186 +1,59 @@\\n {\\n   \\\"files\\\": [\\n     {\\n-      \\\"path\\\": \\\".github/workflows/ci-quality.yml\\\",\\n-      \\\"status\\\": \\\"modified\\\",\\n-      \\\"diff\\\": \\\"diff --git a/.github/workflows/ci-"
     },
     {
       "path": "project-utils/.temp/gemini-response.md",
       "status": "modified",
-      "lines_added": 13,
-      "lines_removed": 8,
+      "lines_added": 9,
+      "lines_removed": 3,
       "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/.temp/gemini-response.md b/project-utils/.temp/gemini-response.md\nindex 9349f0a..a3fdec9 100644\n--- a/project-utils/.temp/gemini-response.md\n+++ b/project-utils/.temp/gemini-response.md\n@@ -16,38 +16,37 @@ Se reemplaza `npm` con `bun` en todos los flujos de trabajo de GitHub Actions pa\n - **Setup**: Reemplazado `actions/setup-node` por `oven-sh/setup-bun`.\n - **Instalación**: Cambiado `npm run ci:install` por `bun install --frozen-lockfile`.\n - **Ejecución de Scripts**: Actualizados todos los comandos `npm run` a `bun run`.\n-- **Matriz de Pruebas**: La matriz en `ci-quality.yml` ahora prueba contra versiones de `bun` en lugar de `node`.\n+- **Matriz de Pruebas**: Estandarizada para usar `bun` en todas las versiones de Node.\n </technical>\n \n <changelog>\n-## [Improvement] [🚀]\n-Infraestructura de CI/CD migrada a Bun para mayor rendimiento y eficiencia.\n+## [Infraestructura] ⚙️\n+- Optimización de la infraestructura de CI/CD para mejorar el rendimiento y la velocidad de los builds.\n </changelog>\n ```\n \n ### **Propuesta de Commit #2**\n \n ```markdown\n-feat(build): implementar arquitectura de monorepo modular\n+refactor(arquitectura): refactorizar a monorepo y modularizar paquetes\n \n-Se refactoriza el proyecto a una arquitectura de monorepo para mejorar la modularidad y mantenibilidad. Se crean tres paquetes publicables e independientes: `@mks2508/better-logger-core`, `@mks2508/better-logger-styling` y `@mks2508/better-logger-exports`.\n+Se reestructura el pr"
-    },
-    {
-      "path": "project-utils/commit-generator.ts",
-      "status": "modified",
-      "lines_added": 150,
-      "lines_removed": 12,
-      "is_binary": false,
-      "diff_preview": "diff --git a/project-utils/commit-generator.ts b/project-utils/commit-generator.ts\nindex 510e1d4..f9dfb9a 100755\n--- a/project-utils/commit-generator.ts\n+++ b/project-utils/commit-generator.ts\n@@ -461,20 +461,124 @@ class CommitGenerator {\n   /**\n    * Parsea propuestas de commit de la respuesta de Gemini\n    */\n-  private parseCommitProposals(aiResponse: string): CommitProposal[] {\n+  private parseCommitProposals(aiResponse: string, allFiles: FileChange[]): CommitProposal[] {\n     // Usar el parser estandarizado\n     const parsedProposals = GeminiResponseParser.parseCommitProposals(aiResponse);\n     \n-    // Convertir al formato interno\n+    // Si hay múltiples commits, dividir archivos inteligentemente\n+    if (parsedProposals.length > 1) {\n+      return this.distributeFilesAcrossCommits(parsedProposals, allFiles);\n+    }\n+    \n+    // Commit único usa todos los archivos\n     return parsedProposals.map(proposal => ({\n       title: proposal.title,\n       description: proposal.description,\n       technical: proposal.technical,\n       changelog: proposal.changelog,\n-      files: [] // Usar todos los archivos disponibles\n+      files: allFiles.map(f => f.path).filter(path => \n+        !path.includes('.temp/') && \n+        !path.startsWith('.release-notes-') &&\n+        !path.includes(' -> ')\n+      )\n     }));\n   }\n \n+  /**\n+   * Distribuye archivos entre múltiples commits basado en patrones\n+   */\n+  private distributeFilesAcrossCommits(\n+    parsedProposals: any[], \n+    allF"
+      "diff_preview": "diff --git a/project-utils/.temp/gemini-response.md b/project-utils/.temp/gemini-response.md\nindex 9c5d4c4..2449e17 100644\n--- a/project-utils/.temp/gemini-response.md\n+++ b/project-utils/.temp/gemini-response.md\n@@ -14,19 +14,19 @@ Se refactoriza el script `commit-generator.ts` para gestionar de forma más inte\n Este cambio introduce una lógica de asignación basada en patrones y contexto, y mejora el filtrado para excluir archivos temporales o de metadatos (como los de `.temp/` o notas de release) de las propuestas de commit.\n \n <technical>\n-- **Archivo Modificado**: `project-utils/commit-generator.ts`.\n-- **Función `parseCommitProposals`**: Actualizada para aceptar la lista completa de archivos y delegar la distribución si hay múltiples commits.\n-- **Nueva Función `distributeFilesAcrossCommits`**: Implementada para asignar archivos a commits específicos de manera inteligente.\n-- **Filtrado de Archivos**: Añadida lógica para excluir rutas que contengan `.temp/`, `.release-notes-` o `->` de los commits generados.\n-- **Centralización**: Se utiliza `GeminiResponseParser` para el parseo estandarizado de la respuesta de la IA.\n+- **Archivo Principal**: `project-utils/commit-generator.ts` ha sido modificado extensamente.\n+- **Nueva Lógica de Distribución**: Se añade el método `distributeFilesAcrossCommits` para dividir los archivos entre múltiples propuestas de commit.\n+- **Refactorización de Parseo**: La función `parseCommitProposals` se actualiza para utilizar la nueva lógica de "
     }
   ],
   "patterns": "No commit patterns found"

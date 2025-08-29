@@ -23,8 +23,8 @@ Complete guide for contributing to Better Logger, including development scripts,
 
 ### Prerequisites
 
-- **Node.js** 18+ (LTS recommended)
-- **npm** 8+ or **yarn** 1.22+
+- **Bun** 1.0+ (Primary runtime - https://bun.sh)
+- **Node.js** 18+ (Backup compatibility)
 - **Git** 2.30+
 
 ### Initial Setup
@@ -34,14 +34,24 @@ Complete guide for contributing to Better Logger, including development scripts,
 git clone https://github.com/MKS2508/advanced-logger.git
 cd advanced-logger
 
-# Install dependencies
-npm install
+# Install dependencies with Bun
+bun install
 
-# Build the project
-npm run build
+# Build all modules
+bun run build:all
 
 # Run development server
-npm run dev
+bun run dev
+```
+
+### Quick Start (Automated)
+
+```bash
+# Complete setup and first commit
+bun install
+bun run type-check        # Verify setup
+bun run build:all         # Build all modules
+bun run commit:auto       # AI-powered first commit
 ```
 
 ### Environment Variables
@@ -65,87 +75,232 @@ ENABLE_SOURCE_MAPS=true
 ### 🏗️ Build Scripts
 
 ```bash
-# Full production build
-npm run build
+# Modular build system with Bun runtime
+bun run build:full     # Complete bundle with all modules
+bun run build:core     # Core logging only (minimal size)
+bun run build:styling  # Styling + theming features  
+bun run build:exports  # Export handlers (file, remote, analytics)
+bun run build:all      # All modules + full build
 
-# Watch mode for development
-npm run build:watch
-
-# Bundle analysis (size optimization)
-npm run build:analyze
+# Traditional build scripts
+bun run build          # Alias for build:full
+bun run clean          # Clean dist/ and packages/*/dist/
+bun run type-check     # TypeScript validation
 ```
 
-### 🧪 Development Scripts
+### 🤖 Automated Development Workflow
 
 ```bash
-# Start Vite development server
-npm run dev
+# Commit automation (with Gemini AI)
+bun run commit:auto    # Auto-generate commit, stage, and push
+bun run commit:ui      # Interactive commit UI
 
-# Type checking (TypeScript)
-npm run type-check
+# Version management
+bun run version:auto   # Auto-detect version type from commits
+bun run version:patch  # 0.2.0 → 0.2.1  
+bun run version:minor  # 0.2.0 → 0.3.0
+bun run version:major  # 0.2.0 → 1.0.0
 
-# Linting (future implementation)
-npm run lint
-npm run lint:fix
+# Pre-release channels  
+bun run version:alpha  # 0.2.0 → 0.2.1-alpha.0
+bun run version:beta   # 0.2.0 → 0.2.1-beta.0  
+bun run version:stable # 0.2.1-alpha.0 → 0.2.1
+
+# Release automation
+bun run release:github # Create GitHub release with assets
+bun run release:auto   # Full release with Gemini AI analysis
 ```
 
-### 🧩 Testing Scripts
+### 🚀 Complete Workflow Scripts
 
 ```bash
-# Run all tests (placeholder for now)
-npm run test
+# Development workflows
+bun run workflow:commit   # commit:auto
+bun run workflow:release  # version:auto + build:all + release:github
+bun run workflow:full     # commit:auto + release:full
 
-# Watch mode testing
-npm run test:watch
-
-# Coverage reports
-npm run test:coverage
-
-# Performance benchmarks
-npm run test:performance
-
-# Visual regression tests
-npm run test:visual
+# Production release workflows  
+bun run release:full      # version:auto + build:all + release:github + publish
 ```
 
-### 📦 Release Scripts
+### 🧪 Testing & Quality Scripts
 
 ```bash
-# Version bumps
-npm run release         # Patch version (0.0.1 → 0.0.2)
-npm run release:minor   # Minor version (0.0.1 → 0.1.0)
-npm run release:major   # Major version (0.0.1 → 1.0.0)
+# Testing
+bun run test             # Run test suite
+bun run test:performance # Performance benchmarks
+bun run test:visual      # Visual regression tests
+bun run size-limit       # Bundle size analysis
 
-# Pre-release versions
-npm run release:alpha   # Alpha release (0.0.1-alpha.0)
-npm run release:beta    # Beta release (0.0.1-beta.0)
+# CI/CD compatibility
+bun run ci:build         # Build all modules
+bun run ci:test          # Run tests in CI
 ```
 
-### 🧹 Maintenance Scripts
+### 📦 Publishing Scripts
 
 ```bash
-# Clean build artifacts
-npm run clean
+# NPM Registry (Production)
+bun run ci:publish       # Publish to public NPM
 
-# Size analysis
-npm run size-limit
+# GitHub Packages (Beta testing)  
+bun run ci:publish:github # Publish to GitHub registry
 
-# Serve demo locally
-npm run demo:serve      # Python server on port 8080
-
-# Preview production build
-npm run preview
+# Note: Publishing is also integrated into release workflows
 ```
 
-### 🤖 CI/CD Scripts
+---
 
+## 🔄 Local Development Workflows
+
+### 🛠️ Common Development Scenarios
+
+#### **Scenario 1: Bug Fix in Core Module**
 ```bash
-# CI-optimized scripts
-npm run ci:install      # Install dependencies (CI)
-npm run ci:build        # Build for CI/CD
-npm run ci:test         # Run tests in CI
-npm run ci:publish      # Publish to npm (CI)
+# 1. Make changes to src/core.ts or src/Logger.ts
+# 2. Test changes
+bun run type-check
+bun run build:core
+
+# 3. Commit with AI assistance
+bun run commit:auto
+# AI detects: "fix(core): resolve logging level hierarchy issue"
+
+# 4. Create patch release
+bun run version:patch     # 0.2.0 → 0.2.1
+bun run build:all         # Rebuild all modules with new version
+bun run release:github    # Create GitHub release
+
+# 5. Optional: Publish to NPM
+bun run ci:publish        # Publish stable version
 ```
+
+#### **Scenario 2: New Feature in Styling Module**
+```bash
+# 1. Develop new theme or styling feature
+# 2. Test visual changes
+bun run dev               # Preview changes
+bun run build:styling     # Test styling build
+
+# 3. Automated workflow
+bun run workflow:commit   # Auto-commit changes
+# AI detects: "feat(styling): add cyberpunk theme with neon effects"
+
+# 4. Feature release
+bun run version:minor     # 0.2.0 → 0.3.0
+bun run workflow:release  # Build + GitHub release (no publish)
+
+# 5. Beta testing before production
+bun run version:beta      # 0.3.0 → 0.3.1-beta.0
+bun run build:all
+bun run ci:publish:github # Publish beta to GitHub Packages
+```
+
+#### **Scenario 3: Major Refactoring (Breaking Changes)**
+```bash
+# 1. Complete refactoring work
+# 2. Update all modules affected
+bun run build:all         # Verify all builds work
+bun run type-check        # Ensure no type errors
+
+# 3. Create comprehensive commit
+bun run commit:auto
+# AI detects: "feat!: redesign API with breaking changes to Logger interface"
+
+# 4. Major version release
+bun run version:major     # 0.2.0 → 1.0.0
+bun run build:all
+bun run release:github
+
+# 5. Production release (after testing)
+bun run ci:publish        # Publish new major version
+```
+
+#### **Scenario 4: Alpha/Beta Release Cycle**
+```bash
+# Development phase
+bun run commit:auto       # Commit feature work
+bun run version:alpha     # 0.2.0 → 0.2.1-alpha.0
+bun run build:all
+bun run ci:publish:github # Alpha testing in GitHub Packages
+
+# More development...
+bun run commit:auto
+bun run version:alpha     # 0.2.1-alpha.0 → 0.2.1-alpha.1
+
+# Beta phase
+bun run version:beta      # 0.2.1-alpha.1 → 0.2.1-beta.0
+bun run workflow:release  # Build + GitHub release
+
+# Stable release
+bun run version:stable    # 0.2.1-beta.0 → 0.2.1
+bun run release:full      # Full production release with NPM publish
+```
+
+#### **Scenario 5: Hotfix in Production**
+```bash
+# 1. Create hotfix branch
+git checkout -b hotfix/critical-bug
+# 2. Fix issue quickly
+bun run type-check
+
+# 3. Emergency release
+bun run commit:auto       # Quick commit
+bun run version:patch     # Immediate patch version
+bun run build:all
+bun run ci:publish        # Direct to production (skip GitHub packages)
+
+# 4. Create GitHub release after
+bun run release:github
+```
+
+### 🔧 Advanced Workflow Combinations
+
+#### **Full Development Cycle**
+```bash
+# Complete development workflow
+bun run workflow:full
+# Executes: commit:auto → version:auto → build:all → release:github → ci:publish
+```
+
+#### **Safe Testing Workflow**
+```bash
+# Test without publishing to NPM
+bun run workflow:commit   # Commit changes
+bun run workflow:release  # Version + build + GitHub release
+bun run ci:publish:github # Test publish to GitHub Packages only
+```
+
+#### **AI-Powered Release**
+```bash
+# Let Gemini AI analyze and create complete release
+bun run release:auto
+# AI analyzes all changes, creates optimized commits, versions, and releases
+```
+
+### 📋 Script Execution Order Reference
+
+#### **For Bug Fixes**
+1. `bun run commit:auto` → Auto-commit with fix message
+2. `bun run version:patch` → Increment patch version
+3. `bun run build:core` → Build affected module only
+4. `bun run release:github` → Create release
+5. `bun run ci:publish` → Publish if needed
+
+#### **For New Features**  
+1. `bun run commit:auto` → Auto-commit with feat message
+2. `bun run version:minor` → Increment minor version
+3. `bun run build:all` → Build all modules
+4. `bun run release:github` → Create release
+5. `bun run ci:publish:github` → Beta test first
+6. `bun run ci:publish` → Production when ready
+
+#### **For Breaking Changes**
+1. `bun run commit:auto` → Auto-commit with breaking change
+2. `bun run version:major` → Increment major version
+3. `bun run build:all` → Build all modules
+4. `bun run release:github` → Create release with breaking change notes
+5. Manual testing before `bun run ci:publish`
 
 ---
 
@@ -348,20 +503,49 @@ describe('User Authentication', () => {
 
 ## 🏗️ Architecture Overview
 
-### Module Structure
+### Modular Architecture
 
+#### **Source Structure**
 ```
 src/
 ├── core.ts                 # Core logging functionality (6KB)
-├── styling-module.ts       # Visual features & themes (26KB)  
-├── exports-module.ts       # Data export & remote logging (12KB)
-├── index.ts               # Full library entry point (64KB)
+├── styling-module.ts       # Visual features & themes (78KB)  
+├── exports-module.ts       # Data export & remote logging (80KB)
+├── index.ts               # Full library entry point (complete bundle)
 ├── cli/                   # CLI interface modules
 ├── styling/               # Styling system components
 ├── handlers/              # Log handler implementations
 ├── utils/                 # Utility functions
 └── types/                 # TypeScript definitions
 ```
+
+#### **Build Outputs**
+```
+dist/                      # Full bundle build
+├── index.js              # Complete library (ES modules)
+├── index.cjs             # Complete library (CommonJS)
+├── core.js               # Core module only
+├── styling.js            # Styling module only
+├── exports.js            # Exports module only
+└── types/                # TypeScript definitions
+
+packages/                  # Individual module builds
+├── core/
+│   ├── package.json      # @mks2508/better-logger-core
+│   └── dist/            # Core module build
+├── styling/  
+│   ├── package.json      # @mks2508/better-logger-styling
+│   └── dist/            # Styling module build
+└── exports/
+    ├── package.json      # @mks2508/better-logger-exports  
+    └── dist/            # Exports module build
+```
+
+#### **Package Distribution**
+- **@mks2508/better-logger**: Full bundle (all modules)
+- **@mks2508/better-logger-core**: Core logging only (minimal)
+- **@mks2508/better-logger-styling**: Visual features + theming
+- **@mks2508/better-logger-exports**: Export handlers + remote logging
 
 ### Build System
 

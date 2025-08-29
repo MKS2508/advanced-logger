@@ -14,19 +14,19 @@ Se refactoriza el script `commit-generator.ts` para gestionar de forma más inte
 Este cambio introduce una lógica de asignación basada en patrones y contexto, y mejora el filtrado para excluir archivos temporales o de metadatos (como los de `.temp/` o notas de release) de las propuestas de commit.
 
 <technical>
-- **Archivo Modificado**: `project-utils/commit-generator.ts`.
-- **Función `parseCommitProposals`**: Actualizada para aceptar la lista completa de archivos y delegar la distribución si hay múltiples commits.
-- **Nueva Función `distributeFilesAcrossCommits`**: Implementada para asignar archivos a commits específicos de manera inteligente.
-- **Filtrado de Archivos**: Añadida lógica para excluir rutas que contengan `.temp/`, `.release-notes-` o `->` de los commits generados.
-- **Centralización**: Se utiliza `GeminiResponseParser` para el parseo estandarizado de la respuesta de la IA.
+- **Archivo Principal**: `project-utils/commit-generator.ts` ha sido modificado extensamente.
+- **Nueva Lógica de Distribución**: Se añade el método `distributeFilesAcrossCommits` para dividir los archivos entre múltiples propuestas de commit.
+- **Refactorización de Parseo**: La función `parseCommitProposals` se actualiza para utilizar la nueva lógica de distribución y para filtrar archivos irrelevantes.
+- **Filtrado Mejorado**: Se implementa un filtro explícito para excluir rutas que contengan `.temp/` o `.release-notes-` de los archivos asignados a un commit.
+- **Archivos de Proceso**: Los cambios en `project-utils/.temp/` son un resultado de la ejecución y prueba de la nueva lógica del script.
 </technical>
 
 <changelog>
-## [Tooling] 🛠️
-- Mejorado el sistema de generación automática de commits para soportar propuestas múltiples y una distribución de archivos más precisa.
-</changelog>
+## [Chore] [⚙️]
+- **Herramientas**: Mejorado el generador de commits para soportar distribución de archivos en propuestas múltiples.
+</changelel changelog>
 ```
 
 ---
 
-**DECISIÓN**: Se propone un único commit, ya que todos los cambios están directamente relacionados con la refactorización y mejora de una única funcionalidad: el sistema de generación de commits.
+**DECISIÓN**: Se propone un único commit, ya que todos los cambios están directamente relacionados con la refactorización de una sola funcionalidad: el script `commit-generator.ts`. Los archivos modificados en el directorio `.temp` son artefactos del desarrollo y prueba de esta misma refactorización.
