@@ -1,6 +1,32 @@
 {
-  "current_version": "0.2.0",
+  "current_version": "0.3.0",
   "versions": [
+    {
+      "version": "0.3.0",
+      "date": "2025-08-29",
+      "type": "minor",
+      "title": "Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release v0.0.3-alpha.1",
+          "description": "chore: release v0.0.3-alpha.1"
+        },
+        {
+          "type": "improvement",
+          "title": "Optimización de la infraestructura de CI/CD para mejorar el rendimiento y la velocidad de los builds",
+          "description": "Optimización de la infraestructura de CI/CD para mejorar el rendimiento y la velocidad de los builds."
+        },
+        {
+          "type": "improvement",
+          "title": "**Herramientas**: Mejorado el generador de commits para soportar distribución de archivos en propuestas múltiples",
+          "description": "**Herramientas**: Mejorado el generador de commits para soportar distribución de archivos en propuestas múltiples."
+        }
+      ],
+      "technical_notes": "- **Sistema de Build Modular**: `vite.config.ts` y `package.json` han sido refactorizados para soportar builds modulares (`full`, `core`, `styling`, `exports`) a través de la variable de entorno `BUILD_MODE`.\n- **Nuevos Workflows de CI/CD**: Se ha añadido una suite completa de workflows en `.github/workflows/` para:\n  - `ci-quality.yml`: Tests de calidad con builds en matriz.\n  - `releases-core.yml`: Releases modulares.\n  - `releases-full.yml`: Pipeline de release completa con integración opcional de Gemini.\n  - `nightly-auto.yml`: Builds nocturnos con detección inteligente de cambios.\n  - `docs-demo.yml`: Despliegue de documentación y demo.\n- **Herramientas de Automatización (`project-utils`)**: Se ha creado un nuevo directorio `project-utils` con scripts para:\n  - `commit-generator.ts`: Generación de commits analizando los cambios con IA.\n  - `version-manager.ts`: Gestión de versiones y `CHANGELOG.json` a partir de commits.\n  - `auto-release-gemini.ts`: Orquestación de releases completas.\n  - `github-release-manager.ts`: Creación de releases en GitHub.\n- **Backup de Workflows Antiguos**: Los workflows anteriores han sido movidos a `.github/workflows-backup/`.\n- **Workflows de GitHub Actions**: Modificados `ci-quality.yml`, `docs-demo.yml`, `nightly-auto.yml`, `releases-core.yml` y `releases-full.yml`.\n- **Setup**: Reemplazado `actions/setup-node` por `oven-sh/setup-bun`.\n- **Instalación**: Cambiado `npm run ci:install` por `bun install --frozen-lockfile`.\n- **Ejecución de Scripts**: Actualizados todos los comandos `npm run` a `bun run`.\n- **Matriz de Pruebas**: La matriz en `ci-quality.yml` ahora prueba contra versiones de `bun` en lugar de `node`.\n- **Workflows de GitHub Actions**: Modificados `ci-quality.yml`, `docs-demo.yml`, `nightly-auto.yml`, `releases-core.yml` y `releases-full.yml`.\n- **Setup**: Reemplazado `actions/setup-node` por `oven-sh/setup-bun`.\n- **Instalación**: Cambiado `npm run ci:install` por `bun install --frozen-lockfile`.\n- **Ejecución de Scripts**: Actualizados todos los comandos `npm run` a `bun run`.\n- **Matriz de Pruebas**: Estandarizada para usar `bun` en todas las versiones de Node.\n- **Archivo Principal**: `project-utils/commit-generator.ts` ha sido modificado extensamente.\n- **Nueva Lógica de Distribución**: Se añade el método `distributeFilesAcrossCommits` para dividir los archivos entre múltiples propuestas de commit.\n- **Refactorización de Parseo**: La función `parseCommitProposals` se actualiza para utilizar la nueva lógica de distribución y para filtrar archivos irrelevantes.\n- **Filtrado Mejorado**: Se implementa un filtro explícito para excluir rutas que contengan `.temp/` o `.release-notes-` de los archivos asignados a un commit.\n- **Archivos de Proceso**: Los cambios en `project-utils/.temp/` son un resultado de la ejecución y prueba de la nueva lógica del script.\n- **Archivo Modificado**: `docs/DEVELOPMENT.md` ha sido reescrito para usar `bun` en lugar de `npm`.\n- **Nuevos Scripts**: Se documentan los nuevos scripts de construcción modular (`build:core`, `build:styling`, etc.).\n- **Archivo Modificado**: `.gitignore` actualizado para excluir la carpeta `/project-utils/.temp`.",
+      "breaking_changes": [],
+      "commit_hash": "8bb2ad5b02e0dc578075b55bef5cac263d0b7d38"
+    },
     {
       "version": "0.2.0",
       "date": "2025-08-29",

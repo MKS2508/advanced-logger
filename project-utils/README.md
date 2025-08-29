@@ -1,4 +1,4 @@
-# Project Utils - Sistema de Automatización Completa
+# Project Utils - Sistema de Automatización Completa con AI
 
 ## 🚀 Comandos de Workflow Automatizado
 
@@ -7,7 +7,6 @@
 # Commits automatizados
 npm run commit:auto           # Commit automático silencioso
 npm run commit:ui            # UI interactiva para commits  
-npm run commit:generate      # Solo generar propuesta
 
 # Versionado automatizado
 npm run version:auto         # Auto-detectar tipo de versión
@@ -21,43 +20,84 @@ npm run version:stable       # Versión estable
 # GitHub Releases
 npm run release:github       # Crear release en GitHub
 npm run release:full         # Versión + Build + GitHub + Publish NPM
-npm run release:auto         # Release completa con AI
+npm run release:auto         # 🤖 Release completa con AI (RECOMENDADO)
 ```
 
-### Workflows Completos
+### 🤖 Release Automatizado con AI (NUEVO)
+```bash
+# Release completo con AI - Un solo comando hace todo:
+# ✅ Genera nueva versión
+# ✅ Build de todos los módulos  
+# ✅ Commit inteligente con AI
+# ✅ GitHub release con release notes
+# ✅ Publicación dual NPM (público + GitHub Packages)
+
+# Ejemplos de uso:
+npm run release:auto -- --type minor --prefix alpha --publish-npm
+npm run release:auto -- --type patch --publish-npm --publish-github
+npm run release:auto -- --dry-run --type minor --prefix beta
+```
+
+### Workflows Clásicos (Legacy)
 ```bash
 npm run workflow:full        # Commit + Versión + Build + Release + Publish
 npm run workflow:commit      # Solo commit automático
-npm run workflow:version     # Versión + Build
 npm run workflow:release     # Versión + Build + GitHub Release
 ```
 
 ## 🔧 Parámetros de Automatización
 
-### commit-generator.ts
+### 🤖 auto-release-gemini.ts (RECOMENDADO)
 ```bash
-# Usar propuesta existente
-node project-utils/commit-generator.ts --proposal-file project-utils/.temp/commit-proposal-*.md --auto-approve
+# Release alpha con AI completo
+bun project-utils/auto-release-gemini.ts \
+  --ai --auto-approve \
+  --type minor --prefix alpha \
+  --work-type feature --affected-components "exports,handlers" \
+  --context "enhanced export functionality" \
+  --publish-npm --publish-github
 
-# Configuración personalizada
-node project-utils/commit-generator.ts \
-  --auto-approve \
-  --quiet \
+# Release beta con contexto de performance
+bun project-utils/auto-release-gemini.ts \
+  --type minor --prefix beta \
+  --work-type improvement --performance-impact major \
+  --context "performance optimizations" \
+  --publish-npm
+
+# Solo mostrar qué haría (dry run)
+bun project-utils/auto-release-gemini.ts --dry-run \
+  --type patch --prefix alpha --publish-npm
+
+# Release para CI/CD
+bun project-utils/auto-release-gemini.ts --auto-approve --ai \
+  --type patch --publish-npm --publish-github
+```
+
+**Parámetros disponibles:**
+- **Version Manager**: `--type` (major|minor|patch), `--prefix` (alpha|beta|rc|'')
+- **Commit AI**: `--work-type`, `--affected-components`, `--context`, `--performance-impact`
+- **Publicación**: `--publish-npm`, `--publish-github`
+- **Control**: `--dry-run`, `--auto-approve`, `--ai`/`--no-ai`, `--force`
+
+### Scripts Individuales (Legacy)
+
+#### commit-generator.ts
+```bash
+bun project-utils/commit-generator.ts \
+  --auto-approve --quiet \
   --work-type feature \
   --affected-components "core,styling" \
-  --output-dir custom/path
+  --context "logger improvements"
 ```
 
-### version-manager.ts
+#### version-manager.ts
 ```bash
-# Versionado automático completo
-node project-utils/version-manager.ts --auto-approve --quiet --type minor
+bun project-utils/version-manager.ts --auto-approve --type minor --prefix alpha
 ```
 
-### github-release-manager.ts
+#### github-release-manager.ts
 ```bash
-# Release automática
-node project-utils/github-release-manager.ts --auto-approve --quiet
+bun project-utils/github-release-manager.ts --auto-approve --force
 ```
 
 ## 📁 Archivos Temporales
@@ -76,28 +116,42 @@ Ubicación: `project-utils/.temp/`
 
 ## 🎯 Casos de Uso
 
-### Desarrollo Normal
+### 🤖 Desarrollo con AI (RECOMENDADO)
 ```bash
 # 1. Hacer cambios en código
-# 2. Commit automático
-npm run commit:auto
+# 2. Release completo con AI en un comando
+npm run release:auto -- --type patch --prefix alpha --publish-npm
 
-# 3. Cuando esté listo para release
-npm run workflow:release
+# Para releases importantes
+npm run release:auto -- \
+  --type minor --prefix beta \
+  --work-type feature \
+  --affected-components "core,exports" \
+  --context "major logging enhancements" \
+  --publish-npm --publish-github
 ```
 
-### CI/CD Pipeline
+### 🔍 Testing y Validación
 ```bash
-# Workflow completo automático
-npm run workflow:full
+# Ver qué haría sin ejecutar
+npm run release:auto -- --dry-run --type minor --prefix alpha --publish-npm
+
+# Testing de instalación después de release
+npm install @mks2508/better-logger@0.4.0-alpha.1
+npm install @mks2508/better-logger@0.4.0-alpha.1 --registry=https://npm.pkg.github.com
 ```
 
-### Releases Manuales con Control
+### 🌐 CI/CD Pipeline
 ```bash
-npm run commit:generate     # Revisar propuesta
-# Editar si necesario
-npm run commit:auto         # Ejecutar commits
-npm run version:minor       # Versión específica
+# Workflow para CI/CD completamente automatizado
+npm run release:auto -- --auto-approve --ai \
+  --type patch --publish-npm --publish-github
+```
+
+### 🕧 Desarrollo Manual (Legacy)
+```bash
+npm run commit:auto         # Commit manual
+npm run version:minor       # Versión manual
 npm run release:github      # Solo GitHub release
 ```
 

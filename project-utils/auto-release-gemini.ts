@@ -52,6 +52,19 @@ class AutoReleaseManagerAI {
   private urgency: string;
   private targetAudience: string;
   private dependencies: string;
+  
+  // Nuevos parámetros para version manager y commit generator
+  private versionType: string;
+  private versionPrefix: string;
+  private workType: string;
+  private affectedComponents: string;
+  private context: string;
+  private performanceImpact: string;
+  private publishNpm: boolean;
+  private publishGithub: boolean;
+  private dryRun: boolean;
+  private autoApprove: boolean;
+  private autoCommit: boolean;
 
   constructor() {
     this.projectRoot = process.cwd();
@@ -68,6 +81,19 @@ class AutoReleaseManagerAI {
     this.urgency = this.getArgValue('--urgency') || 'normal';
     this.targetAudience = this.getArgValue('--audience') || 'public';
     this.dependencies = this.getArgValue('--dependencies') || 'both';
+    
+    // Nuevos parámetros
+    this.versionType = this.getArgValue('--type') || 'patch';
+    this.versionPrefix = this.getArgValue('--prefix') || '';
+    this.workType = this.getArgValue('--work-type') || 'feature';
+    this.affectedComponents = this.getArgValue('--affected-components') || '';
+    this.context = this.getArgValue('--context') || '';
+    this.performanceImpact = this.getArgValue('--performance-impact') || 'none';
+    this.publishNpm = process.argv.includes('--publish-npm');
+    this.publishGithub = process.argv.includes('--publish-github');
+    this.dryRun = process.argv.includes('--dry-run');
+    this.autoApprove = process.argv.includes('--auto-approve');
+    this.autoCommit = process.argv.includes('--auto-commit') || this.autoApprove;
     
     // Crear directorio temporal si no existe
     if (!existsSync(this.tempDir)) {
@@ -96,21 +122,27 @@ class AutoReleaseManagerAI {
     }
 
     try {
+      // Paso 0: Detectar y manejar cambios no commiteados
+      await this.handleUncommittedChanges();
+      
       // Paso 1: Detectar cambios remotos y hacer pull
       await this.pullRemoteChanges();
 
       // Paso 2: Instalar dependencias
       await this.installNodeDependencies();
 
-      // Paso 3: Verificar versión actual del changelog
+      // Paso 3: Generar nueva versión usando version-manager
+      await this.generateNewVersion();
+      
+      // Paso 4: Verificar versión actual del changelog (actualizada)
       const currentVersion = this.getCurrentVersion();
-      console.log(`📋 Versión actual: ${currentVersion}`);
+      console.log(`📋 Versión generada: ${currentVersion}`);
 
-      // Paso 4: Verificar última release existente
+      // Paso 5: Verificar última release existente
       const latestRelease = this.getLatestRelease();
       console.log(`📦 Última release: ${latestRelease || 'ninguna'}`);
 
-      // Paso 5: Comparar versiones
+      // Paso 6: Comparar versiones
       if (latestRelease === currentVersion && !this.forceMode) {
         console.log('✅ No hay nueva versión para compilar. Release ya existe.');
         console.log('💡 Usa --force para forzar la recompilación.');
@@ -120,31 +152,34 @@ class AutoReleaseManagerAI {
       if (this.forceMode && latestRelease === currentVersion) {
         console.log('🔧 Modo forzado activado. Regenerando release existente...');
       } else {
-        console.log(`🆕 Nueva versión detectada: ${currentVersion}`);
+        console.log(`🆕 Nueva versión generada: ${currentVersion}`);
       }
       
       console.log('⚡ Iniciando proceso de compilación y release...\n');
 
-      // Paso 6: Compilar aplicación
+      // Paso 7: Compilar aplicación
       await this.buildApplication();
 
-      // Paso 7: Crear estructura de release
+      // Paso 8: Crear estructura de release
       const releaseInfo = this.parseVersion(currentVersion);
       await this.createReleaseStructure(releaseInfo);
 
-      // Paso 8: Copiar archivos de distribución
+      // Paso 9: Copiar archivos de distribución
       await this.copyDistFiles(releaseInfo);
 
-      // Paso 9: Generar documentación (con AI si está disponible)
+      // Paso 10: Generar documentación (con AI si está disponible)
       await this.generateReleaseDocumentation(releaseInfo);
 
-      // Paso 10: Commit y push con AI
+      // Paso 11: Commit y push con AI
       await this.commitAndPushReleaseAI(releaseInfo);
 
-      // Paso 11: Crear GitHub Release (si está configurado)
+      // Paso 12: Crear GitHub Release (si está configurado)
       await this.createGitHubRelease(releaseInfo);
 
-      // Paso 12: Actualizar sistema OTA
+      // Paso 13: Publicar en registros NPM (si está habilitado)
+      await this.publishToNPMRegistries(releaseInfo);
+
+      // Paso 14: Actualizar sistema OTA
       await this.updateOTASystem(currentVersion);
 
       console.log('\n✅ Auto-release AI completado exitosamente!');
@@ -161,8 +196,9 @@ class AutoReleaseManagerAI {
     try {
       await this.runCommand('git', ['fetch', 'origin']);
       // Detectar rama principal remota
-      const currentBranch = await this.runCommand('git', ['branch', '--show-current']);
-      const remoteBranch = `origin/${currentBranch.trim()}`;
+      const currentBranchResult = await this.runCommand('git', ['branch', '--show-current']);
+      const currentBranch = currentBranchResult.stdout.trim();
+      const remoteBranch = `origin/${currentBranch}`;
       const result = await this.runCommand('git', ['log', `HEAD..${remoteBranch}`, '--oneline']);
       
       if (result.stdout.trim()) {
@@ -174,7 +210,7 @@ class AutoReleaseManagerAI {
           await this.runCommand('git', ['stash', 'push', '-m', 'auto-release-stash']);
         }
         
-        await this.runCommand('git', ['pull', 'origin', currentBranch.trim()]);
+        await this.runCommand('git', ['pull', 'origin', currentBranch]);
         console.log('✅ Actualización completa');
       } else {
         console.log('✅ Repositorio actualizado');
@@ -182,6 +218,163 @@ class AutoReleaseManagerAI {
     } catch (error) {
       throw new Error(`Error al actualizar repositorio: ${error}`);
     }
+  }
+
+  /**
+   * Detecta cambios no commiteados y los maneja según la configuración
+   */
+  private async handleUncommittedChanges(): Promise<void> {
+    console.log('🔍 Verificando cambios no commiteados...');
+    
+    try {
+      const statusResult = await this.runCommand('git', ['status', '--porcelain']);
+      const uncommittedChanges = statusResult.stdout.trim();
+      
+      if (!uncommittedChanges) {
+        console.log('✅ Repositorio limpio, no hay cambios pendientes');
+        return;
+      }
+      
+      console.log('⚠️ Se detectaron cambios no commiteados:');
+      console.log(uncommittedChanges.split('\n').map(line => `  ${line}`).join('\n'));
+      
+      if (this.dryRun) {
+        console.log('🔍 [DRY RUN] Se commitearían los cambios automáticamente');
+        return;
+      }
+      
+      if (this.autoCommit || this.autoApprove) {
+        console.log('🤖 Modo auto-commit activado, commiteando cambios...');
+        await this.autoCommitChanges();
+      } else {
+        // Prompt interactivo
+        const shouldCommit = await this.promptUserForCommit(uncommittedChanges);
+        if (shouldCommit) {
+          await this.autoCommitChanges();
+        } else {
+          console.log('❌ Release cancelado. Commitea tus cambios manualmente y vuelve a intentar.');
+          process.exit(1);
+        }
+      }
+      
+    } catch (error) {
+      throw new Error(`Error verificando estado del repositorio: ${error}`);
+    }
+  }
+  
+  /**
+   * Realiza commit automático con mensaje inteligente y [skip ci]
+   */
+  private async autoCommitChanges(): Promise<void> {
+    console.log('📝 Generando commit automático...');
+    
+    try {
+      // Añadir todos los archivos modificados
+      await this.runCommand('git', ['add', '.']);
+      
+      // Generar mensaje de commit inteligente
+      const commitMessage = await this.generateAutoCommitMessage();
+      
+      // Hacer commit con [skip ci] para evitar workflows recursivos
+      const skipCiMessage = `${commitMessage}\n\n[skip ci] Auto-commit antes de release`;
+      await this.runCommand('git', ['commit', '-m', skipCiMessage]);
+      
+      console.log('✅ Cambios commiteados automáticamente');
+      console.log(`📋 Mensaje: ${commitMessage}`);
+      
+    } catch (error) {
+      throw new Error(`Error en auto-commit: ${error}`);
+    }
+  }
+  
+  /**
+   * Genera mensaje de commit inteligente basado en los archivos modificados
+   */
+  private async generateAutoCommitMessage(): Promise<string> {
+    try {
+      // Obtener archivos modificados
+      const statusResult = await this.runCommand('git', ['status', '--porcelain']);
+      const files = statusResult.stdout.trim().split('\n').filter(line => line.trim());
+      
+      const modifiedFiles = files.map(line => {
+        const status = line.substring(0, 2).trim();
+        const filePath = line.substring(3);
+        return { status, filePath };
+      });
+      
+      // Analizar tipos de cambios
+      const hasPackageJson = modifiedFiles.some(f => f.filePath.includes('package.json'));
+      const hasSourceFiles = modifiedFiles.some(f => f.filePath.match(/\.(ts|js|tsx|jsx)$/));
+      const hasConfigFiles = modifiedFiles.some(f => f.filePath.match(/\.(json|yml|yaml|toml|md)$/));
+      const hasDocFiles = modifiedFiles.some(f => f.filePath.includes('docs/') || f.filePath.includes('README'));
+      
+      let commitType = 'chore';
+      let scope = '';
+      let description = 'cambios automáticos pre-release';
+      
+      if (hasPackageJson && hasSourceFiles) {
+        commitType = 'feat';
+        scope = 'core';
+        description = 'mejoras y actualizaciones automáticas';
+      } else if (hasSourceFiles) {
+        commitType = 'feat';
+        scope = 'core';
+        description = 'actualizaciones de funcionalidad';
+      } else if (hasDocFiles) {
+        commitType = 'docs';
+        scope = 'readme';
+        description = 'actualización de documentación';
+      } else if (hasConfigFiles) {
+        commitType = 'chore';
+        scope = 'config';
+        description = 'actualizaciones de configuración';
+      }
+      
+      const scopePrefix = scope ? `(${scope})` : '';
+      return `${commitType}${scopePrefix}: ${description}`;
+      
+    } catch (error) {
+      console.warn('⚠️ Error generando mensaje inteligente, usando mensaje genérico');
+      return 'chore: cambios automáticos pre-release';
+    }
+  }
+  
+  /**
+   * Prompt interactivo para confirmar commit
+   */
+  private async promptUserForCommit(changes: string): Promise<boolean> {
+    console.log('\n🤔 ¿Qué deseas hacer con estos cambios?');
+    console.log('1. Commitear automáticamente y continuar');
+    console.log('2. Cancelar release y commitear manualmente');
+    console.log('\nEscribe "1" para auto-commit o "2" para cancelar:');
+    
+    return new Promise((resolve) => {
+      const stdin = process.stdin;
+      stdin.setRawMode(true);
+      stdin.resume();
+      stdin.setEncoding('utf8');
+      
+      stdin.on('data', (key) => {
+        if (key === '1') {
+          stdin.setRawMode(false);
+          stdin.pause();
+          console.log('✅ Continuando con auto-commit...');
+          resolve(true);
+        } else if (key === '2') {
+          stdin.setRawMode(false);
+          stdin.pause();
+          console.log('❌ Cancelando release...');
+          resolve(false);
+        } else if (key === '\u0003') { // Ctrl+C
+          stdin.setRawMode(false);
+          stdin.pause();
+          console.log('\n❌ Release cancelado por usuario');
+          process.exit(0);
+        } else {
+          console.log('⚠️ Opción inválida. Escribe "1" o "2"');
+        }
+      });
+    });
   }
 
   private async installNodeDependencies(): Promise<void> {
@@ -196,6 +389,42 @@ class AutoReleaseManagerAI {
       }
     } catch (error) {
       throw new Error(`Error instalando dependencias: ${error}`);
+    }
+  }
+
+  /**
+   * Genera nueva versión usando version-manager.ts con parámetros
+   */
+  private async generateNewVersion(): Promise<void> {
+    console.log('🔢 Generando nueva versión...');
+    
+    if (this.dryRun) {
+      console.log('🔍 [DRY RUN] Se generaría versión con:');
+      console.log(`   - Tipo: ${this.versionType}`);
+      console.log(`   - Prefijo: ${this.versionPrefix || 'stable'}`);
+      return;
+    }
+    
+    try {
+      const versionArgs = [
+        'project-utils/version-manager.ts',
+        '--auto-approve'
+      ];
+      
+      if (this.versionType && this.versionType !== 'auto') {
+        versionArgs.push('--type', this.versionType);
+      }
+      
+      if (this.versionPrefix) {
+        versionArgs.push('--prefix', this.versionPrefix);
+      }
+      
+      console.log(`📋 Ejecutando: bun ${versionArgs.join(' ')}`);
+      const result = await this.runCommand('bun', versionArgs);
+      
+      console.log('✅ Nueva versión generada exitosamente');
+    } catch (error) {
+      throw new Error(`Error generando versión: ${error}`);
     }
   }
 
@@ -240,27 +469,39 @@ class AutoReleaseManagerAI {
   }
 
   private parseVersion(version: string): ReleaseInfo {
-    const match = version.match(/^(pre-alpha-|alpha-|beta-|rc-)?(\d+)\.(\d+)\.(\d+)$/);
+    // Formatos soportados: 0.3.1, 0.4.0-alpha.1, 0.4.0-beta.2, etc.
+    const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-(\w+)(?:\.(\d+))?)?$/);
     if (!match) {
-      throw new Error(`Formato de versión inválido: ${version}`);
+      throw new Error(`Formato de versión inválido: ${version}. Formato esperado: X.Y.Z o X.Y.Z-alpha.N`);
     }
+
+    const [, major, minor, patch, prefix] = match;
 
     return {
       version: version,
-      prefix: match[1] ? match[1].slice(0, -1) : 'stable',
-      major: parseInt(match[2]),
-      minor: parseInt(match[3]),
-      patch: parseInt(match[4])
+      prefix: prefix || 'stable',
+      major: parseInt(major),
+      minor: parseInt(minor),
+      patch: parseInt(patch)
     };
   }
 
   private async buildApplication(): Promise<void> {
     console.log('🔨 Compilando biblioteca...');
     
+    if (this.dryRun) {
+      console.log('🔍 [DRY RUN] Se ejecutaría: npm run build:all');
+      return;
+    }
+    
     try {
+      // Limpiar compilaciones previas
       await this.runCommand('npm', ['run', 'clean']);
-      await this.runCommand('npm', ['run', 'build']);
-      console.log('✅ Compilación exitosa');
+      
+      // Build completo de todos los módulos
+      await this.runCommand('npm', ['run', 'build:all']);
+      
+      console.log('✅ Compilación exitosa (todos los módulos)');
       
     } catch (error) {
       throw new Error(`Error en compilación: ${error}`);
@@ -282,17 +523,37 @@ class AutoReleaseManagerAI {
     const distDir = join(this.projectRoot, 'dist');
 
     console.log('📋 Copiando archivos de distribución...');
+    
+    if (this.dryRun) {
+      console.log('🔍 [DRY RUN] Se copiarían archivos desde dist/ al release');
+      return;
+    }
 
     try {
-      const files = readdirSync(distDir);
+      if (!existsSync(distDir)) {
+        console.log('⚠️ Directorio dist/ no existe, omitiendo copia de archivos');
+        return;
+      }
       
-      for (const file of files) {
+      const files = readdirSync(distDir);
+      const filesToCopy = files.filter(file => {
+        const sourceFile = join(distDir, file);
+        const stat = statSync(sourceFile);
+        return stat.isFile(); // Solo copiar archivos, no directorios
+      });
+      
+      if (filesToCopy.length === 0) {
+        console.log('⚠️ No hay archivos para copiar en dist/');
+        return;
+      }
+      
+      for (const file of filesToCopy) {
         const sourceFile = join(distDir, file);
         const destFile = join(releaseDir, file);
         await this.runCommand('cp', [sourceFile, destFile]);
       }
 
-      console.log('✅ Archivos de distribución copiados');
+      console.log(`✅ ${filesToCopy.length} archivos de distribución copiados`);
 
     } catch (error) {
       throw new Error(`Error copiando archivos de distribución: ${error}`);
@@ -483,10 +744,13 @@ sudo apt-get install -f
 
   private async commitAndPushReleaseAI(releaseInfo: ReleaseInfo): Promise<void> {
     console.log('📤 Realizando commit y push con AI...');
+    
+    if (this.dryRun) {
+      console.log('🔍 [DRY RUN] Se haría commit con AI y push de cambios');
+      return;
+    }
 
     try {
-      const releaseDir = join(this.releaseDir, releaseInfo.prefix, `${releaseInfo.major}.${releaseInfo.minor}.${releaseInfo.patch}`);
-      
       // Configurar git si es necesario
       try {
         await this.runCommand('git', ['config', 'user.name']);
@@ -495,18 +759,28 @@ sudo apt-get install -f
         await this.runCommand('git', ['config', 'user.name', 'Auto-Release AI System']);
       }
 
-      // Añadir archivos
-      await this.runCommand('git', ['add', releaseDir]);
+      // Solo añadir archivos que no estén en gitignore
+      // Añadir cambios en CHANGELOG.json y package.json (actualizados por version-manager)
+      const filesToAdd = [
+        'CHANGELOG.json',
+        'package.json'
+      ];
       
-      // Añadir cambios en Cargo.toml si existen
-      const cargoPath = join(this.projectRoot, 'src-tauri/Cargo.toml');
-      const cargoLockPath = join(this.projectRoot, 'src-tauri/Cargo.lock');
+      // Añadir archivos específicos de packages
+      const packageFiles = [
+        'packages/core/package.json',
+        'packages/styling/package.json',
+        'packages/exports/package.json'
+      ];
       
-      if (existsSync(cargoPath)) {
-        await this.runCommand('git', ['add', cargoPath]);
-      }
-      if (existsSync(cargoLockPath)) {
-        await this.runCommand('git', ['add', cargoLockPath]);
+      for (const filePattern of [...filesToAdd, ...packageFiles]) {
+        try {
+          if (existsSync(join(this.projectRoot, filePattern))) {
+            await this.runCommand('git', ['add', filePattern]);
+          }
+        } catch (error) {
+          // Ignorar errores si el archivo no existe
+        }
       }
 
       // Verificar si hay algo que commitear
@@ -519,15 +793,24 @@ sudo apt-get install -f
       if (this.useAI) {
         // Usar commit-generator con contexto AI mejorado
         console.log('🤖 Generando commit automático con AI avanzado...');
+        
+        const commitArgs = [
+          'project-utils/commit-generator.ts',
+          '--auto-approve'
+        ];
+        
+        if (this.workType) commitArgs.push('--work-type', this.workType);
+        if (this.affectedComponents) commitArgs.push('--affected-components', this.affectedComponents);
+        if (this.context) commitArgs.push('--context', this.context);
+        if (this.performanceImpact) commitArgs.push('--performance-impact', this.performanceImpact);
+        
+        // Contexto adicional para releases
         const extraContext = this.createCommitContext(releaseInfo);
+        if (extraContext) commitArgs.push('--extra', extraContext);
 
         try {
-          await this.runCommand('node', ['project-utils/commit-generator.ts'], {
-            env: {
-              ...process.env,
-              COMMIT_EXTRA_CONTEXT: extraContext
-            }
-          });
+          console.log(`📋 Ejecutando: bun ${commitArgs.join(' ')}`);
+          await this.runCommand('bun', commitArgs);
           
           console.log('✅ Commit AI generado exitosamente');
         } catch (error) {
@@ -541,8 +824,10 @@ sudo apt-get install -f
         await this.runCommand('git', ['commit', '-m', commitMessage]);
       }
 
-      // Push
-      await this.runCommand('git', ['push', 'origin', 'master']);
+      // Push (detectar rama actual)
+      const currentBranchResult = await this.runCommand('git', ['branch', '--show-current']);
+      const currentBranch = currentBranchResult.stdout.trim();
+      await this.runCommand('git', ['push', 'origin', currentBranch]);
       console.log('✅ Push completado');
 
     } catch (error) {
@@ -625,14 +910,22 @@ Compilado nativamente en ARM64 para RPi3+ con optimizaciones.`;
     }
 
     console.log(`🚀 Creando GitHub Release ${this.useAI ? 'con documentación AI' : 'con documentación básica'}...`);
+    
+    if (this.dryRun) {
+      console.log('🔍 [DRY RUN] Se crearía GitHub Release con github-release-manager.ts');
+      return;
+    }
 
     try {
       // Verificar que GitHub CLI esté disponible
       await this.runCommand('gh', ['--version']);
       
       // Ejecutar GitHub Release Manager con configuraciones apropiadas
-      const ghArgs = process.argv.includes('--force') ? ['--force'] : [];
-      await this.runCommand('node', ['project-utils/github-release-manager.ts', ...ghArgs]);
+      const ghArgs = ['project-utils/github-release-manager.ts'];
+      if (process.argv.includes('--force')) ghArgs.push('--force');
+      if (this.autoApprove) ghArgs.push('--auto-approve');
+      
+      await this.runCommand('bun', ghArgs);
       
       console.log(`✅ GitHub Release creado exitosamente ${this.useAI ? '(con mejoras AI)' : ''}`);
       
@@ -640,6 +933,79 @@ Compilado nativamente en ARM64 para RPi3+ con optimizaciones.`;
       console.warn('⚠️ No se pudo crear GitHub Release:', error);
       console.log('💡 Verifica que gh CLI esté instalado y autenticado');
       console.log('💡 O usa --no-github para deshabilitar GitHub releases');
+    }
+  }
+
+  /**
+   * Publica el paquete en registros NPM (público y GitHub)
+   */
+  private async publishToNPMRegistries(releaseInfo: ReleaseInfo): Promise<void> {
+    if (!this.publishNpm && !this.publishGithub) {
+      console.log('⏭️ Publicación NPM deshabilitada (usa --publish-npm o --publish-github)');
+      return;
+    }
+    
+    console.log('📦 Iniciando publicación NPM...');
+    
+    if (this.dryRun) {
+      console.log('🔍 [DRY RUN] Se publicaría en:');
+      if (this.publishNpm) console.log('   - NPM Registry (público)');
+      if (this.publishGithub) console.log('   - GitHub Packages');
+      return;
+    }
+    
+    try {
+      // Verificar que el build esté completo
+      const distPath = join(this.projectRoot, 'dist');
+      if (!existsSync(distPath)) {
+        throw new Error('Directorio dist/ no encontrado. Ejecuta npm run build primero.');
+      }
+      
+      // Publicar en NPM público
+      if (this.publishNpm) {
+        console.log('🌐 Publicando en NPM Registry (público)...');
+        try {
+          await this.runCommand('npm', ['publish', '--access', 'public', '--ignore-scripts']);
+          console.log('✅ Publicado exitosamente en NPM público');
+        } catch (error) {
+          console.error('❌ Error publicando en NPM público:', error);
+          throw error;
+        }
+      }
+      
+      // Publicar en GitHub Packages
+      if (this.publishGithub) {
+        console.log('🐈 Publicando en GitHub Packages...');
+        try {
+          await this.runCommand('npm', [
+            'publish',
+            '--registry=https://npm.pkg.github.com',
+            '--access', 'public',
+            '--ignore-scripts'
+          ]);
+          console.log('✅ Publicado exitosamente en GitHub Packages');
+        } catch (error) {
+          console.error('❌ Error publicando en GitHub Packages:', error);
+          console.log('💡 Verifica que tengas permisos write:packages y estés autenticado');
+          throw error;
+        }
+      }
+      
+      console.log('✅ Publicación NPM completada exitosamente');
+      
+      // Mostrar comandos de instalación
+      console.log('\n📦 Comandos de instalación:');
+      if (this.publishNpm) {
+        console.log(`   npm install @mks2508/better-logger@${releaseInfo.version}`);
+      }
+      if (this.publishGithub) {
+        console.log(`   npm install @mks2508/better-logger@${releaseInfo.version} --registry=https://npm.pkg.github.com`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error en publicación NPM:', error);
+      console.log('💡 Verifica autenticación: npm whoami');
+      throw error;
     }
   }
 
@@ -719,22 +1085,55 @@ if (import.meta.main) {
     console.log(`
 🚀 Auto-Release Manager AI para Better Logger
 
-Automatiza el proceso completo con AI para documentación inteligente y commits mejorados.
+Automatiza el proceso completo: versión, build, commit, GitHub release y publicación NPM.
 
 Uso:
-  node project-utils/auto-release-gemini.ts [opciones]
+  bun project-utils/auto-release-gemini.ts [opciones]
 
-Opciones:
-  --ai            Activar generación con AI (por defecto)
-  --no-ai         Deshabilitar AI, usar generación básica
-  --force         Forzar recompilación aunque la release ya exista
-  --no-github     Deshabilitar creación automática de GitHub releases
-  --help, -h      Mostrar esta ayuda
+Opciones Principales:
+  --ai                          Activar generación con AI (por defecto)
+  --no-ai                       Deshabilitar AI, usar generación básica
+  --force                       Forzar recompilación aunque la release ya exista
+  --dry-run                     Solo mostrar qué haría, sin ejecutar
+  --auto-approve                No pedir confirmación (para CI/CD)
+  --auto-commit                 Auto-commitear cambios pendientes
+                                (se activa automáticamente con --auto-approve)
+
+Version Manager:
+  --type <tipo>                 Tipo de versión: major|minor|patch (default: patch)
+  --prefix <prefijo>            Prefijo: alpha|beta|rc|'' (default: stable)
+
+Commit Generator (AI):
+  --work-type <tipo>            Tipo: feature|fix|refactor|docs|test
+  --affected-components <lista> Componentes afectados: "core,styling,exports"
+  --context <descripción>       Contexto del trabajo realizado
+  --performance-impact <tipo>   Impacto: none|minor|major
+
+Publicación NPM:
+  --publish-npm                 Publicar en NPM Registry (público)
+  --publish-github              Publicar en GitHub Packages
+
+Otras opciones:
+  --no-github                   Deshabilitar creación de GitHub releases
+  --help, -h                    Mostrar esta ayuda
 
 Ejemplos:
-  node project-utils/auto-release-gemini.ts --ai
-  node project-utils/auto-release-gemini.ts --no-ai
-  node project-utils/auto-release-gemini.ts --force --no-github
+  # Release alpha básica
+  bun project-utils/auto-release-gemini.ts --type minor --prefix alpha
+  
+  # Release completa con AI y publicación dual
+  bun project-utils/auto-release-gemini.ts --ai --auto-approve \\
+    --type minor --prefix alpha \\
+    --work-type feature --affected-components "exports,handlers" \\
+    --context "enhanced export functionality" \\
+    --publish-npm --publish-github
+  
+  # Solo mostrar qué haría
+  bun project-utils/auto-release-gemini.ts --dry-run --type patch --publish-npm
+  
+  # Para CI/CD
+  bun project-utils/auto-release-gemini.ts --auto-approve --ai \\
+    --type patch --publish-npm --publish-github
 `);
     process.exit(0);
   }

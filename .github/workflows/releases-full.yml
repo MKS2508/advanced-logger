@@ -1,15 +1,10 @@
-name: Full Release Pipeline with Gemini AI
+name: Full Release Pipeline - Granular AI Steps
 
 on:
   workflow_dispatch:
     inputs:
-      use_gemini:
-        description: 'Usar Gemini AI para versionado inteligente'
-        required: false
-        default: true
-        type: boolean
-      release_type:
-        description: 'Tipo de release (solo si no usar Gemini)'
+      version_type:
+        description: 'Tipo de versión'
         required: false
         default: 'auto'
         type: choice
@@ -18,9 +13,16 @@ on:
           - patch
           - minor
           - major
+      version_prefix:
+        description: 'Prefijo de versión'
+        required: false
+        default: 'stable'
+        type: choice
+        options:
+          - stable
           - alpha
           - beta
-          - stable
+          - rc
       target_registry:
         description: 'Registro objetivo'
         required: false
@@ -35,8 +37,8 @@ on:
         required: false
         default: false
         type: boolean
-      force_release:
-        description: 'Forzar release aunque no haya cambios significativos'
+      dry_run:
+        description: 'Solo mostrar qué haría (dry run)'
         required: false
         default: false
         type: boolean
@@ -45,82 +47,16 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-  # ===== INTELLIGENT VERSIONING WITH GEMINI =====
-  gemini-analysis:
+  # ===== STEP 1: AI VERSION ANALYSIS & GENERATION =====
+  ai-version-generation:
     runs-on: ubuntu-latest
-    if: ${{ inputs.use_gemini }}
-    
-    outputs:
-      should_release: ${{ steps.analysis.outputs.should_release }}
-      version_type: ${{ steps.analysis.outputs.version_type }}
-      changelog: ${{ steps.analysis.outputs.changelog }}
-      release_notes: ${{ steps.analysis.outputs.release_notes }}
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📦 Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: 🔧 Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: 🤖 Run Gemini AI Analysis
-        id: analysis
-        run: |
-          echo "🤖 Ejecutando análisis inteligente con Gemini..."
-          
-          # Usar project-utils auto-release con Gemini
-          bun run release:auto
-          
-          # Verificar si se debe hacer release
-          if [ -f "project-utils/.temp/gemini-response.md" ]; then
-            # Extraer información del análisis de Gemini
-            SHOULD_RELEASE=$(grep -o "should_release: [a-zA-Z]*" project-utils/.temp/gemini-response.md | cut -d' ' -f2 || echo "true")
-            VERSION_TYPE=$(grep -o "version_type: [a-zA-Z]*" project-utils/.temp/gemini-response.md | cut -d' ' -f2 || echo "patch")
-            
-            echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
-            echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
-            
-            # Extraer changelog y release notes si existen
-            if [ -f "project-utils/.temp/commit-proposal"*".md" ]; then
-              CHANGELOG=$(head -n 10 project-utils/.temp/commit-proposal*.md | base64 -w 0)
-              echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
-            fi
-            
-            echo "🤖 Análisis completado: should_release=$SHOULD_RELEASE, version_type=$VERSION_TYPE"
-          else
-            # Fallback si no hay respuesta de Gemini
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "version_type=patch" >> $GITHUB_OUTPUT
-            echo "⚠️ No se encontró respuesta de Gemini, usando valores por defecto"
-          fi
-
-      - name: 📤 Upload Gemini artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: gemini-analysis
-          path: project-utils/.temp/
-          retention-days: 7
-
-  # ===== PREPARE RELEASE =====
-  prepare-full-release:
-    runs-on: ubuntu-latest
-    needs: gemini-analysis
-    if: always() && (needs.gemini-analysis.outputs.should_release == 'true' || inputs.force_release || !inputs.use_gemini)
     
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
       release_channel: ${{ steps.version.outputs.release_channel }}
-      changelog: ${{ steps.version.outputs.changelog }}
+      should_skip: ${{ steps.version.outputs.should_skip }}
     
     steps:
       - name: 📥 Checkout code
@@ -133,354 +69,308 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+          
       - name: 🔧 Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: 🧪 Run tests (unless skipped)
-        if: ${{ !inputs.skip_tests }}
+      - name: 🤖 Setup Gemini CLI
         run: |
-          bun run type-check
-          bun run test
+          echo "🤖 Configurando Gemini CLI..."
+          # Install Gemini CLI
+          npm install -g @google/generative-ai
+          # Verificar instalación
+          echo "✅ Gemini CLI configurado"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: 🏷️ Generate version with AI or manual
+      - name: 🤖 Step 1: AI Version Analysis & Generation
         id: version
         run: |
-          if [ "${{ inputs.use_gemini }}" == "true" ]; then
-            # Usar resultado de Gemini
-            VERSION_TYPE="${{ needs.gemini-analysis.outputs.version_type }}"
-            echo "🤖 Usando tipo de versión de Gemini: $VERSION_TYPE"
-          else
-            # Usar input manual
-            VERSION_TYPE="${{ inputs.release_type }}"
-            echo "👤 Usando tipo de versión manual: $VERSION_TYPE"
+          echo "🤖 === PASO 1: ANÁLISIS Y GENERACIÓN DE VERSIÓN CON AI ==="
+          
+          # Configurar parámetros
+          VERSION_TYPE="${{ inputs.version_type }}"
+          VERSION_PREFIX="${{ inputs.version_prefix }}"
+          
+          # Preparar argumentos para version-manager
+          ARGS="--auto-approve"
+          
+          if [ "$VERSION_TYPE" != "auto" ]; then
+            ARGS="$ARGS --type $VERSION_TYPE"
           fi
           
-          # Aplicar versionado según el tipo determinado
-          case "$VERSION_TYPE" in
-            "auto")
-              bun run version:auto
-              ;;
-            "patch")
-              bun run version:patch
-              ;;
-            "minor")
-              bun run version:minor
-              ;;
-            "major")
-              bun run version:major
-              ;;
-            "alpha")
-              bun run version:alpha
-              ;;
-            "beta")
-              bun run version:beta
-              ;;
-            "stable")
-              bun run version:stable
-              ;;
-          esac
+          if [ "$VERSION_PREFIX" != "stable" ]; then
+            ARGS="$ARGS --prefix $VERSION_PREFIX"
+          fi
           
-          # Obtener nueva versión del package.json
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          # Mostrar comando que se ejecutará
+          echo "📋 Ejecutando: bun project-utils/version-manager.ts $ARGS"
           
-          # Determinar si es prerelease y canal
-          if [[ "$NEW_VERSION" == *"alpha"* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "release_channel=alpha" >> $GITHUB_OUTPUT
-          elif [[ "$NEW_VERSION" == *"beta"* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT  
-            echo "release_channel=beta" >> $GITHUB_OUTPUT
-          else
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            echo "🔍 [DRY RUN] Se generaría nueva versión con: $ARGS"
+            echo "should_skip=true" >> $GITHUB_OUTPUT
+            echo "version=dry-run" >> $GITHUB_OUTPUT
+            echo "tag=dry-run" >> $GITHUB_OUTPUT
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
-            echo "release_channel=latest" >> $GITHUB_OUTPUT
-          fi
-          
-          echo "📦 Nueva versión: $NEW_VERSION"
-
-      - name: 📝 Generate enhanced changelog
-        id: changelog
-        run: |
-          if [ "${{ inputs.use_gemini }}" == "true" ] && [ "${{ needs.gemini-analysis.outputs.changelog }}" != "" ]; then
-            # Usar changelog de Gemini si existe
-            echo "📋 Usando changelog generado por Gemini AI..."
-            CHANGELOG=$(echo "${{ needs.gemini-analysis.outputs.changelog }}" | base64 -d)
+            echo "release_channel=dry-run" >> $GITHUB_OUTPUT
           else
-            # Generar changelog tradicional
-            echo "📋 Generando changelog tradicional..."
-            LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
-            if [ -n "$LAST_TAG" ]; then
-              CHANGELOG=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+            # Ejecutar version-manager con AI
+            echo "🚀 Ejecutando version-manager con análisis AI..."
+            bun project-utils/version-manager.ts $ARGS
+            
+            # Obtener nueva versión del package.json
+            NEW_VERSION=$(node -p "require('./package.json').version")
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+            
+            # Determinar si es prerelease y canal
+            if [[ "$NEW_VERSION" == *"alpha"* ]]; then
+              echo "is_prerelease=true" >> $GITHUB_OUTPUT
+              echo "release_channel=alpha" >> $GITHUB_OUTPUT
+            elif [[ "$NEW_VERSION" == *"beta"* ]]; then
+              echo "is_prerelease=true" >> $GITHUB_OUTPUT
+              echo "release_channel=beta" >> $GITHUB_OUTPUT
+            elif [[ "$NEW_VERSION" == *"rc"* ]]; then
+              echo "is_prerelease=true" >> $GITHUB_OUTPUT
+              echo "release_channel=rc" >> $GITHUB_OUTPUT
             else
-              CHANGELOG="- Initial release with complete Better Logger functionality"
+              echo "is_prerelease=false" >> $GITHUB_OUTPUT
+              echo "release_channel=latest" >> $GITHUB_OUTPUT
             fi
+            
+            echo "should_skip=false" >> $GITHUB_OUTPUT
+            echo "✅ Nueva versión generada: $NEW_VERSION"
           fi
-          
-          # Guardar changelog en archivo
-          echo "$CHANGELOG" > RELEASE_CHANGELOG.md
-          echo "changelog=$(echo "$CHANGELOG" | base64 -w 0)" >> $GITHUB_OUTPUT
-          echo "📋 Changelog generado exitosamente"
 
-      - name: 🏗️ Build all modules
-        run: bun run build:all
-
-      - name: 📊 Generate bundle analysis
+      - name: 🏷️ Commit and push version changes
+        if: inputs.dry_run != true
         run: |
-          echo "## 📦 Bundle Analysis" > BUNDLE_ANALYSIS.md
-          echo "### Full Build" >> BUNDLE_ANALYSIS.md
-          echo "\`\`\`" >> BUNDLE_ANALYSIS.md
-          ls -lh dist/*.js dist/*.cjs | grep -E '\.(js|cjs)$' >> BUNDLE_ANALYSIS.md
-          echo "\`\`\`" >> BUNDLE_ANALYSIS.md
-          echo "" >> BUNDLE_ANALYSIS.md
-          
-          echo "### Modular Builds" >> BUNDLE_ANALYSIS.md
-          for module in core styling exports; do
-            if [ -d "dist/modular/$module" ]; then
-              echo "#### $module Module" >> BUNDLE_ANALYSIS.md
-              echo "\`\`\`" >> BUNDLE_ANALYSIS.md
-              ls -lh dist/modular/$module/*.js dist/modular/$module/*.cjs 2>/dev/null | grep -E '\.(js|cjs)$' >> BUNDLE_ANALYSIS.md
-              echo "\`\`\`" >> BUNDLE_ANALYSIS.md
-            fi
-          done
+          echo "🏷️ Commiteando cambios de versión..."
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json CHANGELOG.json packages/*/package.json
+          git commit -m "chore: release ${{ steps.version.outputs.version }}" || echo "No changes to commit"
+          git push origin main
 
-      - name: 📤 Upload release artifacts
+      - name: 📤 Upload version artifacts
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: full-release-${{ steps.version.outputs.version }}
+          name: version-artifacts
           path: |
-            dist/
-            RELEASE_CHANGELOG.md
-            BUNDLE_ANALYSIS.md
-          retention-days: 30
+            project-utils/.temp/
+            CHANGELOG.json
+            package.json
+          retention-days: 7
 
-  # ===== PUBLISH TO NPM =====
-  publish-npm-full:
+  # ===== STEP 2: BUILD & PREPARE =====
+  build-and-prepare:
     runs-on: ubuntu-latest
-    needs: prepare-full-release
-    if: ${{ inputs.target_registry == 'npm' || inputs.target_registry == 'both' }}
+    needs: ai-version-generation
+    if: needs.ai-version-generation.outputs.should_skip != 'true'
     
     steps:
-      - name: 📥 Checkout code
+      - name: 📥 Checkout code with version changes
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+          
+      - name: 🔄 Pull latest changes
+        run: git pull origin main
 
       - name: 📦 Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest          registry-url: 'https://registry.npmjs.org'
+          bun-version: latest
+          
+      - name: 🔧 Install dependencies
+        run: bun install --frozen-lockfile
 
-      - name: 📥 Download release artifacts
+      - name: 🧪 Step 2: Run tests (unless skipped)
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          echo "🧪 === PASO 2: EJECUTANDO TESTS Y VALIDACIONES ==="
+          bun run type-check
+          bun run test
+          echo "✅ Tests completados exitosamente"
+
+      - name: 🏗️ Step 3: Build all modules
+        run: |
+          echo "🏗️ === PASO 3: COMPILANDO TODOS LOS MÓDULOS ==="
+          bun run build:all
+          echo "✅ Build completado exitosamente"
+          
+          # Mostrar archivos generados
+          echo "📊 Archivos generados:"
+          ls -la dist/
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ needs.ai-version-generation.outputs.version }}
+          path: dist/
+          retention-days: 30
+
+  # ===== STEP 3: NPM PUBLISHING =====
+  publish-npm:
+    runs-on: ubuntu-latest
+    needs: [ai-version-generation, build-and-prepare]
+    if: needs.ai-version-generation.outputs.should_skip != 'true' && (inputs.target_registry == 'npm' || inputs.target_registry == 'both')
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          
+      - name: 📦 Setup Bun with NPM registry
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 📥 Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: full-release-${{ needs.prepare-full-release.outputs.version }}
+          name: build-artifacts-${{ needs.ai-version-generation.outputs.version }}
+          path: dist/
 
-      - name: 🔄 Update package version
-        run: bun --bun npm version ${{ needs.prepare-full-release.outputs.version }} --no-git-tag-version
-
-      - name: 🚀 Publish to NPM
+      - name: 🚀 Step 4: Publish to NPM Registry
         run: |
-          if [ "${{ needs.prepare-full-release.outputs.is_prerelease }}" == "true" ]; then
-            echo "📦 Publishing prerelease to NPM with tag: ${{ needs.prepare-full-release.outputs.release_channel }}"
-            bun publish --access public --tag ${{ needs.prepare-full-release.outputs.release_channel }}
+          echo "🚀 === PASO 4: PUBLICANDO EN NPM REGISTRY ==="
+          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+            echo "📦 Publishing prerelease to NPM with tag: ${{ needs.ai-version-generation.outputs.release_channel }}"
+            npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
           else
             echo "📦 Publishing stable release to NPM"
-            bun publish --access public
+            npm publish --access public
           fi
+          echo "✅ Publicación en NPM completada"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  # ===== PUBLISH TO GITHUB PACKAGES =====
-  publish-github-full:
+  # ===== STEP 4: GITHUB PACKAGES PUBLISHING =====
+  publish-github:
     runs-on: ubuntu-latest
-    needs: prepare-full-release
-    if: ${{ inputs.target_registry == 'github' || inputs.target_registry == 'both' }}
+    needs: [ai-version-generation, build-and-prepare]
+    if: needs.ai-version-generation.outputs.should_skip != 'true' && (inputs.target_registry == 'github' || inputs.target_registry == 'both')
     
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-
-      - name: 📦 Setup Bun
+        with:
+          ref: main
+          
+      - name: 📦 Setup Bun with GitHub registry
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest          registry-url: 'https://npm.pkg.github.com'
+          bun-version: latest
+          registry-url: 'https://npm.pkg.github.com'
 
-      - name: 📥 Download release artifacts
+      - name: 📥 Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: full-release-${{ needs.prepare-full-release.outputs.version }}
+          name: build-artifacts-${{ needs.ai-version-generation.outputs.version }}
+          path: dist/
 
-      - name: 🔄 Update package version
-        run: bun --bun npm version ${{ needs.prepare-full-release.outputs.version }} --no-git-tag-version
-
-      - name: 📦 Publish to GitHub Packages
+      - name: 📦 Step 5: Publish to GitHub Packages
         run: |
-          if [ "${{ needs.prepare-full-release.outputs.is_prerelease }}" == "true" ]; then
-            echo "📦 Publishing prerelease to GitHub Packages with tag: ${{ needs.prepare-full-release.outputs.release_channel }}"
-            bun publish --access public --tag ${{ needs.prepare-full-release.outputs.release_channel }}
+          echo "📦 === PASO 5: PUBLICANDO EN GITHUB PACKAGES ==="
+          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+            echo "📦 Publishing prerelease to GitHub Packages with tag: ${{ needs.ai-version-generation.outputs.release_channel }}"
+            npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
           else
             echo "📦 Publishing stable release to GitHub Packages" 
-            bun publish --access public
+            npm publish --access public
           fi
+          echo "✅ Publicación en GitHub Packages completada"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ===== CREATE COMPREHENSIVE GITHUB RELEASE =====
-  create-comprehensive-release:
+  # ===== STEP 5: GITHUB RELEASE WITH AI =====
+  create-github-release:
     runs-on: ubuntu-latest
-    needs: [gemini-analysis, prepare-full-release, publish-npm-full, publish-github-full]
-    if: always() && needs.prepare-full-release.result == 'success'
+    needs: [ai-version-generation, build-and-prepare, publish-npm, publish-github]
+    if: always() && needs.ai-version-generation.outputs.should_skip != 'true' && needs.build-and-prepare.result == 'success'
     
     permissions:
       contents: write
-      id-token: write
     
     steps:
       - name: 📥 Checkout code  
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
 
-      - name: 📥 Download release artifacts
+      - name: 📦 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          
+      - name: 🔧 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 📥 Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: full-release-${{ needs.prepare-full-release.outputs.version }}
+          name: build-artifacts-${{ needs.ai-version-generation.outputs.version }}
+          path: dist/
 
-      - name: 📥 Download Gemini artifacts (if available)
-        uses: actions/download-artifact@v4
-        if: needs.gemini-analysis.result == 'success'
-        with:
-          name: gemini-analysis
-          path: gemini-temp/
-
-      - name: 📦 Create comprehensive release archives
+      - name: 🏷️ Create git tag
         run: |
-          VERSION=${{ needs.prepare-full-release.outputs.version }}
-          
-          # Crear archivos de distribución completa
-          tar -czf better-logger-complete-${VERSION}.tar.gz dist/ docs/ README.md package.json
-          zip -r better-logger-complete-${VERSION}.zip dist/ docs/ README.md package.json
-          
-          # Crear paquetes modulares individuales
-          for module in core styling exports; do
-            if [ -d "dist/modular/$module" ]; then
-              tar -czf better-logger-${module}-${VERSION}.tar.gz dist/modular/${module}/ README.md package.json
-              zip -r better-logger-${module}-${VERSION}.zip dist/modular/${module}/ README.md package.json
-            fi
-          done
-
-      - name: 🏷️ Commit and tag with enhanced info
-        run: |
+          echo "🏷️ Creando tag de git..."
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          
-          # Crear commit message mejorado
-          COMMIT_MSG="chore: release ${{ needs.prepare-full-release.outputs.version }}"
-          if [ "${{ inputs.use_gemini }}" == "true" ]; then
-            COMMIT_MSG="$COMMIT_MSG (AI-generated)"
-          fi
-          
-          git commit -m "$COMMIT_MSG" || true
-          git tag -a "${{ needs.prepare-full-release.outputs.tag }}" -m "Release ${{ needs.prepare-full-release.outputs.version }}"
-          git push origin main --tags
+          git tag -a "${{ needs.ai-version-generation.outputs.tag }}" -m "Release ${{ needs.ai-version-generation.outputs.version }}"
+          git push origin --tags
 
-      - name: 📝 Prepare comprehensive release notes
+      - name: 🚀 Step 6: Create GitHub Release with AI
         run: |
-          VERSION=${{ needs.prepare-full-release.outputs.version }}
-          CHANGELOG=$(echo "${{ needs.prepare-full-release.outputs.changelog }}" | base64 -d)
-          
-          echo "# Better Logger ${VERSION}" > FINAL_RELEASE_NOTES.md
-          echo "" >> FINAL_RELEASE_NOTES.md
-          
-          if [ "${{ inputs.use_gemini }}" == "true" ]; then
-            echo "🤖 **AI-Generated Release** - This release was analyzed and versioned using Gemini AI" >> FINAL_RELEASE_NOTES.md
-            echo "" >> FINAL_RELEASE_NOTES.md
-          fi
-          
-          if [ "${{ needs.prepare-full-release.outputs.is_prerelease }}" == "true" ]; then
-            echo "⚠️ **This is a pre-release version** - Not recommended for production use." >> FINAL_RELEASE_NOTES.md
-            echo "" >> FINAL_RELEASE_NOTES.md
-          fi
-          
-          echo "## 🔄 Changes" >> FINAL_RELEASE_NOTES.md
-          echo "$CHANGELOG" >> FINAL_RELEASE_NOTES.md
-          echo "" >> FINAL_RELEASE_NOTES.md
-          
-          # Incluir análisis de bundle
-          cat BUNDLE_ANALYSIS.md >> FINAL_RELEASE_NOTES.md
-          echo "" >> FINAL_RELEASE_NOTES.md
-          
-          echo "## 📦 Available Packages" >> FINAL_RELEASE_NOTES.md
-          echo "### Complete Library" >> FINAL_RELEASE_NOTES.md
-          echo "\`\`\`bash" >> FINAL_RELEASE_NOTES.md
-          if [ "${{ needs.prepare-full-release.outputs.is_prerelease }}" == "true" ]; then
-            echo "npm install @mks2508/better-logger@${{ needs.prepare-full-release.outputs.release_channel }}" >> FINAL_RELEASE_NOTES.md
-          else
-            echo "npm install @mks2508/better-logger" >> FINAL_RELEASE_NOTES.md
-          fi
-          echo "\`\`\`" >> FINAL_RELEASE_NOTES.md
-          echo "" >> FINAL_RELEASE_NOTES.md
-          
-          echo "### Modular Packages" >> FINAL_RELEASE_NOTES.md
-          echo "Download individual modules from the release assets below for selective usage." >> FINAL_RELEASE_NOTES.md
-
-      - name: 🚀 Create Comprehensive GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.prepare-full-release.outputs.tag }}
-          name: Better Logger ${{ needs.prepare-full-release.outputs.version }}${{ inputs.use_gemini && ' (AI)' || '' }}
-          body_path: FINAL_RELEASE_NOTES.md
-          draft: false
-          prerelease: ${{ needs.prepare-full-release.outputs.is_prerelease == 'true' }}
-          files: |
-            better-logger-complete-${{ needs.prepare-full-release.outputs.version }}.tar.gz
-            better-logger-complete-${{ needs.prepare-full-release.outputs.version }}.zip
-            better-logger-core-${{ needs.prepare-full-release.outputs.version }}.tar.gz
-            better-logger-core-${{ needs.prepare-full-release.outputs.version }}.zip
-            better-logger-styling-${{ needs.prepare-full-release.outputs.version }}.tar.gz
-            better-logger-styling-${{ needs.prepare-full-release.outputs.version }}.zip
-            better-logger-exports-${{ needs.prepare-full-release.outputs.version }}.tar.gz
-            better-logger-exports-${{ needs.prepare-full-release.outputs.version }}.zip
+          echo "🚀 === PASO 6: CREANDO GITHUB RELEASE CON AI ==="
+          bun project-utils/github-release-manager.ts --auto-approve
+          echo "✅ GitHub Release creado exitosamente"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ===== COMPREHENSIVE RELEASE SUMMARY =====
-  comprehensive-summary:
+  # ===== RELEASE SUMMARY =====
+  release-summary:
     runs-on: ubuntu-latest
-    needs: [gemini-analysis, prepare-full-release, publish-npm-full, publish-github-full, create-comprehensive-release]
-    if: always() && needs.prepare-full-release.result == 'success'
+    needs: [ai-version-generation, build-and-prepare, publish-npm, publish-github, create-github-release]
+    if: always() && needs.ai-version-generation.outputs.should_skip != 'true'
     
     steps:
       - name: 📊 Comprehensive Release Summary  
         run: |
-          VERSION="${{ needs.prepare-full-release.outputs.version }}"
-          TAG="${{ needs.prepare-full-release.outputs.tag }}"
-          CHANNEL="${{ needs.prepare-full-release.outputs.release_channel }}"
-          IS_PRERELEASE="${{ needs.prepare-full-release.outputs.is_prerelease }}"
-          USED_AI="${{ inputs.use_gemini }}"
+          VERSION="${{ needs.ai-version-generation.outputs.version }}"
+          TAG="${{ needs.ai-version-generation.outputs.tag }}"
+          CHANNEL="${{ needs.ai-version-generation.outputs.release_channel }}"
+          IS_PRERELEASE="${{ needs.ai-version-generation.outputs.is_prerelease }}"
           
-          echo "## 🎉 Comprehensive Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Full Release Pipeline Complete!" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- **Channel**: $CHANNEL" >> $GITHUB_STEP_SUMMARY
           echo "- **Prerelease**: $IS_PRERELEASE" >> $GITHUB_STEP_SUMMARY
-          echo "- **AI-Generated**: $USED_AI" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          echo "### 📦 Published Packages" >> $GITHUB_STEP_SUMMARY
-          echo "- **Complete Library**: Full Better Logger with all features" >> $GITHUB_STEP_SUMMARY
-          echo "- **Modular Builds**: Core, Styling, and Exports available separately" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Pipeline Steps Results" >> $GITHUB_STEP_SUMMARY
+          echo "1. **AI Version Generation**: ✅ $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Build & Prepare**: ${{ needs.build-and-prepare.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "3. **NPM Publishing**: ${{ needs.publish-npm.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "4. **GitHub Packages**: ${{ needs.publish-github.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "5. **GitHub Release**: ${{ needs.create-github-release.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ inputs.target_registry == 'npm' || inputs.target_registry == 'both' }}" ]; then
+          if [ "${{ inputs.target_registry == 'npm' || inputs.target_registry == 'both' }}" == "true" ]; then
             echo "- **NPM**: https://www.npmjs.com/package/@mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ "${{ inputs.target_registry == 'github' || inputs.target_registry == 'both' }}" ]; then
+          if [ "${{ inputs.target_registry == 'github' || inputs.target_registry == 'both' }}" == "true" ]; then
             echo "- **GitHub Packages**: https://github.com/MKS2508/advanced-logger/packages/" >> $GITHUB_STEP_SUMMARY  
           fi
           echo "- **GitHub Release**: https://github.com/MKS2508/advanced-logger/releases/tag/$TAG" >> $GITHUB_STEP_SUMMARY
-          echo "- **Documentation**: https://mks2508.github.io/advanced-logger/" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY

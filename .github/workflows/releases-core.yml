@@ -1,4 +1,4 @@
-name: Core Modular Releases
+name: Core Modular Releases - AI Enhanced
 
 on:
   workflow_dispatch:
@@ -14,17 +14,26 @@ on:
           - styling
           - exports
           - full
-      release_type:
-        description: 'Tipo de release'
-        required: true
-        default: 'patch'
+      version_type:
+        description: 'Tipo de versión'
+        required: false
+        default: 'auto'
         type: choice
         options:
+          - auto
           - patch
           - minor
           - major
+      version_prefix:
+        description: 'Prefijo de versión'
+        required: false
+        default: 'stable'
+        type: choice
+        options:
+          - stable
           - alpha
           - beta
+          - rc
       target_registry:
         description: 'Registro objetivo'
         required: false
@@ -44,8 +53,8 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-  # ===== VALIDATION & VERSIONING =====
-  prepare-modular-release:
+  # ===== STEP 1: AI VERSION ANALYSIS FOR MODULAR RELEASE =====
+  ai-modular-version:
     runs-on: ubuntu-latest
     
     outputs:
@@ -63,23 +72,52 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📦 Setup Bun
-        uses: actions/oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
           
       - name: 🔧 Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: 🧪 Run tests (unless skipped)
-        if: ${{ !inputs.skip_tests }}
+      - name: 🤖 Setup Gemini CLI
         run: |
-          bun run type-check
-          bun run test
+          echo "🤖 Configurando Gemini CLI para release modular..."
+          # Install Gemini CLI
+          npm install -g @google/generative-ai
+          # Verificar instalación
+          echo "✅ Gemini CLI configurado para módulos"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: 🏷️ Generate version
+      - name: 🤖 Step 1: AI Version Analysis for Modular Release
         id: version
         run: |
-          bun run version:${{ inputs.release_type }}
+          echo "🤖 === PASO 1: ANÁLISIS AI PARA RELEASE MODULAR ==="
+          
+          # Configurar contexto específico para release modular
+          WORK_TYPE="modular-release"
+          AFFECTED_COMPONENTS="${{ inputs.module }}"
+          CONTEXT="Modular release for ${{ inputs.module }} module(s)"
+          
+          VERSION_TYPE="${{ inputs.version_type }}"
+          VERSION_PREFIX="${{ inputs.version_prefix }}"
+          
+          # Preparar argumentos para version-manager con contexto de módulos
+          ARGS="--auto-approve"
+          
+          if [ "$VERSION_TYPE" != "auto" ]; then
+            ARGS="$ARGS --type $VERSION_TYPE"
+          fi
+          
+          if [ "$VERSION_PREFIX" != "stable" ]; then
+            ARGS="$ARGS --prefix $VERSION_PREFIX"
+          fi
+          
+          echo "📋 Ejecutando version-manager con contexto modular: $AFFECTED_COMPONENTS"
+          echo "🚀 Comando: bun project-utils/version-manager.ts $ARGS"
+          
+          # Ejecutar version-manager con análisis AI
+          bun project-utils/version-manager.ts $ARGS
           
           # Obtener nueva versión
           NEW_VERSION=$(node -p "require('./package.json').version")
@@ -91,284 +129,317 @@ jobs:
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
             echo "release_channel=alpha" >> $GITHUB_OUTPUT
           elif [[ "$NEW_VERSION" == *"beta"* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT  
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
             echo "release_channel=beta" >> $GITHUB_OUTPUT
+          elif [[ "$NEW_VERSION" == *"rc"* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "release_channel=rc" >> $GITHUB_OUTPUT
           else
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
             echo "release_channel=latest" >> $GITHUB_OUTPUT
           fi
           
-          echo "📦 Nueva versión: $NEW_VERSION"
+          echo "✅ Versión generada para release modular: $NEW_VERSION"
 
-      - name: 🧩 Determine modules to build
+      - name: 📋 Step 2: Determine modules to build
         id: modules
         run: |
-          case "${{ inputs.module }}" in
-            "all") 
-              MODULES='["core", "styling", "exports", "full"]'
+          echo "📋 === PASO 2: DETERMINANDO MÓDULOS A CONSTRUIR ==="
+          MODULE_INPUT="${{ inputs.module }}"
+          
+          case "$MODULE_INPUT" in
+            "all")
+              MODULES="core,styling,exports,full"
               ;;
-            "core"|"styling"|"exports"|"full")
-              MODULES='["${{ inputs.module }}"]'
+            "full")
+              MODULES="full"
+              ;;
+            *)
+              MODULES="$MODULE_INPUT"
               ;;
           esac
+          
           echo "modules=$MODULES" >> $GITHUB_OUTPUT
-          echo "📦 Módulos a construir: $MODULES"
+          echo "✅ Módulos a construir: $MODULES"
 
-  # ===== MODULAR BUILDS =====
-  build-modules:
+      - name: 🏷️ Commit version changes
+        run: |
+          echo "🏷️ Commiteando cambios de versión modular..."
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json CHANGELOG.json packages/*/package.json
+          git commit -m "chore: modular release ${{ steps.version.outputs.version }} (${{ inputs.module }})" || echo "No changes to commit"
+          git push origin main
+
+      - name: 📤 Upload version artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: modular-version-artifacts
+          path: |
+            project-utils/.temp/
+            CHANGELOG.json
+            package.json
+          retention-days: 7
+
+  # ===== STEP 2: BUILD SPECIFIED MODULES =====
+  build-modular:
     runs-on: ubuntu-latest
-    needs: prepare-modular-release
+    needs: ai-modular-version
     
     strategy:
       matrix:
-        module: ${{ fromJson(needs.prepare-modular-release.outputs.modules_to_build) }}
+        module: ${{ fromJson(format('["{0}"]', needs.ai-modular-version.outputs.modules_to_build)) }}
     
     steps:
-      - name: 📥 Checkout code
+      - name: 📥 Checkout code with version changes
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+          
+      - name: 🔄 Pull latest changes
+        run: git pull origin main
 
       - name: 📦 Setup Bun
-        uses: actions/oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
           
       - name: 🔧 Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: 🔄 Update package version
-        run: npm version ${{ needs.prepare-modular-release.outputs.version }} --no-git-tag-version
-
-      - name: 🏗️ Build module ${{ matrix.module }}
+      - name: 🧪 Run tests for module (unless skipped)
+        if: ${{ !inputs.skip_tests }}
         run: |
-          if [ "${{ matrix.module }}" = "full" ]; then
-            bun run build:full
-          else
-            bun run build:${{ matrix.module }}
-          fi
+          echo "🧪 === EJECUTANDO TESTS PARA MÓDULO: ${{ matrix.module }} ==="
+          bun run type-check
+          bun run test
+          echo "✅ Tests completados para ${{ matrix.module }}"
 
-      - name: 📦 Create module archives
+      - name: 🏗️ Step 3: Build specific module
         run: |
-          VERSION=${{ needs.prepare-modular-release.outputs.version }}
-          MODULE=${{ matrix.module }}
+          echo "🏗️ === PASO 3: CONSTRUYENDO MÓDULO: ${{ matrix.module }} ==="
           
-          if [ "$MODULE" = "full" ]; then
-            # Build completa - todos los archivos
-            tar -czf better-logger-${MODULE}-${VERSION}.tar.gz dist/ README.md package.json
-            zip -r better-logger-${MODULE}-${VERSION}.zip dist/ README.md package.json
+          case "${{ matrix.module }}" in
+            "core")
+              bun run build:core
+              echo "✅ Módulo core construido"
+              ;;
+            "styling") 
+              bun run build:styling
+              echo "✅ Módulo styling construido"
+              ;;
+            "exports")
+              bun run build:exports
+              echo "✅ Módulo exports construido"
+              ;;
+            "full")
+              bun run build:full
+              echo "✅ Build completo realizado"
+              ;;
+            *)
+              echo "🏗️ Construyendo todos los módulos..."
+              bun run build:all
+              echo "✅ Todos los módulos construidos"
+              ;;
+          esac
+          
+          # Mostrar archivos generados
+          echo "📊 Archivos generados para ${{ matrix.module }}:"
+          if [ "${{ matrix.module }}" == "full" ] || [ "${{ matrix.module }}" == "all" ]; then
+            ls -la dist/
           else
-            # Build modular - solo archivos específicos
-            tar -czf better-logger-${MODULE}-${VERSION}.tar.gz dist/modular/${MODULE}/ README.md package.json
-            zip -r better-logger-${MODULE}-${VERSION}.zip dist/modular/${MODULE}/ README.md package.json
+            ls -la dist/modular/${{ matrix.module }}/ || ls -la dist/
           fi
 
-      - name: 📤 Upload module artifacts
+      - name: 📤 Upload build artifacts for module
         uses: actions/upload-artifact@v4
         with:
-          name: module-${{ matrix.module }}-${{ needs.prepare-modular-release.outputs.version }}
+          name: build-${{ matrix.module }}-${{ needs.ai-modular-version.outputs.version }}
           path: |
-            better-logger-${{ matrix.module }}-${{ needs.prepare-modular-release.outputs.version }}.*
             dist/
-            package.json
           retention-days: 30
 
-  # ===== PUBLISH TO NPM =====
-  publish-npm:
+  # ===== STEP 3: PUBLISH MODULAR RELEASES =====
+  publish-modular:
     runs-on: ubuntu-latest
-    needs: [prepare-modular-release, build-modules]
-    if: ${{ inputs.target_registry == 'npm' || inputs.target_registry == 'both' }}
-    
-    strategy:
-      matrix:
-        module: ${{ fromJson(needs.prepare-modular-release.outputs.modules_to_build) }}
+    needs: [ai-modular-version, build-modular]
+    if: inputs.target_registry == 'npm' || inputs.target_registry == 'both'
     
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-
-      - name: 📦 Setup Bun for NPM
-        uses: actions/oven-sh/setup-bun@v2
+        with:
+          ref: main
+          
+      - name: 📦 Setup Bun with NPM registry
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-                    registry-url: 'https://registry.npmjs.org'
+          registry-url: 'https://registry.npmjs.org'
 
-      - name: 📥 Download module artifacts
+      - name: 📥 Download all build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: module-${{ matrix.module }}-${{ needs.prepare-modular-release.outputs.version }}
+          pattern: build-*-${{ needs.ai-modular-version.outputs.version }}
+          path: builds/
+          merge-multiple: true
 
-      - name: 🔄 Update package version
-        run: npm version ${{ needs.prepare-modular-release.outputs.version }} --no-git-tag-version
-
-      - name: 🚀 Publish ${{ matrix.module }} to NPM
+      - name: 🚀 Step 4: Publish modular releases to NPM
         run: |
-          if [ "${{ needs.prepare-modular-release.outputs.is_prerelease }}" == "true" ]; then
-            echo "📦 Publishing prerelease ${{ matrix.module }} to NPM with tag: ${{ needs.prepare-modular-release.outputs.release_channel }}"
-            npm publish --access public --tag ${{ needs.prepare-modular-release.outputs.release_channel }}
+          echo "🚀 === PASO 4: PUBLICANDO RELEASES MODULARES EN NPM ==="
+          
+          # Determinar tag de publicación
+          if [ "${{ needs.ai-modular-version.outputs.is_prerelease }}" == "true" ]; then
+            PUBLISH_TAG="${{ needs.ai-modular-version.outputs.release_channel }}"
+            echo "📦 Publicando como prerelease con tag: $PUBLISH_TAG"
           else
-            echo "📦 Publishing stable ${{ matrix.module }} to NPM"
-            npm publish --access public
+            PUBLISH_TAG="latest"
+            echo "📦 Publicando como release estable"
           fi
+          
+          # Publicar dependiendo del módulo seleccionado
+          if [ "${{ inputs.module }}" == "all" ] || [ "${{ inputs.module }}" == "full" ]; then
+            echo "📦 Publicando paquete completo..."
+            npm publish --access public --tag $PUBLISH_TAG
+          else
+            echo "📦 Publicando módulo específico: ${{ inputs.module }}"
+            # Para releases modulares específicos, publicar como paquete scoped
+            npm publish --access public --tag $PUBLISH_TAG
+          fi
+          
+          echo "✅ Publicación modular completada en NPM"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  # ===== PUBLISH TO GITHUB PACKAGES =====
-  publish-github:
+  # ===== STEP 4: GITHUB PACKAGES (if selected) =====
+  publish-github-modular:
     runs-on: ubuntu-latest
-    needs: [prepare-modular-release, build-modules]
-    if: ${{ inputs.target_registry == 'github' || inputs.target_registry == 'both' }}
-    
-    strategy:
-      matrix:
-        module: ${{ fromJson(needs.prepare-modular-release.outputs.modules_to_build) }}
+    needs: [ai-modular-version, build-modular]
+    if: inputs.target_registry == 'github' || inputs.target_registry == 'both'
     
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-
-      - name: 📦 Setup Bun for GitHub Packages
-        uses: actions/oven-sh/setup-bun@v2
+        with:
+          ref: main
+          
+      - name: 📦 Setup Bun with GitHub registry
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-                    registry-url: 'https://npm.pkg.github.com'
+          registry-url: 'https://npm.pkg.github.com'
 
-      - name: 📥 Download module artifacts
+      - name: 📥 Download all build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: module-${{ matrix.module }}-${{ needs.prepare-modular-release.outputs.version }}
+          pattern: build-*-${{ needs.ai-modular-version.outputs.version }}
+          path: builds/
+          merge-multiple: true
 
-      - name: 🔄 Update package version
-        run: npm version ${{ needs.prepare-modular-release.outputs.version }} --no-git-tag-version
-
-      - name: 📦 Publish ${{ matrix.module }} to GitHub Packages
+      - name: 📦 Step 5: Publish to GitHub Packages
         run: |
-          if [ "${{ needs.prepare-modular-release.outputs.is_prerelease }}" == "true" ]; then
-            echo "📦 Publishing prerelease ${{ matrix.module }} to GitHub Packages with tag: ${{ needs.prepare-modular-release.outputs.release_channel }}"
-            npm publish --access public --tag ${{ needs.prepare-modular-release.outputs.release_channel }}
+          echo "📦 === PASO 5: PUBLICANDO EN GITHUB PACKAGES ==="
+          
+          if [ "${{ needs.ai-modular-version.outputs.is_prerelease }}" == "true" ]; then
+            echo "📦 Publishing prerelease to GitHub Packages with tag: ${{ needs.ai-modular-version.outputs.release_channel }}"
+            npm publish --access public --tag ${{ needs.ai-modular-version.outputs.release_channel }}
           else
-            echo "📦 Publishing stable ${{ matrix.module }} to GitHub Packages" 
+            echo "📦 Publishing stable release to GitHub Packages"
             npm publish --access public
           fi
+          echo "✅ Publicación modular completada en GitHub Packages"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ===== CREATE GITHUB RELEASE =====
-  create-github-release:
+  # ===== STEP 5: CREATE MODULAR GITHUB RELEASE =====
+  create-modular-release:
     runs-on: ubuntu-latest
-    needs: [prepare-modular-release, build-modules, publish-npm, publish-github]
-    if: always() && needs.prepare-modular-release.result == 'success'
+    needs: [ai-modular-version, build-modular, publish-modular, publish-github-modular]
+    if: always() && needs.build-modular.result == 'success'
     
     permissions:
       contents: write
-      id-token: write
     
     steps:
-      - name: 📥 Checkout code  
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
 
-      - name: 📥 Download all module artifacts
+      - name: 📦 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          
+      - name: 🔧 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 📥 Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: module-*-${{ needs.prepare-modular-release.outputs.version }}
+          pattern: build-*-${{ needs.ai-modular-version.outputs.version }}
+          path: builds/
           merge-multiple: true
 
-      - name: 🏷️ Commit and tag
+      - name: 🏷️ Create git tag for modular release
         run: |
+          echo "🏷️ Creando tag para release modular..."
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          git commit -m "chore: release ${{ needs.prepare-modular-release.outputs.version }} (modular)" || true
-          git tag -a "${{ needs.prepare-modular-release.outputs.tag }}" -m "Modular Release ${{ needs.prepare-modular-release.outputs.version }}"
-          git push origin main --tags
+          TAG_NAME="${{ needs.ai-modular-version.outputs.tag }}-${{ inputs.module }}"
+          git tag -a "$TAG_NAME" -m "Modular release ${{ needs.ai-modular-version.outputs.version }} (${{ inputs.module }})"
+          git push origin --tags
 
-      - name: 📝 Prepare release notes
+      - name: 🚀 Step 6: Create Modular GitHub Release with AI
         run: |
-          VERSION=${{ needs.prepare-modular-release.outputs.version }}
-          MODULE=${{ inputs.module }}
+          echo "🚀 === PASO 6: CREANDO GITHUB RELEASE MODULAR CON AI ==="
           
-          echo "# Better Logger ${VERSION} - Modular Release" > RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
+          # Agregar contexto de módulo al release
+          export RELEASE_CONTEXT="Modular release for ${{ inputs.module }} module(s)"
+          export RELEASE_MODULE="${{ inputs.module }}"
           
-          if [ "${{ needs.prepare-modular-release.outputs.is_prerelease }}" == "true" ]; then
-            echo "⚠️ **This is a pre-release version** - Not recommended for production use." >> RELEASE_NOTES.md
-            echo "" >> RELEASE_NOTES.md
-          fi
-          
-          echo "## 📦 Modules Released" >> RELEASE_NOTES.md
-          echo "**Selected Module(s)**: \`$MODULE\`" >> RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
-          
-          echo "### Available Module Builds:" >> RELEASE_NOTES.md
-          echo "- **Core**: Minimal logger functionality" >> RELEASE_NOTES.md
-          echo "- **Styling**: Advanced visual features" >> RELEASE_NOTES.md  
-          echo "- **Exports**: Export and remote handlers" >> RELEASE_NOTES.md
-          echo "- **Full**: Complete library with all features" >> RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
-          
-          echo "## 📦 Installation" >> RELEASE_NOTES.md
-          if [ "${{ needs.prepare-modular-release.outputs.is_prerelease }}" == "true" ]; then
-            echo "\`\`\`bash" >> RELEASE_NOTES.md
-            echo "npm install @mks2508/better-logger@${{ needs.prepare-modular-release.outputs.release_channel }}" >> RELEASE_NOTES.md
-            echo "\`\`\`" >> RELEASE_NOTES.md
-          else
-            echo "\`\`\`bash" >> RELEASE_NOTES.md  
-            echo "npm install @mks2508/better-logger" >> RELEASE_NOTES.md
-            echo "\`\`\`" >> RELEASE_NOTES.md
-          fi
-
-      - name: 🚀 Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.prepare-modular-release.outputs.tag }}
-          name: Better Logger ${{ needs.prepare-modular-release.outputs.version }} (Modular)
-          body_path: RELEASE_NOTES.md
-          draft: false
-          prerelease: ${{ needs.prepare-modular-release.outputs.is_prerelease == 'true' }}
-          files: |
-            better-logger-*-${{ needs.prepare-modular-release.outputs.version }}.tar.gz
-            better-logger-*-${{ needs.prepare-modular-release.outputs.version }}.zip
+          bun project-utils/github-release-manager.ts --auto-approve
+          echo "✅ GitHub Release modular creado exitosamente"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ===== RELEASE SUMMARY =====
-  release-summary:
+  # ===== MODULAR RELEASE SUMMARY =====
+  modular-summary:
     runs-on: ubuntu-latest
-    needs: [prepare-modular-release, build-modules, publish-npm, publish-github, create-github-release]
-    if: always() && needs.prepare-modular-release.result == 'success'
+    needs: [ai-modular-version, build-modular, publish-modular, publish-github-modular, create-modular-release]
+    if: always()
     
     steps:
-      - name: 📊 Modular Release Summary  
+      - name: 📊 Modular Release Summary
         run: |
-          VERSION="${{ needs.prepare-modular-release.outputs.version }}"
-          TAG="${{ needs.prepare-modular-release.outputs.tag }}"
-          CHANNEL="${{ needs.prepare-modular-release.outputs.release_channel }}"
-          IS_PRERELEASE="${{ needs.prepare-modular-release.outputs.is_prerelease }}"
+          VERSION="${{ needs.ai-modular-version.outputs.version }}"
           MODULE="${{ inputs.module }}"
+          CHANNEL="${{ needs.ai-modular-version.outputs.release_channel }}"
+          IS_PRERELEASE="${{ needs.ai-modular-version.outputs.is_prerelease }}"
           
-          echo "## 🎉 Modular Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Modular Release Pipeline Complete!" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- **Module(s)**: $MODULE" >> $GITHUB_STEP_SUMMARY
           echo "- **Channel**: $CHANNEL" >> $GITHUB_STEP_SUMMARY
           echo "- **Prerelease**: $IS_PRERELEASE" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ inputs.target_registry == 'npm' || inputs.target_registry == 'both' }}" ]; then
-            echo "- **NPM**: https://www.npmjs.com/package/@mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
-          fi
-          if [ "${{ inputs.target_registry == 'github' || inputs.target_registry == 'both' }}" ]; then
-            echo "- **GitHub Packages**: https://github.com/MKS2508/advanced-logger/packages/" >> $GITHUB_STEP_SUMMARY  
-          fi
-          echo "- **GitHub Release**: https://github.com/MKS2508/advanced-logger/releases/tag/$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Pipeline Steps Results" >> $GITHUB_STEP_SUMMARY
+          echo "1. **AI Version Analysis**: ✅ $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Module Build**: ${{ needs.build-modular.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "3. **NPM Publishing**: ${{ needs.publish-modular.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "4. **GitHub Packages**: ${{ needs.publish-github-modular.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "5. **GitHub Release**: ${{ needs.create-modular-release.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Module-Specific Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           if [ "$IS_PRERELEASE" == "true" ]; then
-            echo "npm install @mks2508/better-logger@$CHANNEL" >> $GITHUB_STEP_SUMMARY
-          else  
-            echo "npm install @mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
+            echo "npm install @mks2508/better-logger@$CHANNEL  # $MODULE module included" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "npm install @mks2508/better-logger  # $MODULE module included" >> $GITHUB_STEP_SUMMARY
           fi
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

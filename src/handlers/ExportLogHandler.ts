@@ -465,4 +465,145 @@ export class ExportLogHandler implements ILogHandler {
     getAllLogs(): LogEntry[] {
         return [...this.buffer];
     }
+
+    /**
+     * Save export to file with download prompt
+     */
+    async saveToFile(format: ExportFormat, filters: ExportFilters = {}, options: ExportOptions = {}): Promise<boolean> {
+        try {
+            const result = this.export(format, filters, options);
+            const blob = new Blob([result.data], { 
+                type: this.getMimeType(format) 
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const filename = this.generateFilename(format, filters);
+            
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            return true;
+        } catch (error) {
+            console.error('Failed to save file:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Get MIME type for format
+     */
+    private getMimeType(format: ExportFormat): string {
+        const mimeTypes = {
+            json: 'application/json',
+            csv: 'text/csv',
+            markdown: 'text/markdown',
+            plain: 'text/plain',
+            html: 'text/html'
+        };
+        return mimeTypes[format] || 'text/plain';
+    }
+
+    /**
+     * Generate filename with timestamp
+     */
+    private generateFilename(format: ExportFormat, filters: ExportFilters): string {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const prefix = filters.prefixes?.length === 1 ? `_${filters.prefixes[0]}` : '';
+        const extension = format === 'markdown' ? 'md' : format;
+        return `logs${prefix}_${timestamp}.${extension}`;
+    }
+
+    /**
+     * Stream logs to external endpoint
+     */
+    async streamToEndpoint(endpoint: string, filters: ExportFilters = {}, options: { 
+        apiKey?: string; 
+        batchSize?: number; 
+        format?: ExportFormat 
+    } = {}): Promise<boolean> {
+        try {
+            const logs = this.filterLogs(filters);
+            const batchSize = options.batchSize || 100;
+            const format = options.format || 'json';
+            
+            // Send in batches
+            for (let i = 0; i < logs.length; i += batchSize) {
+                const batch = logs.slice(i, i + batchSize);
+                const result = this.export(format, {}, { compact: true });
+                
+                const headers: Record<string, string> = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (options.apiKey) {
+                    headers['Authorization'] = `Bearer ${options.apiKey}`;
+                }
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        logs: batch,
+                        metadata: {
+                            batchIndex: Math.floor(i / batchSize),
+                            totalBatches: Math.ceil(logs.length / batchSize),
+                            timestamp: new Date().toISOString()
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Failed to stream logs:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Create export with metadata enrichment
+     */
+    exportWithMetadata(format: ExportFormat, filters: ExportFilters = {}, options: ExportOptions = {}): ExportResult {
+        const baseResult = this.export(format, filters, options);
+        const bufferStats = this.getBufferStats();
+        
+        return {
+            ...baseResult,
+            metadata: {
+                ...baseResult.metadata,
+                bufferStats,
+                performance: {
+                    memoryUsage: this.estimateMemoryUsage(),
+                    processingTime: Date.now()
+                },
+                system: {
+                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Node.js',
+                    timestamp: new Date().toISOString(),
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                }
+            }
+        };
+    }
+
+    /**
+     * Estimate memory usage of buffer
+     */
+    private estimateMemoryUsage(): number {
+        const sampleEntry = this.buffer[0];
+        if (!sampleEntry) return 0;
+        
+        // Rough estimation: JSON.stringify size * buffer length
+        const sampleSize = JSON.stringify(sampleEntry).length;
+        return sampleSize * this.buffer.length;
+    }
 }

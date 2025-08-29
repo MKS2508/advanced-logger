@@ -1,32 +1,30 @@
 ### **ANÁLISIS PRINCIPAL**
 
-Se ha realizado una refactorización significativa del generador de commits (`commit-generator.ts`). La lógica principal ha sido actualizada para procesar y distribuir archivos de manera más inteligente cuando se reciben múltiples propuestas de commit desde la IA. Además, se ha mejorado el sistema para filtrar archivos temporales y de proceso, asegurando que solo el código relevante sea incluido en los commits finales. Los cambios en los archivos del directorio `.temp` reflejan la ejecución y prueba de este nuevo sistema.
+Se ha realizado una migración del entorno de desarrollo de NPM a Bun, actualizando la documentación principal para reflejar los nuevos comandos y flujos de trabajo. El archivo `DEVELOPMENT.md` ha sido reescrito para usar `bun` como el gestor de paquetes y runtime principal. Adicionalmente, se ha actualizado el `.gitignore` para excluir archivos temporales generados por las utilidades del proyecto.
 
 ---
 
 ### **Propuesta de Commit #1**
 
 ```markdown
-refactor(commit-generator): mejorar el parseo y la distribución de archivos en commits
+docs(dev-env): Migrar entorno de desarrollo a Bun y actualizar guía
 
-Se refactoriza el script `commit-generator.ts` para gestionar de forma más inteligente las propuestas de commit múltiples. La nueva implementación permite distribuir los archivos modificados entre varios commits propuestos, en lugar de asignar todos los archivos a cada uno.
+Se reemplaza NPM por Bun como el runtime y gestor de paquetes principal del proyecto para mejorar la velocidad y la eficiencia del desarrollo. La guía `DEVELOPMENT.md` ha sido actualizada exhaustivamente para reflejar este cambio, incluyendo nuevos comandos para instalación, construcción modular y ejecución.
 
-Este cambio introduce una lógica de asignación basada en patrones y contexto, y mejora el filtrado para excluir archivos temporales o de metadatos (como los de `.temp/` o notas de release) de las propuestas de commit.
+Adicionalmente, se ha añadido el directorio `.project-utils/.temp` al `.gitignore` para evitar que los archivos temporales de análisis de la IA sean rastreados por Git.
 
 <technical>
-- **Archivo Principal**: `project-utils/commit-generator.ts` ha sido modificado extensamente.
-- **Nueva Lógica de Distribución**: Se añade el método `distributeFilesAcrossCommits` para dividir los archivos entre múltiples propuestas de commit.
-- **Refactorización de Parseo**: La función `parseCommitProposals` se actualiza para utilizar la nueva lógica de distribución y para filtrar archivos irrelevantes.
-- **Filtrado Mejorado**: Se implementa un filtro explícito para excluir rutas que contengan `.temp/` o `.release-notes-` de los archivos asignados a un commit.
-- **Archivos de Proceso**: Los cambios en `project-utils/.temp/` son un resultado de la ejecución y prueba de la nueva lógica del script.
+- **Archivo Modificado**: `docs/DEVELOPMENT.md` ha sido reescrito para usar `bun` en lugar de `npm`.
+- **Nuevos Scripts**: Se documentan los nuevos scripts de construcción modular (`build:core`, `build:styling`, etc.).
+- **Archivo Modificado**: `.gitignore` actualizado para excluir la carpeta `/project-utils/.temp`.
 </technical>
 
 <changelog>
-## [Chore] [⚙️]
-- **Herramientas**: Mejorado el generador de commits para soportar distribución de archivos en propuestas múltiples.
-</changelel changelog>
+## [Internal] ⚙️
+Se migra el entorno de desarrollo a Bun para mejorar el rendimiento y la experiencia del desarrollador.
+</changelog>
 ```
 
 ---
 
-**DECISIÓN**: Se propone un único commit, ya que todos los cambios están directamente relacionados con la refactorización de una sola funcionalidad: el script `commit-generator.ts`. Los archivos modificados en el directorio `.temp` son artefactos del desarrollo y prueba de esta misma refactorización.
+**DECISIÓN**: Se propone un único commit porque todos los cambios están directamente relacionados con una sola tarea cohesiva: la migración del entorno de desarrollo a Bun y la actualización de su documentación correspondiente.
