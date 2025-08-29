@@ -23,6 +23,9 @@
     "type": "git",
     "url": "https://github.com/MKS2508/advanced-logger.git"
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -49,7 +52,8 @@
     "ci:install": "npm ci",
     "ci:build": "npm run build",
     "ci:test": "npm run test",
-    "ci:publish": "npm publish --access public"
+    "ci:publish": "npm publish --access public",
+    "ci:publish:github": "npm publish --registry=https://npm.pkg.github.com --access public"
   },
   "devDependencies": {
     "terser": "^5.43.1",
