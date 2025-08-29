@@ -92,10 +92,10 @@ jobs:
       - name: 🤖 Step 1: AI Version Analysis & Generation
         id: version
         env:
-          VERSION_TYPE: ${{ github.event_name == 'workflow_dispatch' && inputs.version_type || 'auto' }}
-          VERSION_PREFIX: ${{ github.event_name == 'workflow_dispatch' && inputs.version_prefix || 'stable' }}
-          TARGET_REGISTRY: ${{ github.event_name == 'workflow_dispatch' && inputs.target_registry || 'npm' }}
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          VERSION_TYPE: ${{ inputs.version_type || 'auto' }}
+          VERSION_PREFIX: ${{ inputs.version_prefix || 'stable' }}
+          TARGET_REGISTRY: ${{ inputs.target_registry || 'npm' }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
           echo "🤖 === PASO 1: ANÁLISIS Y GENERACIÓN DE VERSIÓN CON AI ==="
           
