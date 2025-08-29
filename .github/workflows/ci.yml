@@ -243,21 +243,24 @@ jobs:
           name: dist-files
           path: dist/
 
-      - name: 🏗️ Build documentation site
+      - name: 🏗️ Setup Jekyll for documentation
         run: |
-          mkdir -p docs-site
-          cp demo.html docs-site/index.html
-          cp -r dist/ docs-site/dist/
-          cp -r docs/ docs-site/docs/
-          cp README.md docs-site/
+          cp demo.html docs/demo.html
+          cp -r dist/ docs/dist/
 
       - name: 📤 Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: 📤 Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+
       - name: 📤 Upload to Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs-site/
+          path: ./_site
 
       - name: 🚀 Deploy to GitHub Pages
         id: deployment

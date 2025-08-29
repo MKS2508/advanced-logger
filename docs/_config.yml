@@ -34,3 +34,5 @@ navigation:
     url: /API
   - title: Development Guide
     url: /DEVELOPMENT
+  - title: Live Demo
+    url: /demo.html

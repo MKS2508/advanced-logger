@@ -28,7 +28,7 @@
   },
   "homepage": "https://mks2508.github.io/advanced-logger/",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "dev": "vite",
