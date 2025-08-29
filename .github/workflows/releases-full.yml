@@ -246,10 +246,10 @@ jobs:
         with:
           ref: main
 
-      - name: "📦 Setup Bun with NPM registry"
-        uses: oven-sh/setup-bun@v2
+      - name: "📦 Setup Node.js with NPM registry"
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
       - name: "📥 Download build artifacts"
@@ -284,10 +284,10 @@ jobs:
         with:
           ref: main
 
-      - name: "📦 Setup Bun with GitHub registry"
-        uses: oven-sh/setup-bun@v2
+      - name: "📦 Setup Node.js with GitHub registry"
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20'
           registry-url: 'https://npm.pkg.github.com'
 
       - name: "📥 Download build artifacts"
