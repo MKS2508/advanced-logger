@@ -1,34 +1,31 @@
 ### **ANÁLISIS PRINCIPAL**
 
-El análisis de los cambios muestra una actualización de versión coordinada a `alpha-0.6.0` en todos los archivos de manifiesto del proyecto (`package.json`, `package-lock.json`) y la generación de una nueva entrada en el `CHANGELOG.json`. Estos cambios son consistentes con un proceso de release automatizado para una nueva versión alpha.
+Los cambios detectados consisten en la actualización de la versión a `0.7.1-alpha.1` en los archivos `package.json` del proyecto principal y de los sub-paquetes (`core`, `exports`, `styling`). Además, se ha actualizado el `CHANGELOG.json` para reflejar la nueva versión y sus características, incluyendo la funcionalidad `feat(core): mejoras y actualizaciones automáticas`.
 
 ---
 
 ### **Propuesta de Commit #1**
 
 ```markdown
-release(alpha-0.6.0): Automated release with RPi binaries and AI docs
+release(0.7.1-alpha.1): Publicación automatizada de la versión 0.7.1-alpha.1
 
-This is an automated release for version alpha-0.6.0.
+Este es un commit de publicación automatizado para la versión 0.7.1-alpha.1.
 
-This version introduces automatic updates and core improvements. It includes optimized ARM64 binaries specifically compiled for Raspberry Pi 3B+, along with AI-enhanced documentation to provide better clarity and guidance.
+Esta versión introduce la nueva característica de mejoras y actualizaciones automáticas en el núcleo de la aplicación. Incluye binarios ARM64 nativos, optimizados específicamente para Raspberry Pi 3B+, y viene acompañada de documentación mejorada y notas de lanzamiento generadas mediante inteligencia artificial para mayor claridad y detalle.
 
 <technical>
-- Version bumped to alpha-0.6.0 across all `package.json` files and `package-lock.json`.
-- `CHANGELOG.json` updated with the new version details.
-- This release includes pre-compiled ARM64 binaries for Raspberry Pi 3B+.
-- AI-generated documentation has been included in the release assets.
+- Actualización de la versión a `0.7.1-alpha.1` en `package.json`, `packages/core/package.json`, `packages/exports/package.json` y `packages/styling/package.json`.
+- Actualización de `CHANGELOG.json` para registrar la nueva versión y sus cambios.
+- Inclusión de binarios ARM64 pre-compilados y optimizados para Raspberry Pi 3B+.
+- Generación de documentación y notas de release asistida por IA.
 </technical>
 
 <changelog>
-## [Feature] ✨
-### `alpha-0.6.0`
-- **Mejoras Automáticas**: Introducción de funcionalidades para actualizaciones automáticas y mejoras del núcleo.
-- **Soporte Raspberry Pi**: Se incluyen binarios ARM64 optimizados para Raspberry Pi 3B+.
-- **Documentación Mejorada**: La documentación ha sido enriquecida y detallada mediante IA.
+## [feature] ✨
+feat(core): Mejoras y actualizaciones automáticas para una experiencia de usuario más fluida y mantenible.
 </changelog>
 ```
 
 ---
 
-**DECISIÓN**: Se propone un único commit, ya que todos los cambios corresponden a una única acción atómica: el release automatizado de la versión `alpha-0.6.0`. Agruparlos en un solo commit mantiene la cohesión y facilita el seguimiento del historial de versiones.
+**DECISIÓN**: Se propone un único commit, ya que todos los cambios están directamente relacionados con el proceso de lanzamiento automatizado de la nueva versión `0.7.1-alpha.1` y forman una unidad lógica.

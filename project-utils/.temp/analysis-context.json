@@ -3,23 +3,15 @@
     {
       "path": "CHANGELOG.json",
       "status": "modified",
-      "diff": "diff --git a/CHANGELOG.json b/CHANGELOG.json\nindex 5bf47aa..8ec3c35 100644\n--- a/CHANGELOG.json\n+++ b/CHANGELOG.json\n@@ -1,6 +1,23 @@\n {\n-  \"current_version\": \"alpha-0.5.0\",\n+  \"current_version\": \"alpha-0.6.0\",\n   \"versions\": [\n+    {\n+      \"version\": \"alpha-0.6.0\",\n+      \"date\": \"2025-08-29\",\n+      \"type\": \"minor\",\n+      \"title\": \"Versión Alpha - Nueva funcionalidad: feat(core): mejoras y actualizaciones automáticas\",\n+      \"changes\": [\n+        {\n+          \"type\": \"feature\",\n+          \"title\": \"feat(core): mejoras y actualizaciones automáticas\",\n+          \"description\": \"feat(core): mejoras y actualizaciones automáticas\"\n+        }\n+      ],\n+      \"technical_notes\": \"\",\n+      \"breaking_changes\": [],\n+      \"commit_hash\": \"3f9a76116a5a6dcde8b7e35810c3b155850a2ce1\",\n+      \"prefix\": \"alpha\"\n+    },\n     {\n       \"version\": \"alpha-0.5.0\",\n       \"date\": \"2025-08-29\",",
+      "diff": "diff --git a/CHANGELOG.json b/CHANGELOG.json\nindex 26db34b..09b3006 100644\n--- a/CHANGELOG.json\n+++ b/CHANGELOG.json\n@@ -1,6 +1,23 @@\n {\n-  \"current_version\": \"0.7.0-alpha.1\",\n+  \"current_version\": \"0.7.1-alpha.1\",\n   \"versions\": [\n+    {\n+      \"version\": \"0.7.1-alpha.1\",\n+      \"date\": \"2025-08-29\",\n+      \"type\": \"patch\",\n+      \"title\": \"Versión Alpha - Nueva funcionalidad: feat(core): mejoras y actualizaciones automáticas\",\n+      \"changes\": [\n+        {\n+          \"type\": \"feature\",\n+          \"title\": \"feat(core): mejoras y actualizaciones automáticas\",\n+          \"description\": \"feat(core): mejoras y actualizaciones automáticas\"\n+        }\n+      ],\n+      \"technical_notes\": \"\",\n+      \"breaking_changes\": [],\n+      \"commit_hash\": \"0e5c697086454b1a56cee3696d08e38515449217\",\n+      \"prefix\": \"alpha\"\n+    },\n     {\n       \"version\": \"0.7.0-alpha.1\",\n       \"date\": \"2025-08-29\",",
       "lines_added": 18,
       "lines_removed": 1,
       "is_binary": false
     },
     {
-      "path": "package-lock.json",
-      "status": "modified",
-      "diff": "diff --git a/package-lock.json b/package-lock.json\nindex 724031a..985f768 100644\n--- a/package-lock.json\n+++ b/package-lock.json\n@@ -1,12 +1,12 @@\n {\n   \"name\": \"@mks2508/better-logger\",\n-  \"version\": \"alpha-0.4.0\",\n+  \"version\": \"alpha-0.5.0\",\n   \"lockfileVersion\": 3,\n   \"requires\": true,\n   \"packages\": {\n     \"\": {\n       \"name\": \"@mks2508/better-logger\",\n-      \"version\": \"alpha-0.4.0\",\n+      \"version\": \"alpha-0.5.0\",\n       \"license\": \"MIT\",\n       \"devDependencies\": {\n         \"terser\": \"^5.43.1\",",
-      "lines_added": 2,
-      "lines_removed": 2,
-      "is_binary": false
-    },
-    {
       "path": "package.json",
       "status": "modified",
-      "diff": "diff --git a/package.json b/package.json\nindex 759fc70..56c9e99 100644\n--- a/package.json\n+++ b/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger\",\n-  \"version\": \"alpha-0.5.0\",\n+  \"version\": \"alpha-0.6.0\",\n   \"type\": \"module\",\n   \"description\": \"State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface\",\n   \"main\": \"dist/index.js\",",
+      "diff": "diff --git a/package.json b/package.json\nindex 8701d95..eaafac6 100644\n--- a/package.json\n+++ b/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger\",\n-  \"version\": \"0.7.0-alpha.1\",\n+  \"version\": \"0.7.1-alpha.1\",\n   \"type\": \"module\",\n   \"description\": \"State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface\",\n   \"main\": \"dist/index.js\",",
       "lines_added": 1,
       "lines_removed": 1,
       "is_binary": false
@@ -27,7 +19,7 @@
     {
       "path": "packages/core/package.json",
       "status": "modified",
-      "diff": "diff --git a/packages/core/package.json b/packages/core/package.json\nindex 54ce2a7..e9291ab 100644\n--- a/packages/core/package.json\n+++ b/packages/core/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-core\",\n-  \"version\": \"alpha-0.5.0\",\n+  \"version\": \"alpha-0.6.0\",\n   \"type\": \"module\",\n   \"description\": \"Core logging functionality for Better Logger - Advanced console logger with hierarchical levels\",\n   \"main\": \"dist/index.js\",",
+      "diff": "diff --git a/packages/core/package.json b/packages/core/package.json\nindex dbfe4fb..eb22893 100644\n--- a/packages/core/package.json\n+++ b/packages/core/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-core\",\n-  \"version\": \"0.7.0-alpha.1\",\n+  \"version\": \"0.7.1-alpha.1\",\n   \"type\": \"module\",\n   \"description\": \"Core logging functionality for Better Logger - Advanced console logger with hierarchical levels\",\n   \"main\": \"dist/index.js\",",
       "lines_added": 1,
       "lines_removed": 1,
       "is_binary": false
@@ -35,7 +27,7 @@
     {
       "path": "packages/exports/package.json",
       "status": "modified",
-      "diff": "diff --git a/packages/exports/package.json b/packages/exports/package.json\nindex 6a3323d..773f673 100644\n--- a/packages/exports/package.json\n+++ b/packages/exports/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-exports\",\n-  \"version\": \"alpha-0.5.0\",\n+  \"version\": \"alpha-0.6.0\",\n   \"type\": \"module\",\n   \"description\": \"Export handlers for Better Logger - File, Remote, Analytics and custom log destinations\",\n   \"main\": \"dist/index.js\",\n@@ -36,6 +36,6 @@\n     \"README.md\"\n   ],\n   \"peerDependencies\": {\n-    \"@mks2508/better-logger-core\": \"^alpha-0.5.0\"\n+    \"@mks2508/better-logger-core\": \"^alpha-0.6.0\"\n   }\n }",
+      "diff": "diff --git a/packages/exports/package.json b/packages/exports/package.json\nindex de76514..368f605 100644\n--- a/packages/exports/package.json\n+++ b/packages/exports/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-exports\",\n-  \"version\": \"0.7.0-alpha.1\",\n+  \"version\": \"0.7.1-alpha.1\",\n   \"type\": \"module\",\n   \"description\": \"Export handlers for Better Logger - File, Remote, Analytics and custom log destinations\",\n   \"main\": \"dist/index.js\",\n@@ -36,6 +36,6 @@\n     \"README.md\"\n   ],\n   \"peerDependencies\": {\n-    \"@mks2508/better-logger-core\": \"^0.7.0-alpha.1\"\n+    \"@mks2508/better-logger-core\": \"^0.7.1-alpha.1\"\n   }\n }",
       "lines_added": 2,
       "lines_removed": 2,
       "is_binary": false
@@ -43,22 +35,21 @@
     {
       "path": "packages/styling/package.json",
       "status": "modified",
-      "diff": "diff --git a/packages/styling/package.json b/packages/styling/package.json\nindex 59c3d24..a500b83 100644\n--- a/packages/styling/package.json\n+++ b/packages/styling/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-styling\",\n-  \"version\": \"alpha-0.5.0\",\n+  \"version\": \"alpha-0.6.0\",\n   \"type\": \"module\",\n   \"description\": \"Advanced CSS styling system for Better Logger - Console styling with gradients, animations and SVG support\",\n   \"main\": \"dist/index.js\",\n@@ -36,6 +36,6 @@\n     \"README.md\"\n   ],\n   \"peerDependencies\": {\n-    \"@mks2508/better-logger-core\": \"^alpha-0.5.0\"\n+    \"@mks2508/better-logger-core\": \"^alpha-0.6.0\"\n   }\n }",
+      "diff": "diff --git a/packages/styling/package.json b/packages/styling/package.json\nindex e70e550..bfe4e09 100644\n--- a/packages/styling/package.json\n+++ b/packages/styling/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-styling\",\n-  \"version\": \"0.7.0-alpha.1\",\n+  \"version\": \"0.7.1-alpha.1\",\n   \"type\": \"module\",\n   \"description\": \"Advanced CSS styling system for Better Logger - Console styling with gradients, animations and SVG support\",\n   \"main\": \"dist/index.js\",\n@@ -36,6 +36,6 @@\n     \"README.md\"\n   ],\n   \"peerDependencies\": {\n-    \"@mks2508/better-logger-core\": \"^0.7.0-alpha.1\"\n+    \"@mks2508/better-logger-core\": \"^0.7.1-alpha.1\"\n   }\n }",
       "lines_added": 2,
       "lines_removed": 2,
       "is_binary": false
     }
   ],
   "stats": {
-    "total_files": 6,
-    "total_additions": 26,
-    "total_deletions": 9,
+    "total_files": 5,
+    "total_additions": 24,
+    "total_deletions": 7,
     "files_by_extension": {
-      "json": 6
+      "json": 5
     },
     "directories_affected": [
       "CHANGELOG.json",
-      "package-lock.json",
       "package.json",
       "packages"
     ]

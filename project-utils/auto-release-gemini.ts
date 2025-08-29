@@ -974,8 +974,15 @@ Compilado nativamente en ARM64 para RPi3+ con optimizaciones.`;
       if (this.publishNpm) {
         console.log('🌐 Publicando en NPM Registry (público)...');
         try {
-          await this.runCommand('npm', ['publish', '--access', 'public', '--ignore-scripts']);
-          console.log('✅ Publicado exitosamente en NPM público');
+          // Determinar tag basado en el prefijo de la versión
+          const npmTag = this.determineNPMTag(releaseInfo.version);
+          const npmArgs = ['publish', '--access', 'public', '--ignore-scripts'];
+          if (npmTag !== 'latest') {
+            npmArgs.push('--tag', npmTag);
+          }
+          
+          await this.runCommand('npm', npmArgs);
+          console.log(`✅ Publicado exitosamente en NPM público con tag: ${npmTag}`);
         } catch (error) {
           console.error('❌ Error publicando en NPM público:', error);
           throw error;
@@ -986,13 +993,20 @@ Compilado nativamente en ARM64 para RPi3+ con optimizaciones.`;
       if (this.publishGithub) {
         console.log('🐈 Publicando en GitHub Packages...');
         try {
-          await this.runCommand('npm', [
+          // Determinar tag basado en el prefijo de la versión
+          const npmTag = this.determineNPMTag(releaseInfo.version);
+          const githubArgs = [
             'publish',
             '--registry=https://npm.pkg.github.com',
             '--access', 'public',
             '--ignore-scripts'
-          ]);
-          console.log('✅ Publicado exitosamente en GitHub Packages');
+          ];
+          if (npmTag !== 'latest') {
+            githubArgs.push('--tag', npmTag);
+          }
+          
+          await this.runCommand('npm', githubArgs);
+          console.log(`✅ Publicado exitosamente en GitHub Packages con tag: ${npmTag}`);
         } catch (error) {
           console.error('❌ Error publicando en GitHub Packages:', error);
           console.log('💡 Verifica que tengas permisos write:packages y estés autenticado');
@@ -1015,6 +1029,31 @@ Compilado nativamente en ARM64 para RPi3+ con optimizaciones.`;
       console.error('❌ Error en publicación NPM:', error);
       console.log('💡 Verifica autenticación: npm whoami');
       throw error;
+    }
+  }
+
+  /**
+   * Determina el tag NPM apropiado basado en el formato de versión
+   */
+  private determineNPMTag(version: string): string {
+    const releaseInfo = this.parseVersion(version);
+    
+    // Si no hay prefijo, es una versión estable (latest)
+    if (!releaseInfo.prefix || releaseInfo.prefix === 'stable') {
+      return 'latest';
+    }
+    
+    // Mapear prefijos a tags NPM
+    switch (releaseInfo.prefix) {
+      case 'alpha':
+      case 'pre-alpha':
+        return 'alpha';
+      case 'beta':
+        return 'beta';
+      case 'rc':
+        return 'next'; // tag común para release candidates
+      default:
+        return releaseInfo.prefix; // usar el prefijo como tag
     }
   }
 
