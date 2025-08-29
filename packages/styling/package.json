@@ -1,0 +1,41 @@
+{
+  "name": "@mks2508/better-logger-styling",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Advanced CSS styling system for Better Logger - Console styling with gradients, animations and SVG support",
+  "main": "dist/index.js",
+  "types": "dist/types/styling-module.d.ts",
+  "keywords": [
+    "logger",
+    "console",
+    "styling",
+    "css",
+    "svg",
+    "animation",
+    "gradients",
+    "typescript",
+    "browser"
+  ],
+  "author": "MKS2508",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MKS2508/advanced-logger.git",
+    "directory": "packages/styling"
+  },
+  "bugs": {
+    "url": "https://github.com/MKS2508/advanced-logger/issues"
+  },
+  "homepage": "https://mks2508.github.io/advanced-logger/",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@mks2508/better-logger-core": "^0.2.0"
+  }
+}

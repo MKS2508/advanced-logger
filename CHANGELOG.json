@@ -1,0 +1,376 @@
+{
+  "current_version": "0.2.0",
+  "versions": [
+    {
+      "version": "0.2.0",
+      "date": "2025-08-29",
+      "type": "minor",
+      "title": "Nuevas funcionalidades incluyendo feat(package): update to v4.0.0-alpha.1 pre-release version y 4 más",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "🎨 **Sistema de Banner Inteligente** - 5 tipos diferentes con auto-detección",
+          "description": "🎨 **Sistema de Banner Inteligente** - 5 tipos diferentes con auto-detección"
+        },
+        {
+          "type": "improvement",
+          "title": "🚀 **CLI Avanzado** - Comandos completos para configuración y demostración",
+          "description": "🚀 **CLI Avanzado** - Comandos completos para configuración y demostración"
+        },
+        {
+          "type": "improvement",
+          "title": "🎯 **Detección Browser** - Optimización automática según capacidades",
+          "description": "🎯 **Detección Browser** - Optimización automática según capacidades"
+        },
+        {
+          "type": "improvement",
+          "title": "📱 **Soporte SVG** - Logos vectoriales con animaciones embebidas",
+          "description": "📱 **Soporte SVG** - Logos vectoriales con animaciones embebidas"
+        },
+        {
+          "type": "improvement",
+          "title": "✨ **CSS Animations** - Gradientes animados y efectos visuales",
+          "description": "✨ **CSS Animations** - Gradientes animados y efectos visuales"
+        },
+        {
+          "type": "improvement",
+          "title": "🌈 **Sistema de Temas** - 4 esquemas visuales con banners únicos",
+          "description": "🌈 **Sistema de Temas** - 4 esquemas visuales con banners únicos"
+        },
+        {
+          "type": "improvement",
+          "title": "🔧 **Progressive Enhancement** - Fallbacks para máxima compatibilidad",
+          "description": "🔧 **Progressive Enhancement** - Fallbacks para máxima compatibilidad"
+        },
+        {
+          "type": "improvement",
+          "title": "🎪 **Modo Demo** - Demostración interactiva de todas las capacidades",
+          "description": "🎪 **Modo Demo** - Demostración interactiva de todas las capacidades"
+        },
+        {
+          "type": "improvement",
+          "title": "Chrome: Todas las features (SVG + animaciones + gradientes)",
+          "description": "Chrome: Todas las features (SVG + animaciones + gradientes)"
+        },
+        {
+          "type": "improvement",
+          "title": "Firefox: SVG y gradientes avanzados",
+          "description": "Firefox: SVG y gradientes avanzados"
+        },
+        {
+          "type": "improvement",
+          "title": "Safari: ASCII art y colores básicos",
+          "description": "Safari: ASCII art y colores básicos"
+        },
+        {
+          "type": "improvement",
+          "title": "Edge/Otros: Banner simple con estilos CSS",
+          "description": "Edge/Otros: Banner simple con estilos CSS"
+        },
+        {
+          "type": "feature",
+          "title": "feat(package): update to v4.0.0-alpha.1 pre-release version",
+          "description": "feat(package): update to v4.0.0-alpha.1 pre-release version"
+        },
+        {
+          "type": "feature",
+          "title": "feat(package): publish as @mks2508/better-logger@0.0.1",
+          "description": "feat(package): publish as @mks2508/better-logger@0.0.1"
+        },
+        {
+          "type": "feature",
+          "title": "Demo profesional interactivo con CDN imports",
+          "description": "Demo profesional interactivo con CDN imports"
+        },
+        {
+          "type": "feature",
+          "title": "Showcase completo de todas las funcionalidades del logger",
+          "description": "Showcase completo de todas las funcionalidades del logger"
+        },
+        {
+          "type": "feature",
+          "title": "Ejemplos visuales de temas y animaciones CSS",
+          "description": "Ejemplos visuales de temas y animaciones CSS"
+        },
+        {
+          "type": "improvement",
+          "title": "Optimización de pipelines CI/CD con scripts npm predefinidos",
+          "description": "Optimización de pipelines CI/CD con scripts npm predefinidos"
+        },
+        {
+          "type": "improvement",
+          "title": "Consistencia en comandos de build y deploy",
+          "description": "Consistencia en comandos de build y deploy"
+        },
+        {
+          "type": "improvement",
+          "title": "Mejor organización de procesos de release",
+          "description": "Mejor organización de procesos de release"
+        },
+        {
+          "type": "improvement",
+          "title": "Diseño responsive para la demo",
+          "description": "Diseño responsive para la demo"
+        },
+        {
+          "type": "improvement",
+          "title": "Efectos visuales modernos con CSS Grid y gradientes",
+          "description": "Efectos visuales modernos con CSS Grid y gradientes"
+        },
+        {
+          "type": "improvement",
+          "title": "Navegación intuitiva por categorías de features",
+          "description": "Navegación intuitiva por categorías de features"
+        },
+        {
+          "type": "improvement",
+          "title": "0.0.2-alpha.0",
+          "description": "0.0.2-alpha.0"
+        },
+        {
+          "type": "fix",
+          "title": "fix(ci): correct script names in performance and visual test jobs",
+          "description": "fix(ci): correct script names in performance and visual test jobs"
+        },
+        {
+          "type": "improvement",
+          "title": "Añadidos scripts placeholder para tests de performance y visuales",
+          "description": "Añadidos scripts placeholder para tests de performance y visuales"
+        },
+        {
+          "type": "improvement",
+          "title": "Pipeline CI/CD ahora completa exitosamente durante desarrollo",
+          "description": "Pipeline CI/CD ahora completa exitosamente durante desarrollo"
+        },
+        {
+          "type": "improvement",
+          "title": "Preparación para implementación de sistema de testing comprehensivo",
+          "description": "Preparación para implementación de sistema de testing comprehensivo"
+        },
+        {
+          "type": "improvement",
+          "title": "Publicación dual automática a npmjs",
+          "description": "Publicación dual automática a npmjs.org y GitHub Packages"
+        },
+        {
+          "type": "improvement",
+          "title": "Configuración ",
+          "description": "Configuración .npmrc para desarrollo seguro con scope"
+        },
+        {
+          "type": "improvement",
+          "title": "Pipeline de release completamente automatizado",
+          "description": "Pipeline de release completamente automatizado"
+        },
+        {
+          "type": "improvement",
+          "title": "Corrección de permisos en workflows de GitHub Actions",
+          "description": "Corrección de permisos en workflows de GitHub Actions"
+        },
+        {
+          "type": "improvement",
+          "title": "Autenticación dual para ambos registries NPM",
+          "description": "Autenticación dual para ambos registries NPM"
+        },
+        {
+          "type": "improvement",
+          "title": "Scripts CI optimizados para publicación en paralelo",
+          "description": "Scripts CI optimizados para publicación en paralelo"
+        },
+        {
+          "type": "improvement",
+          "title": "Scope @mks2508 configurado para prevenir publicaciones accidentales",
+          "description": "Scope @mks2508 configurado para prevenir publicaciones accidentales"
+        },
+        {
+          "type": "improvement",
+          "title": "Autenticación segura usando GITHUB_TOKEN y NPM_TOKEN",
+          "description": "Autenticación segura usando GITHUB_TOKEN y NPM_TOKEN"
+        },
+        {
+          "type": "improvement",
+          "title": "chore: release v0.0.2-alpha.1",
+          "description": "chore: release v0.0.2-alpha.1"
+        },
+        {
+          "type": "improvement",
+          "title": "Fixed publishing pipeline failures por hooks prepublishOnly",
+          "description": "Fixed publishing pipeline failures por hooks prepublishOnly"
+        },
+        {
+          "type": "improvement",
+          "title": "Optimización de publish usando artifacts pre-generados",
+          "description": "Optimización de publish usando artifacts pre-generados"
+        },
+        {
+          "type": "improvement",
+          "title": "chore: release v0.0.2-alpha.2",
+          "description": "chore: release v0.0.2-alpha.2"
+        },
+        {
+          "type": "improvement",
+          "title": "Added bugs URL para better issue tracking",
+          "description": "Added bugs URL para better issue tracking"
+        },
+        {
+          "type": "improvement",
+          "title": "Added homepage URL pointing to GitHub Pages demo",
+          "description": "Added homepage URL pointing to GitHub Pages demo"
+        },
+        {
+          "type": "improvement",
+          "title": "Improved repository URL format for better GitHub integration",
+          "description": "Improved repository URL format for better GitHub integration"
+        },
+        {
+          "type": "improvement",
+          "title": "0.0.2-alpha.2",
+          "description": "0.0.2-alpha.2"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Documentación completa en GitHub Pages con Jekyll",
+          "description": "✅ Documentación completa en GitHub Pages con Jekyll"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ API reference con todos los métodos, tipos e interfaces",
+          "description": "✅ API reference con todos los métodos, tipos e interfaces"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Development guide con casos de uso y patrones",
+          "description": "✅ Development guide con casos de uso y patrones"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ 4 ejemplos prácticos ejecutables (basic, performance, styling, export)",
+          "description": "✅ 4 ejemplos prácticos ejecutables (basic, performance, styling, export)"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Configuración Jekyll para navegación y SEO",
+          "description": "✅ Configuración Jekyll para navegación y SEO"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Estructura docs/ organizada sin duplicaciones",
+          "description": "✅ Estructura docs/ organizada sin duplicaciones"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Jekyll configurado correctamente desde /docs/",
+          "description": "✅ Jekyll configurado correctamente desde /docs/"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Workflow GitHub Actions optimizado para Jekyll",
+          "description": "✅ Workflow GitHub Actions optimizado para Jekyll"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Demo accesible desde documentación",
+          "description": "✅ Demo accesible desde documentación"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Navegación completa API + Development + Demo",
+          "description": "✅ Navegación completa API + Development + Demo"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Estructura GitHub docs estándar",
+          "description": "✅ Estructura GitHub docs estándar"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Demo en raíz (/) del sitio GitHub Pages",
+          "description": "✅ Demo en raíz (/) del sitio GitHub Pages"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Documentación Jekyll en /docs/ del sitio",
+          "description": "✅ Documentación Jekyll en /docs/ del sitio"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Navegación correcta entre demo y documentación",
+          "description": "✅ Navegación correcta entre demo y documentación"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Enlaces actualizados en toda la documentación",
+          "description": "✅ Enlaces actualizados en toda la documentación"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Estructura GitHub Pages estándar optimizada",
+          "description": "✅ Estructura GitHub Pages estándar optimizada"
+        },
+        {
+          "type": "fix",
+          "title": "✅ CSS assets Jekyll cargando correctamente",
+          "description": "✅ CSS assets Jekyll cargando correctamente"
+        },
+        {
+          "type": "fix",
+          "title": "✅ CORS error demo solucionado con jsDelivr",
+          "description": "✅ CORS error demo solucionado con jsDelivr"
+        },
+        {
+          "type": "fix",
+          "title": "✅ Navegación funcionando entre demo y docs",
+          "description": "✅ Navegación funcionando entre demo y docs"
+        },
+        {
+          "type": "fix",
+          "title": "✅ NPM registry configurado para package linking",
+          "description": "✅ NPM registry configurado para package linking"
+        },
+        {
+          "type": "fix",
+          "title": "✅ Preparado para release con token",
+          "description": "✅ Preparado para release con token"
+        },
+        {
+          "type": "improvement",
+          "title": "0.0.2",
+          "description": "0.0.2"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ GitHub Pages CSS assets funcionando",
+          "description": "✅ GitHub Pages CSS assets funcionando"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Demo CORS error resuelto con jsDelivr",
+          "description": "✅ Demo CORS error resuelto con jsDelivr"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ NPM token configurado para auto-publish",
+          "description": "✅ NPM token configurado para auto-publish"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Package se vinculará automáticamente al repo",
+          "description": "✅ Package se vinculará automáticamente al repo"
+        },
+        {
+          "type": "improvement",
+          "title": "✅ Documentación completa accesible",
+          "description": "✅ Documentación completa accesible"
+        },
+        {
+          "type": "improvement",
+          "title": "0.0.3-alpha.0",
+          "description": "0.0.3-alpha.0"
+        }
+      ],
+      "technical_notes": "- Implementado sistema de banner inteligente con 5 variantes: simple, ascii, unicode, svg, animated\n- Agregado auto-detection de capacidades browser (Chrome/Firefox/Safari/Edge)\n- Creado StyleBuilder con método chaining para CSS dinámico\n- Desarrollado CLI completo con comandos: /help, /config, /themes, /banners, /demo\n- Implementado soporte SVG con data URI encoding y animaciones CSS keyframes\n- Agregado sistema de temas con banners específicos (default, dark, neon, minimal)\n- Creado logWithSVG() y logAnimated() para contenido visual avanzado\n- Implementado progressive enhancement con fallbacks robustos\n- Agregado THEME_PRESETS con 4 esquemas visuales completos\n- Desarrollado feature detection para SVG y CSS animations\n- Creado BANNER_VARIANTS con estilos optimizados por browser\n- Implementado theme-specific banners que se activan automáticamente\nUpdated .github/workflows/ci.yml and release.yml to replace direct npm commands with predefined scripts from package.json. This ensures consistency and allows for script optimizations. Created demo.html as a professional showcase importing @mks2508/better-logger from unpkg CDN. Added comprehensive JavaScript demo functions for all features including core logging, visual styling, data export, CLI interface, and advanced features. Implemented modern CSS with backdrop-filter, grid layout, and gradient animations.\nAdded test:performance and test:visual placeholder scripts in package.json that echo status messages and exit with code 0. These scripts will be replaced with actual Playwright-based visual regression tests and performance benchmarks once the comprehensive testing system is implemented.\nAdded permissions 'contents: write', 'packages: write', 'id-token: write' to workflows. Created .npmrc with @mks2508:registry=https://npm.pkg.github.com for scoped packages. Updated package.json with publishConfig defaulting to npmjs.org. Added GitHub Packages authentication setup using GITHUB_TOKEN in workflows. Implemented sequential publishing to both registries in release workflow.\nAdded --ignore-scripts flag to npm publish commands in CI workflows. This prevents the prepublishOnly script from running during CI publishing, avoiding build failures when dependencies like vite are not available in the publishing environment but pre-built artifacts are already present.\nAdded bugs.url field pointing to GitHub issues page and homepage field pointing to GitHub Pages deployment. Updated repository.url to use git+ prefix format as recommended by npm. These changes improve package discoverability and integration with GitHub.\nAgregada estructura docs/ con Jekyll frontmatter:\n- docs/_config.yml para configuración de Jekyll\n- docs/index.md como página principal\n- docs/API.md con documentación completa de la API\n- docs/DEVELOPMENT.md con guía de desarrollo\n- examples/ con 4 archivos .js completos\n- Configurado navegación y permalinks\n- Removido duplicación de .github/docs/\nWorkflow changes:\n- Removido docs-site/ custom directory\n- Agregado jekyll-build-pages@v1 action\n- Source: ./docs, destination: ./_site\n- Copy demo.html y dist/ a docs/\n- Upload pages artifact desde ./_site\n- Navegación _config.yml actualizada\nWorkflow changes:\n- mkdir -p _site/docs estructura\n- cp demo.html _site/index.html (raíz)\n- jekyll-build-pages source: ./docs destination: ./_site/docs\n- baseurl: '/docs' en _config.yml\n- Navegación actualizada: Live Demo url: /\n- Enlaces actualizados en documentación\nJekyll fixes:\n- url: https://mks2508.github.io baseurl: /advanced-logger/docs\n- navegación URLs: /advanced-logger/docs/API, /advanced-logger/docs/DEVELOPMENT\n- demo.html: jsDelivr CDN con local fallback import()\n- .npmrc: //registry.npmjs.org/:_authToken=\nVersion bump: 0.0.2-alpha.2 → 0.0.2\n- Removido publishConfig registry GitHub Packages\n- NPM_TOKEN secret configurado\n- Registry público npmjs.org\n- Workflow CI/CD listo para publish\n- **Sistema de Build Modular**: `vite.config.ts` y `package.json` han sido refactorizados para soportar builds modulares (`full`, `core`, `styling`, `exports`) a través de la variable de entorno `BUILD_MODE`.\n- **Nuevos Workflows de CI/CD**: Se ha añadido una suite completa de workflows en `.github/workflows/` para:\n  - `ci-quality.yml`: Tests de calidad con builds en matriz.\n  - `releases-core.yml`: Releases modulares.\n  - `releases-full.yml`: Pipeline de release completa con integración opcional de Gemini.\n  - `nightly-auto.yml`: Builds nocturnos con detección inteligente de cambios.\n  - `docs-demo.yml`: Despliegue de documentación y demo.\n- **Herramientas de Automatización (`project-utils`)**: Se ha creado un nuevo directorio `project-utils` con scripts para:\n  - `commit-generator.ts`: Generación de commits analizando los cambios con IA.\n  - `version-manager.ts`: Gestión de versiones y `CHANGELOG.json` a partir de commits.\n  - `auto-release-gemini.ts`: Orquestación de releases completas.\n  - `github-release-manager.ts`: Creación de releases en GitHub.\n- **Backup de Workflows Antiguos**: Los workflows anteriores han sido movidos a `.github/workflows-backup/`.",
+      "breaking_changes": [],
+      "commit_hash": "c1dd6e87531c4f94297eb77ce2e6198591d657d7"
+    }
+  ]
+}

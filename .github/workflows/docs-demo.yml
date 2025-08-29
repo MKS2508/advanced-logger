@@ -22,17 +22,15 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
+          bun-version: latest          
       - name: 🔧 Install dependencies
-        run: npm run ci:install
+        run: bun install --frozen-lockfile
 
       - name: 🏗️ Build library for demo
-        run: npm run build:full
+        run: bun run build:full
 
       - name: 🏗️ Setup demo structure
         run: |

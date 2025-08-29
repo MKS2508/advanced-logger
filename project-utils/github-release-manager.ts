@@ -131,9 +131,17 @@ class GitHubReleaseManager {
         return null;
       }
 
-      // Obtener archivos de la distribución
+      // Obtener solo archivos de la distribución (no directorios)
       const files = readdirSync(this.releasesDir)
-        .map(file => join(this.releasesDir, file));
+        .map(file => join(this.releasesDir, file))
+        .filter(filePath => {
+          try {
+            const stat = statSync(filePath);
+            return stat.isFile();
+          } catch {
+            return false;
+          }
+        });
 
       // Determinar si es prerelease
       const isPrerelease = version.includes('-alpha') || version.includes('-beta') || version.includes('-rc') || version.includes('-pre');

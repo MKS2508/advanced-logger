@@ -24,6 +24,8 @@ interface Version {
   breaking_changes: string[];
   commit_hash: string;
   prefix?: string; // pre-alpha, alpha, beta, rc, o undefined para stable
+  affected_modules?: string[]; // Módulos afectados en esta versión
+  module_versions?: Record<string, string>; // Versiones específicas de cada módulo
 }
 
 interface ChangelogData {
@@ -44,13 +46,17 @@ class VersionManager {
   private projectRoot: string;
   private changelogPath: string;
   private packageJsonPath: string;
-  private tauriConfigPath: string;
-  private cargoTomlPath: string;
+  private modulePackagePaths: Record<string, string>;
 
   constructor() {
     this.projectRoot = process.cwd();
     this.changelogPath = join(this.projectRoot, 'CHANGELOG.json');
     this.packageJsonPath = join(this.projectRoot, 'package.json');
+    this.modulePackagePaths = {
+      'core': join(this.projectRoot, 'packages/core/package.json'),
+      'styling': join(this.projectRoot, 'packages/styling/package.json'),
+      'exports': join(this.projectRoot, 'packages/exports/package.json')
+    };
   }
 
   /**
@@ -446,8 +452,9 @@ class VersionManager {
       writeFileSync(this.changelogPath, JSON.stringify(changelogData, null, 2));
       console.log(`💾 Changelog actualizado: ${this.changelogPath}`);
 
-      // Actualizar todos los archivos de configuración
-      await this.updateAllVersionFiles(newVersion);
+      // Detectar módulos afectados y actualizar archivos de configuración
+      const affectedModules = await this.detectAffectedModules();
+      await this.updateAllVersionFiles(newVersion, affectedModules);
 
       console.log(`\n✅ Versionado completado exitosamente!`);
       console.log(`📦 Nueva versión: ${newVersion}`);
@@ -505,11 +512,11 @@ class VersionManager {
   /**
    * Actualiza versión en todos los archivos de configuración
    */
-  private async updateAllVersionFiles(version: string): Promise<void> {
+  private async updateAllVersionFiles(version: string, affectedModules?: string[]): Promise<void> {
     console.log(`🔄 Sincronizando versión ${version} en todos los archivos...`);
     
-    // Actualizar package.json
-    await this.updatePackageVersion(version);
+    // Actualizar package.json principal y modulares
+    await this.updatePackageVersion(version, affectedModules);
     
     // No hay archivos adicionales que actualizar para Better Logger
     
@@ -519,13 +526,73 @@ class VersionManager {
   }
 
   /**
-   * Actualiza versión en package.json
+   * Detecta qué módulos han sido afectados basado en archivos cambiados
    */
-  private async updatePackageVersion(version: string): Promise<void> {
+  private async detectAffectedModules(): Promise<string[]> {
+    try {
+      const changedFiles = await this.gitCommand(['diff', '--name-only', 'HEAD~1']);
+      const affectedModules = new Set<string>();
+
+      for (const file of changedFiles.split('\n').filter(f => f.trim())) {
+        // Detectar por patterns de archivos
+        if (file.includes('core') || file.includes('Logger.ts') || file.includes('constants.ts')) {
+          affectedModules.add('core');
+        }
+        if (file.includes('styling') || file.includes('Style')) {
+          affectedModules.add('styling');
+        }
+        if (file.includes('exports') || file.includes('Handler')) {
+          affectedModules.add('exports');
+        }
+      }
+
+      // Si no se puede determinar, afectar todos los módulos
+      const result = Array.from(affectedModules);
+      if (result.length === 0) {
+        console.log(`⚠️ No se pudo determinar módulos afectados, usando todos`);
+        return ['core', 'styling', 'exports'];
+      }
+
+      console.log(`📋 Módulos afectados detectados: ${result.join(', ')}`);
+      return result;
+    } catch (error) {
+      console.warn(`⚠️ Error detectando módulos afectados:`, error);
+      return ['core', 'styling', 'exports']; // fallback
+    }
+  }
+
+  /**
+   * Actualiza versión en package.json principal y modulares
+   */
+  private async updatePackageVersion(version: string, modules?: string[]): Promise<void> {
+    // Actualizar package.json principal
     const packageJson = JSON.parse(readFileSync(this.packageJsonPath, 'utf-8'));
     packageJson.version = version;
     writeFileSync(this.packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
     console.log(`📦 Actualizado package.json → ${version}`);
+
+    // Actualizar package.json de módulos afectados
+    if (modules && modules.length > 0) {
+      for (const moduleName of modules) {
+        const modulePath = this.modulePackagePaths[moduleName];
+        if (modulePath && existsSync(modulePath)) {
+          const modulePackageJson = JSON.parse(readFileSync(modulePath, 'utf-8'));
+          modulePackageJson.version = version;
+          
+          // Actualizar peerDependencies si existen
+          if (modulePackageJson.peerDependencies) {
+            Object.keys(modulePackageJson.peerDependencies).forEach(dep => {
+              if (dep.startsWith('@mks2508/better-logger')) {
+                modulePackageJson.peerDependencies[dep] = `^${version}`;
+              }
+            });
+          }
+          
+          writeFileSync(modulePath, JSON.stringify(modulePackageJson, null, 2) + '\n');
+          console.log(`📦 Actualizado ${moduleName}/package.json → ${version}`);
+        }
+      }
+    }
   }
 
   /**

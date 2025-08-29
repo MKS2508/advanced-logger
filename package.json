@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger",
-  "version": "0.0.3-alpha.1",
+  "version": "0.2.0",
   "type": "module",
   "description": "State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface",
   "main": "dist/index.js",
@@ -30,7 +30,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && BUILD_MODE=full vite build",
-    "build:full": "tsc && BUILD_MODE=full vite build", 
+    "build:full": "tsc && BUILD_MODE=full vite build",
     "build:core": "tsc && BUILD_MODE=core vite build",
     "build:styling": "tsc && BUILD_MODE=styling vite build",
     "build:exports": "tsc && BUILD_MODE=exports vite build",
@@ -50,7 +50,7 @@
     "commit:ui": "bun project-utils/commit-ui.ts",
     "version:auto": "bun project-utils/version-manager.ts --auto-approve",
     "version:patch": "bun project-utils/version-manager.ts --type patch --auto-approve",
-    "version:minor": "bun project-utils/version-manager.ts --type minor --auto-approve", 
+    "version:minor": "bun project-utils/version-manager.ts --type minor --auto-approve",
     "version:major": "bun project-utils/version-manager.ts --type major --auto-approve",
     "version:alpha": "bun project-utils/version-manager.ts --prefix alpha --auto-approve",
     "version:beta": "bun project-utils/version-manager.ts --prefix beta --auto-approve",

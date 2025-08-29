@@ -1,0 +1,35 @@
+{
+  "name": "@mks2508/better-logger-core",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Core logging functionality for Better Logger - Advanced console logger with hierarchical levels",
+  "main": "dist/index.js",
+  "types": "dist/types/core.d.ts",
+  "keywords": [
+    "logger",
+    "console",
+    "core",
+    "typescript",
+    "browser",
+    "debug"
+  ],
+  "author": "MKS2508",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MKS2508/advanced-logger.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/MKS2508/advanced-logger/issues"
+  },
+  "homepage": "https://mks2508.github.io/advanced-logger/",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

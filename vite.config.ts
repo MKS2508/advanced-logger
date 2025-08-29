@@ -85,13 +85,13 @@ const buildConfigs = {
     plugins: [
       dts({
         ...baseConfig.plugins[0].options,
-        outDir: 'dist/modular/core/types',
+        outDir: 'packages/core/dist/types',
         include: ['src/core.ts', 'src/constants.ts', 'src/types/**/*'],
       })
     ],
     build: {
       ...baseConfig.build,
-      outDir: 'dist/modular/core',
+      outDir: 'packages/core/dist',
       lib: {
         entry: resolve(__dirname, 'src/core.ts'),
         name: 'BetterLoggerCore',
@@ -117,13 +117,13 @@ const buildConfigs = {
     plugins: [
       dts({
         ...baseConfig.plugins[0].options,
-        outDir: 'dist/modular/styling/types',
+        outDir: 'packages/styling/dist/types',
         include: ['src/styling-module.ts', 'src/constants.ts', 'src/types/**/*'],
       })
     ],
     build: {
       ...baseConfig.build,
-      outDir: 'dist/modular/styling',
+      outDir: 'packages/styling/dist',
       lib: {
         entry: resolve(__dirname, 'src/styling-module.ts'),
         name: 'BetterLoggerStyling',
@@ -149,13 +149,13 @@ const buildConfigs = {
     plugins: [
       dts({
         ...baseConfig.plugins[0].options,
-        outDir: 'dist/modular/exports/types',
+        outDir: 'packages/exports/dist/types',
         include: ['src/exports-module.ts', 'src/constants.ts', 'src/types/**/*'],
       })
     ],
     build: {
       ...baseConfig.build,
-      outDir: 'dist/modular/exports',
+      outDir: 'packages/exports/dist',
       lib: {
         entry: resolve(__dirname, 'src/exports-module.ts'),
         name: 'BetterLoggerExports',

@@ -63,14 +63,12 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
+          bun-version: latest
       - name: 🔧 Install dependencies
-        run: npm run ci:install
+        run: bun install --frozen-lockfile
 
       - name: 🤖 Run Gemini AI Analysis
         id: analysis
@@ -78,7 +76,7 @@ jobs:
           echo "🤖 Ejecutando análisis inteligente con Gemini..."
           
           # Usar project-utils auto-release con Gemini
-          npm run release:auto
+          bun run release:auto
           
           # Verificar si se debe hacer release
           if [ -f "project-utils/.temp/gemini-response.md" ]; then
@@ -131,20 +129,18 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
+          bun-version: latest
       - name: 🔧 Install dependencies
-        run: npm run ci:install
+        run: bun install --frozen-lockfile
 
       - name: 🧪 Run tests (unless skipped)
         if: ${{ !inputs.skip_tests }}
         run: |
-          npm run type-check
-          npm run ci:test
+          bun run type-check
+          bun run test
 
       - name: 🏷️ Generate version with AI or manual
         id: version
@@ -162,25 +158,25 @@ jobs:
           # Aplicar versionado según el tipo determinado
           case "$VERSION_TYPE" in
             "auto")
-              npm run version:auto
+              bun run version:auto
               ;;
             "patch")
-              npm run version:patch
+              bun run version:patch
               ;;
             "minor")
-              npm run version:minor
+              bun run version:minor
               ;;
             "major")
-              npm run version:major
+              bun run version:major
               ;;
             "alpha")
-              npm run version:alpha
+              bun run version:alpha
               ;;
             "beta")
-              npm run version:beta
+              bun run version:beta
               ;;
             "stable")
-              npm run version:stable
+              bun run version:stable
               ;;
           esac
           
@@ -227,7 +223,7 @@ jobs:
           echo "📋 Changelog generado exitosamente"
 
       - name: 🏗️ Build all modules
-        run: npm run build:all
+        run: bun run build:all
 
       - name: 📊 Generate bundle analysis
         run: |
@@ -268,12 +264,10 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js for NPM
-        uses: actions/setup-node@v4
+      - name: 📦 Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          bun-version: latest          registry-url: 'https://registry.npmjs.org'
 
       - name: 📥 Download release artifacts
         uses: actions/download-artifact@v4
@@ -281,16 +275,16 @@ jobs:
           name: full-release-${{ needs.prepare-full-release.outputs.version }}
 
       - name: 🔄 Update package version
-        run: npm version ${{ needs.prepare-full-release.outputs.version }} --no-git-tag-version
+        run: bun --bun npm version ${{ needs.prepare-full-release.outputs.version }} --no-git-tag-version
 
       - name: 🚀 Publish to NPM
         run: |
           if [ "${{ needs.prepare-full-release.outputs.is_prerelease }}" == "true" ]; then
             echo "📦 Publishing prerelease to NPM with tag: ${{ needs.prepare-full-release.outputs.release_channel }}"
-            npm publish --access public --tag ${{ needs.prepare-full-release.outputs.release_channel }}
+            bun publish --access public --tag ${{ needs.prepare-full-release.outputs.release_channel }}
           else
             echo "📦 Publishing stable release to NPM"
-            npm publish --access public
+            bun publish --access public
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -305,12 +299,10 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js for GitHub Packages
-        uses: actions/setup-node@v4
+      - name: 📦 Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://npm.pkg.github.com'
+          bun-version: latest          registry-url: 'https://npm.pkg.github.com'
 
       - name: 📥 Download release artifacts
         uses: actions/download-artifact@v4
@@ -318,16 +310,16 @@ jobs:
           name: full-release-${{ needs.prepare-full-release.outputs.version }}
 
       - name: 🔄 Update package version
-        run: npm version ${{ needs.prepare-full-release.outputs.version }} --no-git-tag-version
+        run: bun --bun npm version ${{ needs.prepare-full-release.outputs.version }} --no-git-tag-version
 
       - name: 📦 Publish to GitHub Packages
         run: |
           if [ "${{ needs.prepare-full-release.outputs.is_prerelease }}" == "true" ]; then
             echo "📦 Publishing prerelease to GitHub Packages with tag: ${{ needs.prepare-full-release.outputs.release_channel }}"
-            npm publish --access public --tag ${{ needs.prepare-full-release.outputs.release_channel }}
+            bun publish --access public --tag ${{ needs.prepare-full-release.outputs.release_channel }}
           else
             echo "📦 Publishing stable release to GitHub Packages" 
-            npm publish --access public
+            bun publish --access public
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -152,20 +152,18 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
+          bun-version: latest          
       - name: 🔧 Install dependencies
-        run: npm run ci:install
+        run: bun install --frozen-lockfile
 
       - name: 🏗️ Build library with quality checks
         run: |
-          npm run build:all
-          npm run type-check
-          npm run ci:test
+          bun run build:all
+          bun run type-check
+          bun run test
 
       - name: 🏷️ Generate intelligent nightly version
         id: version
@@ -196,7 +194,7 @@ jobs:
 
       - name: 📝 Update package for nightly
         run: |
-          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+          bun --bun npm version ${{ steps.version.outputs.version }} --no-git-tag-version
 
       - name: 📊 Generate build report
         run: |
@@ -236,7 +234,7 @@ jobs:
 
       - name: 🚀 Publish nightly to NPM
         run: |
-          npm publish --tag nightly --access public
+          bun publish --tag nightly --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -244,7 +242,7 @@ jobs:
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
           echo "@mks2508:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          npm publish --registry=https://npm.pkg.github.com --tag nightly --access public
+          bun publish --registry=https://npm.pkg.github.com --tag nightly --access public
 
       - name: 🏷️ Create nightly tag
         run: |

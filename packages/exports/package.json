@@ -1,0 +1,41 @@
+{
+  "name": "@mks2508/better-logger-exports",
+  "version": "0.2.0", 
+  "type": "module",
+  "description": "Export handlers for Better Logger - File, Remote, Analytics and custom log destinations",
+  "main": "dist/index.js",
+  "types": "dist/types/exports-module.d.ts",
+  "keywords": [
+    "logger",
+    "console",
+    "exports",
+    "handlers",
+    "file",
+    "remote",
+    "analytics",
+    "typescript",
+    "browser"
+  ],
+  "author": "MKS2508",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MKS2508/advanced-logger.git",
+    "directory": "packages/exports"
+  },
+  "bugs": {
+    "url": "https://github.com/MKS2508/advanced-logger/issues"
+  },
+  "homepage": "https://mks2508.github.io/advanced-logger/",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@mks2508/better-logger-core": "^0.2.0"
+  }
+}

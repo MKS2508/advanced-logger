@@ -25,13 +25,14 @@ Eres un asistente especializado en análisis de código y automatización para e
 ## Datos del Análisis
 {
   "stats": {
-    "total_files": 20,
-    "total_additions": 150,
+    "total_files": 24,
+    "total_additions": 162,
     "total_deletions": 3,
     "files_by_extension": {
       "yml": 9,
-      "json": 1,
-      "md": 1,
+      "json": 2,
+      "md": 3,
+      "txt": 1,
       "ts": 8,
       "js": 1
     },
@@ -119,6 +120,38 @@ Eres un asistente especializado en análisis de código y automatización para e
       "diff_preview": "diff --git a/package.json b/package.json\nindex 49619ea..bcde04c 100644\n--- a/package.json\n+++ b/package.json\n@@ -29,32 +29,38 @@\n   \"homepage\": \"https://mks2508.github.io/advanced-logger/\",\n   \"scripts\": {\n     \"dev\": \"vite\",\n-    \"build\": \"tsc && vite build\",\n-    \"build:watch\": \"vite build --watch\",\n-    \"build:analyze\": \"vite build --mode analyze\",\n-    \"preview\": \"vite preview\",\n+    \"build\": \"tsc && BUILD_MODE=full vite build\",\n+    \"build:full\": \"tsc && BUILD_MODE=full vite build\", \n+    \"build:core\": \"tsc && BUILD_MODE=core vite build\",\n+    \"build:styling\": \"tsc && BUILD_MODE=styling vite build\",\n+    \"build:exports\": \"tsc && BUILD_MODE=exports vite build\",\n+    \"build:all\": \"npm run build:full && npm run build:core && npm run build:styling && npm run build:exports\",\n     \"clean\": \"rm -rf dist node_modules/.vite\",\n     \"type-check\": \"tsc --noEmit\",\n-    \"lint\": \"echo 'Linting with ESLint...' && exit 0\",\n-    \"lint:fix\": \"echo 'Fixing with ESLint...' && exit 0\",\n     \"test\": \"echo 'Running tests...' && exit 0\",\n-    \"test:watch\": \"echo 'Running tests in watch mode...' && exit 0\",\n-    \"test:coverage\": \"echo 'Running tests with coverage...' && exit 0\",\n     \"test:performance\": \"echo 'Running performance benchmarks...' && exit 0\",\n     \"test:visual\": \"echo 'Running visual tests...' && exit 0\",\n-    \"prepublishOnly\": \"npm run clean && npm run type-check && npm run build\",\n-    \"release\": \"npm version patch && npm publish --access public\",\n-    \"release:minor\": \"npm versio"
     },
     {
+      "path": "project-utils/.temp/analysis-context.json",
+      "status": "added",
+      "lines_added": 189,
+      "lines_removed": 0,
+      "is_binary": true,
+      "diff_preview": "diff --git a/project-utils/.temp/analysis-context.json b/project-utils/.temp/analysis-context.json\nnew file mode 100644\nindex 0000000..f443d31\n--- /dev/null\n+++ b/project-utils/.temp/analysis-context.json\n@@ -0,0 +1,189 @@\n+{\n+  \"files\": [\n+    {\n+      \"path\": \".github/workflows/ci.yml -> .github/workflows-backup/ci.yml\",\n+      \"status\": \"renamed\",\n+      \"diff\": \"\"\n+    },\n+    {\n+      \"path\": \".github/workflows-backup/nightly.yml\",\n+      \"status\": \"added\",\n+      \"diff\": \"diff --git a/.github/workflows-backup/nightly.yml b/.github/workflows-backup/nightly.yml\\nnew file mode 100644\\nindex 0000000..2618595\\n--- /dev/null\\n+++ b/.github/workflows-backup/nightly.yml\\n@@ -0,0 +1,196 @@\\n+name: Nightly Builds\\n+\\n+on:\\n+  schedule:\\n+    # Ejecutar cada día a las 3:00 AM UTC\\n+    - cron: '0 3 * * *'\\n+  workflow_dispatch:\\n+    inputs:\\n+      force_build:\\n+        description: 'Forzar build aunque no haya cambios'\\n+        required: false\\n+        default: false\\n+        type: boolean\\n+\\n+env:\\n+  NODE_VERSION: '20'\\n+  REGISTRY_URL: 'https://registry.npmjs.org'\\n+\\n+jobs:\\n+  check-changes:\\n+    runs-on: ubuntu-latest\\n+    outputs:\\n+      has_changes: ${{ steps.changes.outputs.has_changes }}\\n+      last_commit: ${{ steps.changes.outputs.last_commit }}\\n+      commit_count: ${{ steps.changes.outputs.commit_count }}\\n+    \\n+    steps:\\n+      - name: 📥 Checkout code\\n+        uses: actions/checkout@v4\\n+        with:\\n+          fetch-depth: 0\\n+\\n+      - name: \ud83d"
+    },
+    {
+      "path": "project-utils/.temp/commit-proposal-2025-08-29T18-19-51.md",
+      "status": "added",
+      "lines_added": 36,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/.temp/commit-proposal-2025-08-29T18-19-51.md b/project-utils/.temp/commit-proposal-2025-08-29T18-19-51.md\nnew file mode 100644\nindex 0000000..8c61574\n--- /dev/null\n+++ b/project-utils/.temp/commit-proposal-2025-08-29T18-19-51.md\n@@ -0,0 +1,36 @@\n+### **ANÁLISIS PRINCIPAL**\n+\n+Se ha detectado una refactorización masiva y la implementación de un sistema de automatización completo para el proyecto. Los cambios introducen una infraestructura de CI/CD modular y avanzada, junto con un conjunto de herramientas locales (`project-utils`) para automatizar la generación de commits, el versionado y la creación de releases, incluyendo integración con IA (Gemini). El sistema de build ha sido modificado para soportar compilaciones modulares (`full`, `core`, `styling`, `exports`), alineándose con los nuevos workflows de GitHub Actions.\n+\n+---\n+\n+### **Propuesta de Commit #1**\n+\n+```markdown\n+feat(build): Implementación de Sistema de Build y Release Modular con IA\n+\n+Se introduce un sistema de automatización y CI/CD completamente nuevo y avanzado para mejorar la eficiencia del desarrollo y la gestión de releases.\n+\n+Este sistema reemplaza los flujos de trabajo monolíticos anteriores con una arquitectura modular y potente que permite builds y releases independientes para los distintos componentes de la librería (`core`, `styling`, `exports`). Además, se integra un conjunto de herramientas en `project-utils` que automatizan tareas clave como la generación de commits, "
+    },
+    {
+      "path": "project-utils/.temp/gemini-prompt.txt",
+      "status": "added",
+      "lines_added": 257,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/.temp/gemini-prompt.txt b/project-utils/.temp/gemini-prompt.txt\nnew file mode 100644\nindex 0000000..b89b032\n--- /dev/null\n+++ b/project-utils/.temp/gemini-prompt.txt\n@@ -0,0 +1,257 @@\n+# Sistema de Análisis Inteligente - Better Logger\n+\n+Eres un asistente especializado en análisis de código y automatización para el proyecto Better Logger. Tu función es proporcionar respuestas estructuradas, precisas y consistentes que puedan ser parseadas automáticamente.\n+\n+## REGLAS CRÍTICAS DE FORMATO\n+\n+1. **FORMATO DE RESPUESTA OBLIGATORIO**: Todas tus respuestas deben seguir exactamente el formato especificado más abajo.\n+2. **CONSISTENCIA**: Mantén la misma estructura sin importar la complejidad del análisis.\n+3. **PARSEABLE**: El formato debe ser fácil de procesar automáticamente con expresiones regulares.\n+4. **BLOQUES MARKDOWN**: Usa ```markdown para bloques de código cuando se especifique.\n+5. **SECCIONES TÉCNICAS**: Siempre incluye las secciones <technical> y <changelog> cuando sea aplicable.\n+\n+## Contexto del Proyecto\n+**Nombre**: Better Logger\n+**Descripción**: State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface\n+**Versión Actual**: 0.0.3-alpha.0\n+**Stack Tecnológico**: TypeScript, Vite, Browser, CSS-in-JS, SVG\n+**Plataforma Objetivo**: Browser (Chrome, Firefox, Safari, Edge)\n+\n+---\n+\n+\n+# ANÁLISIS DE COMMITS\n+\n+## Datos del Análisis\n+{\n+  \"stats\": {\n+    \"total_files\": 20,\n+    \"total_additions\": 150,"
+    },
+    {
+      "path": "project-utils/.temp/gemini-response.md",
+      "status": "added",
+      "lines_added": 36,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/.temp/gemini-response.md b/project-utils/.temp/gemini-response.md\nnew file mode 100644\nindex 0000000..8c61574\n--- /dev/null\n+++ b/project-utils/.temp/gemini-response.md\n@@ -0,0 +1,36 @@\n+### **ANÁLISIS PRINCIPAL**\n+\n+Se ha detectado una refactorización masiva y la implementación de un sistema de automatización completo para el proyecto. Los cambios introducen una infraestructura de CI/CD modular y avanzada, junto con un conjunto de herramientas locales (`project-utils`) para automatizar la generación de commits, el versionado y la creación de releases, incluyendo integración con IA (Gemini). El sistema de build ha sido modificado para soportar compilaciones modulares (`full`, `core`, `styling`, `exports`), alineándose con los nuevos workflows de GitHub Actions.\n+\n+---\n+\n+### **Propuesta de Commit #1**\n+\n+```markdown\n+feat(build): Implementación de Sistema de Build y Release Modular con IA\n+\n+Se introduce un sistema de automatización y CI/CD completamente nuevo y avanzado para mejorar la eficiencia del desarrollo y la gestión de releases.\n+\n+Este sistema reemplaza los flujos de trabajo monolíticos anteriores con una arquitectura modular y potente que permite builds y releases independientes para los distintos componentes de la librería (`core`, `styling`, `exports`). Además, se integra un conjunto de herramientas en `project-utils` que automatizan tareas clave como la generación de commits, el versionado semántico y la publicación en GitHub, utilizan"
+    },
+    {
       "path": "project-utils/README.md",
       "status": "added",
       "lines_added": 118,
@@ -137,10 +170,10 @@ Eres un asistente especializado en análisis de código y automatización para e
     {
       "path": "project-utils/commit-generator.ts",
       "status": "added",
-      "lines_added": 858,
+      "lines_added": 861,
       "lines_removed": 0,
       "is_binary": true,
-      "diff_preview": "diff --git a/project-utils/commit-generator.ts b/project-utils/commit-generator.ts\nnew file mode 100755\nindex 0000000..1e0df07\n--- /dev/null\n+++ b/project-utils/commit-generator.ts\n@@ -0,0 +1,858 @@\n+#!/usr/bin/env node\n+\n+/**\n+ * Generador Automático de Commits con Gemini CLI\n+ * Analiza todos los cambios del repositorio y genera commits coherentes\n+ * siguiendo los patrones establecidos para el proyecto Better Logger\n+ */\n+\n+import { spawn } from 'child_process';\n+import { readFileSync, writeFileSync, existsSync } from 'fs';\n+import { createCommitPrompt, GeminiResponseParser, BETTER_LOGGER_PROJECT_CONFIG, type GeminiPromptConfig } from './prompt-templates';\n+import { join } from 'path';\n+\n+interface FileChange {\n+  path: string;\n+  status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';\n+  diff?: string;\n+  lines_added?: number;\n+  lines_removed?: number;\n+  is_binary?: boolean;\n+}\n+\n+interface GitStats {\n+  total_files: number;\n+  total_additions: number;\n+  total_deletions: number;\n+  files_by_extension: Record<string, number>;\n+  directories_affected: string[];\n+}\n+\n+interface CommitAnalysis {\n+  files: FileChange[];\n+  stats: GitStats;\n+  project_context: {\n+    name: string;\n+    description: string;\n+    tech_stack: string[];\n+    target_platform: string;\n+  };\n+  commit_patterns: string;\n+}\n+\n+interface CommitProposal {\n+  title: string;\n+  description: string;\n+  technical: string;\n+  changelog: string;\n+  files?: string[];\n+}\n+\n+class CommitGenerator {\n"
+      "diff_preview": "diff --git a/project-utils/commit-generator.ts b/project-utils/commit-generator.ts\nnew file mode 100755\nindex 0000000..2e6cda9\n--- /dev/null\n+++ b/project-utils/commit-generator.ts\n@@ -0,0 +1,861 @@\n+#!/usr/bin/env node\n+\n+/**\n+ * Generador Automático de Commits con Gemini CLI\n+ * Analiza todos los cambios del repositorio y genera commits coherentes\n+ * siguiendo los patrones establecidos para el proyecto Better Logger\n+ */\n+\n+import { spawn } from 'child_process';\n+import { readFileSync, writeFileSync, existsSync } from 'fs';\n+import { createCommitPrompt, GeminiResponseParser, BETTER_LOGGER_PROJECT_CONFIG, type GeminiPromptConfig } from './prompt-templates';\n+import { join } from 'path';\n+\n+interface FileChange {\n+  path: string;\n+  status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';\n+  diff?: string;\n+  lines_added?: number;\n+  lines_removed?: number;\n+  is_binary?: boolean;\n+}\n+\n+interface GitStats {\n+  total_files: number;\n+  total_additions: number;\n+  total_deletions: number;\n+  files_by_extension: Record<string, number>;\n+  directories_affected: string[];\n+}\n+\n+interface CommitAnalysis {\n+  files: FileChange[];\n+  stats: GitStats;\n+  project_context: {\n+    name: string;\n+    description: string;\n+    tech_stack: string[];\n+    target_platform: string;\n+  };\n+  commit_patterns: string;\n+}\n+\n+interface CommitProposal {\n+  title: string;\n+  description: string;\n+  technical: string;\n+  changelog: string;\n+  files?: string[];\n+}\n+\n+class CommitGenerator {\n"
     },
     {
       "path": "project-utils/commit-ui.ts",

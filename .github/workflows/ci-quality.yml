@@ -29,10 +29,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20, 21]
+        bun-version: ["1.0", "latest"]
         build-mode: [full, core, styling, exports]
     
-    name: Test Node ${{ matrix.node-version }} - ${{ matrix.build-mode }}
+    name: Test Bun ${{ matrix.bun-version }} - ${{ matrix.build-mode }}
     
     steps:
       - name: 📥 Checkout code
@@ -40,31 +40,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 📦 Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: 📦 Setup Bun ${{ matrix.bun-version }}
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          bun-version: ${{ matrix.bun-version }}
 
       - name: 🔧 Install dependencies
-        run: npm run ci:install
+        run: bun install --frozen-lockfile
 
       - name: 🔍 Type checking
-        run: npm run type-check
+        run: bun run type-check
 
       - name: 🏗️ Build ${{ matrix.build-mode }}
         run: |
           if [ "${{ matrix.build-mode }}" = "full" ]; then
-            npm run build:all
+            bun run build:all
           else
-            npm run build:${{ matrix.build-mode }}
+            bun run build:${{ matrix.build-mode }}
           fi
 
       - name: 🧪 Run tests
-        run: npm run ci:test
+        run: bun run ci:test
 
       - name: 📊 Check bundle sizes
-        run: npm run size-limit
+        run: bun run size-limit
 
       - name: 📤 Upload build artifacts (Node 20 only)
         uses: actions/upload-artifact@v4
@@ -91,7 +90,7 @@ jobs:
           cache: 'npm'
 
       - name: 🔧 Install dependencies
-        run: npm run ci:install
+        run: bun install --frozen-lockfile
 
       - name: 📥 Download build artifacts
         uses: actions/download-artifact@v4
@@ -100,7 +99,7 @@ jobs:
           path: dist/
 
       - name: ⚡ Performance benchmarks
-        run: npm run test:performance
+        run: bun run test:performance
 
       - name: 📊 Bundle analysis
         run: |
@@ -148,7 +147,7 @@ jobs:
           cache: 'npm'
 
       - name: 🔧 Install dependencies
-        run: npm run ci:install
+        run: bun install --frozen-lockfile
 
       - name: 📥 Download build artifacts
         uses: actions/download-artifact@v4
@@ -160,7 +159,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: 🖼️ Run visual tests
-        run: npm run test:visual
+        run: bun run test:visual
 
       - name: 📤 Upload test results
         uses: actions/upload-artifact@v4
@@ -238,7 +237,7 @@ jobs:
           cache: 'npm'
 
       - name: 🔧 Install dependencies
-        run: npm run ci:install
+        run: bun install --frozen-lockfile
 
       - name: 🔍 Code analysis
         run: |
@@ -248,7 +247,7 @@ jobs:
           echo "## 📊 Code Quality Report" > quality-report.md
           echo "### TypeScript Analysis" >> quality-report.md
           echo "\`\`\`" >> quality-report.md
-          npm run type-check >> quality-report.md 2>&1 || echo "TypeScript issues detected" >> quality-report.md
+          bun run type-check >> quality-report.md 2>&1 || echo "TypeScript issues detected" >> quality-report.md
           echo "\`\`\`" >> quality-report.md
           
           echo "### File Statistics" >> quality-report.md
@@ -278,7 +277,7 @@ jobs:
           cache: 'npm'
 
       - name: 🔧 Install dependencies
-        run: npm run ci:install
+        run: bun install --frozen-lockfile
 
       - name: 🧪 Test project-utils scripts
         run: |
@@ -305,7 +304,7 @@ jobs:
           CRITICAL_SCRIPTS=("build" "build:all" "commit:auto" "version:auto" "workflow:full")
           
           for script in "${CRITICAL_SCRIPTS[@]}"; do
-            if npm run --silent "$script" --help >/dev/null 2>&1; then
+            if bun run --silent "$script" --help >/dev/null 2>&1; then
               echo "✅ Script '$script' is valid"
             else
               echo "❌ Script '$script' has issues"

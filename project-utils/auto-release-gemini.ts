@@ -160,7 +160,10 @@ class AutoReleaseManagerAI {
     
     try {
       await this.runCommand('git', ['fetch', 'origin']);
-      const result = await this.runCommand('git', ['log', 'HEAD..origin/master', '--oneline']);
+      // Detectar rama principal remota
+      const currentBranch = await this.runCommand('git', ['branch', '--show-current']);
+      const remoteBranch = `origin/${currentBranch.trim()}`;
+      const result = await this.runCommand('git', ['log', `HEAD..${remoteBranch}`, '--oneline']);
       
       if (result.stdout.trim()) {
         console.log('📥 Cambios remotos detectados. Actualizando...');
@@ -171,7 +174,7 @@ class AutoReleaseManagerAI {
           await this.runCommand('git', ['stash', 'push', '-m', 'auto-release-stash']);
         }
         
-        await this.runCommand('git', ['pull', 'origin', 'master']);
+        await this.runCommand('git', ['pull', 'origin', currentBranch.trim()]);
         console.log('✅ Actualización completa');
       } else {
         console.log('✅ Repositorio actualizado');

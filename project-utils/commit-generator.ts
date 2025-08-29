@@ -487,7 +487,8 @@ class CommitGenerator {
         ? proposal.files 
         : allFiles
             .map(f => f.path)
-            .filter(path => !path.includes('.temp/') && !path.startsWith('.release-notes-'));
+            .filter(path => !path.includes('.temp/') && !path.startsWith('.release-notes-'))
+            .filter(path => !path.includes(' -> ')); // Filtrar sintaxis de rename "file.yml -> backup/file.yml"
       
       // Agregar archivos específicos al staging area
       for (const file of targetFiles) {
