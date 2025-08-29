@@ -1,8 +1,28 @@
 {
   "name": "advanced-logger",
-  "private": true,
-  "version": "0.0.0",
+  "version": "4.0.0-alpha.1",
   "type": "module",
+  "description": "State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "keywords": [
+    "logger",
+    "console",
+    "styling",
+    "css",
+    "svg",
+    "animation",
+    "typescript",
+    "browser",
+    "cli",
+    "debug"
+  ],
+  "author": "MKS2508",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MKS2508/advanced-logger.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
