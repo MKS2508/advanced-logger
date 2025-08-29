@@ -14,10 +14,29 @@ import {
   createScopedLogger,
   cli,
   setTheme,
-} from './Logger.ts';
+  setBannerType,
+  showBanner,
+  logWithSVG,
+  logAnimated,
+  createStyle,
+  stylePresets
+} from './index.js';
 
-// The init banner from Logger.ts is displayed automatically on import.
-console.log("Advanced Logger script loaded. Test functions are now available.");
+import {
+  demonstrateBanners,
+  demonstrateThemes,
+  demonstrateSVG,
+  demonstrateAnimations,
+  demonstrateCLI,
+  demonstrateExports,
+  demonstrateAllFeatures as demoAllFeatures
+} from './example.js';
+
+console.log('%cBetter Logger Demo Ready! 🚀', 
+  'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 14px;');
+  
+console.log('📋 Available test functions: testDebug(), testBanners(), testThemes(), and more!');
+console.log('💻 CLI Available: cli("/help") for commands');
 
 function testDebug() {
   debug("This is a debug message.", { user: "test", id: 123 });
@@ -86,8 +105,33 @@ function testTrace() {
   innerFunction();
 }
 
+// Visual feature tests
+function testBanners() {
+  demonstrateBanners();
+}
+
+function testThemes() {
+  demonstrateThemes();
+}
+
+function testSVG() {
+  demonstrateSVG();
+}
+
+function testAnimations() {
+  demonstrateAnimations();
+}
+
+function testCLI() {
+  demonstrateCLI();
+}
+
+function testExports() {
+  demonstrateExports();
+}
+
 function testAllFeatures() {
-  group("🌟 Demonstrating All Logger Features");
+  group("🌟 Demonstrating Core Logger Features");
   testDebug();
   testInfo();
   testWarn();
@@ -100,10 +144,16 @@ function testAllFeatures() {
   testScopedLogger();
   testTrace();
   groupEnd();
+  
+  setTimeout(() => {
+    info('🎨 Running visual features demo...');
+    demoAllFeatures();
+  }, 2000);
 }
 
 // Expose functions to global scope for onclick attributes in index.html
 if (typeof window !== 'undefined') {
+  // Core logging tests
   (window as any).testDebug = testDebug;
   (window as any).testInfo = testInfo;
   (window as any).testWarn = testWarn;
@@ -117,10 +167,30 @@ if (typeof window !== 'undefined') {
   (window as any).testTrace = testTrace;
   (window as any).testAllFeatures = testAllFeatures;
   
-  // Expose CLI functions globally
+  // Visual feature tests  
+  (window as any).testBanners = testBanners;
+  (window as any).testThemes = testThemes;
+  (window as any).testSVG = testSVG;
+  (window as any).testAnimations = testAnimations;
+  (window as any).testCLI = testCLI;
+  (window as any).testExports = testExports;
+  
+  // Direct access to library functions
   (window as any).cli = cli;
   (window as any).setTheme = setTheme;
+  (window as any).setBannerType = setBannerType;
+  (window as any).showBanner = showBanner;
+  (window as any).logWithSVG = logWithSVG;
+  (window as any).logAnimated = logAnimated;
+  (window as any).createStyle = createStyle;
+  (window as any).stylePresets = stylePresets;
   
-  // Display CLI usage info
-  console.log('%c🚀 Logger CLI Available! Try: cli("/help")', 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 12px; border-radius: 4px; font-weight: bold;');
+  // Display welcome info
+  setTimeout(() => {
+    console.log('%c💡 Quick Start Guide', stylePresets.info);
+    console.log('🎨 Visual: testBanners(), testThemes(), testSVG(), testAnimations()');
+    console.log('📊 Core: testTable(), testGrouping(), testTiming(), testTrace()');
+    console.log('💻 CLI: cli("/help") - Try commands like "/theme neon", "/banner ascii"');
+    console.log('🌟 Full Demo: testAllFeatures()');
+  }, 1000);
 }

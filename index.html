@@ -209,8 +209,8 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>🚀 Advanced Logger Test</h1>
-            <p>State-of-the-art console logging with advanced styling</p>
+            <h1>🚀 Better Logger Demo</h1>
+            <p>Complete library with styling, SVG, animations, export & CLI features</p>
             <div class="console-note">
                 📝 Open your browser's Developer Console to see the styled log output
                 <button class="devtools-button" id="devtools-btn" onclick="tryOpenDevTools()">
@@ -245,7 +245,31 @@
             </section>
 
             <section class="advanced-section">
-                <h2>Advanced Features</h2>
+                <h2>Visual Features</h2>
+                <div class="button-grid">
+                    <button class="log-button info" onclick="testBanners()">
+                        🎨 Banner System
+                    </button>
+                    <button class="log-button debug" onclick="testThemes()">
+                        🌈 Theme Switching
+                    </button>
+                    <button class="log-button success" onclick="testSVG()">
+                        🖼️ SVG Backgrounds
+                    </button>
+                    <button class="log-button warn" onclick="testAnimations()">
+                        ✨ CSS Animations
+                    </button>
+                    <button class="log-button info" onclick="testCLI()">
+                        💻 CLI Commands
+                    </button>
+                    <button class="log-button critical" onclick="testExports()">
+                        📤 Export Features
+                    </button>
+                </div>
+            </section>
+            
+            <section class="advanced-section">
+                <h2>Core Features</h2>
                 <div class="button-grid">
                     <button class="log-button info" onclick="testTable()">
                         📊 Table Display
@@ -270,7 +294,7 @@
         </main>
 
         <footer class="footer">
-            <p>Advanced Logger v2.0.0 | Built with TypeScript & Modern Web Standards</p>
+            <p>Better Logger v0.0.1 | Built with TypeScript & Modern Web Standards</p>
         </footer>
     </div>
     <script>

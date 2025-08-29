@@ -1,0 +1,307 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY_URL: 'https://registry.npmjs.org'
+
+jobs:
+  # ===== BUILD & TEST =====
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20, 21]
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          registry-url: ${{ env.REGISTRY_URL }}
+
+      - name: 🔧 Install dependencies
+        run: npm run ci:install
+
+      - name: 🔍 Type checking
+        run: npm run type-check
+
+      - name: 🧹 Lint code
+        run: npm run lint
+
+      - name: 🏗️ Build library
+        run: npm run ci:build
+
+      - name: 🧪 Run tests
+        run: npm run ci:test
+
+      - name: 📊 Check bundle sizes
+        run: npm run size-limit
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == 20
+        with:
+          name: dist-files
+          path: dist/
+          retention-days: 30
+
+  # ===== VISUAL TESTING =====
+  visual-tests:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm run ci:install
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+          path: dist/
+
+      - name: 🎭 Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: 🖼️ Run visual tests
+        run: npm run ci:test:visual
+
+      - name: 📤 Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 30
+
+      - name: 📤 Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-screenshots
+          path: test-results/
+          retention-days: 30
+
+  # ===== NPM PUBLISH =====
+  publish:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, visual-tests]
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: ${{ env.REGISTRY_URL }}
+
+      - name: 🔧 Install dependencies
+        run: npm run ci:install
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+          path: dist/
+
+      - name: 🚀 Publish to NPM
+        run: npm run ci:publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: 📝 Extract release notes
+        id: extract_release
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=v$VERSION" >> $GITHUB_OUTPUT
+
+  # ===== GITHUB RELEASE =====
+  github-release:
+    runs-on: ubuntu-latest
+    needs: publish
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+          path: dist/
+
+      - name: 📦 Create release archive
+        run: |
+          tar -czf better-logger-dist.tar.gz dist/
+          zip -r better-logger-dist.zip dist/
+
+      - name: 🏷️ Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Better Logger ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            ## 🚀 Better Logger ${{ github.ref_name }}
+            
+            ### 📦 Installation
+            ```bash
+            npm install @mks2508/better-logger@${{ github.ref_name }}
+            ```
+            
+            ### 📊 Bundle Sizes
+            - **Full library**: ~64KB (13KB gzipped)
+            - **Core module**: ~6KB (2KB gzipped)  
+            - **Styling module**: ~26KB (5KB gzipped)
+            - **Exports module**: ~12KB (3KB gzipped)
+            
+            ### 🔗 Links
+            - [📚 Documentation](https://mks2508.github.io/advanced-logger/)
+            - [🧩 Examples](https://github.com/MKS2508/advanced-logger/tree/main/examples)
+            - [📋 Changelog](https://github.com/MKS2508/advanced-logger/blob/main/CHANGELOG.md)
+            
+            ### 📁 Assets
+            - `better-logger-dist.tar.gz` - Distribution files (tar.gz)
+            - `better-logger-dist.zip` - Distribution files (zip)
+          files: |
+            better-logger-dist.tar.gz
+            better-logger-dist.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ===== DEPLOY GITHUB PAGES =====
+  deploy-docs:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm run ci:install
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+          path: dist/
+
+      - name: 🏗️ Build documentation site
+        run: |
+          mkdir -p docs-site
+          cp demo.html docs-site/index.html
+          cp -r dist/ docs-site/dist/
+          cp -r docs/ docs-site/docs/
+          cp README.md docs-site/
+
+      - name: 📤 Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📤 Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ===== SECURITY & QUALITY =====
+  security-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔒 Security audit
+        run: npm audit --audit-level=high
+
+      - name: 📊 Check for outdated packages
+        run: npm outdated || true
+
+  # ===== PERFORMANCE TESTING =====
+  performance:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm run ci:install
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+          path: dist/
+
+      - name: ⚡ Performance benchmarks
+        run: npm run ci:test:performance
+
+      - name: 📊 Bundle analysis
+        run: |
+          echo "## Bundle Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "### Size Breakdown" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -la dist/ >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
