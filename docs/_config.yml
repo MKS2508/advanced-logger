@@ -1,0 +1,36 @@
+title: "Better Logger Documentation"
+description: "State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface"
+theme: minima
+url: "https://mks2508.github.io/advanced-logger"
+baseurl: ""
+
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  syntax_highlighter: rouge
+
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+header_pages:
+  - API.md
+  - DEVELOPMENT.md
+
+navigation:
+  - title: Home
+    url: /
+  - title: API Reference
+    url: /API
+  - title: Development Guide
+    url: /DEVELOPMENT

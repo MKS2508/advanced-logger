@@ -1,0 +1,16 @@
+{
+  "name": "better-logger-examples",
+  "version": "1.0.0",
+  "description": "Examples for Better Logger package",
+  "type": "module",
+  "scripts": {
+    "basic": "node basic-logging.js",
+    "performance": "node performance-timing.js", 
+    "styling": "node styling-themes.js",
+    "export": "node data-export.js",
+    "all": "npm run basic && npm run performance && npm run styling && npm run export"
+  },
+  "dependencies": {
+    "@mks2508/better-logger": "^0.0.2-alpha.2"
+  }
+}

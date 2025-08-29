@@ -1,3 +1,8 @@
+---
+layout: default
+title: Better Logger Documentation
+---
+
 # 🚀 Better Logger
 
 **State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface**
@@ -71,21 +76,21 @@ import { ExportLogger } from '@mks2508/better-logger/exports';
 | **Exports** | 12KB | 3KB | Production logging, analytics |
 | **Full** | 64KB | 13KB | Complete feature set |
 
-## 📚 Documentation & Learning
+## 📚 Documentation
+
+### 🎮 Interactive Demo
+- **[🌟 Live Demo](https://mks2508.github.io/advanced-logger/demo.html)** - Try all features in your browser
 
 ### 📖 Complete Documentation
-- **[📋 API Reference](docs/API.md)** - Complete method documentation
-- **[🚀 Core Module](docs/CORE.md)** - Essential logging features
-- **[🎨 Styling Module](docs/STYLING.md)** - Themes and visual customization  
-- **[📤 Exports Module](docs/EXPORTS.md)** - Data export and remote logging
+- **[📋 API Reference](API)** - Complete method documentation
+- **[🛠️ Development Guide](DEVELOPMENT)** - Use cases and development workflow
 
-### 🎮 Interactive Learning
-- **[🌟 Live Demo](https://mks2508.github.io/advanced-logger/)** - Try all features in your browser
-- **[📁 Examples](examples/)** - 4 comprehensive tutorials with runnable code
-
-### 🏃 Quick Examples
+### 🏃 Examples
 ```bash
-cd examples && npm install
+# Clone and try examples
+git clone https://github.com/MKS2508/advanced-logger.git
+cd advanced-logger/examples && npm install
+
 npm run basic        # Learn fundamentals
 npm run performance  # Master timing operations
 npm run styling      # Explore visual features
@@ -157,18 +162,17 @@ const csvData = await logger.exportLogs('csv', {
 ## 🔗 Resources
 
 - 📦 **[NPM Package](https://www.npmjs.com/package/@mks2508/better-logger)**
-- 🎮 **[Interactive Demo](https://mks2508.github.io/advanced-logger/)**
-- 📚 **[Documentation](docs/)**
-- 🧩 **[Examples](examples/)**
+- 📚 **[GitHub Repository](https://github.com/MKS2508/advanced-logger)**
+- 🧩 **[Examples](https://github.com/MKS2508/advanced-logger/tree/main/examples)**
 - 🐛 **[Issues & Support](https://github.com/MKS2508/advanced-logger/issues)**
 
 ## 🤝 Contributing
 
-Contributions welcome! See our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions welcome! See our [Contributing Guide](https://github.com/MKS2508/advanced-logger/blob/main/CONTRIBUTING.md) for details.
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/MKS2508/advanced-logger/blob/main/LICENSE) for details.
 
 ---
 
