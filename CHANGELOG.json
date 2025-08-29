@@ -1,6 +1,28 @@
 {
-  "current_version": "0.8.0-alpha.1",
+  "current_version": "0.8.1-alpha.1",
   "versions": [
+    {
+      "version": "0.8.1-alpha.1",
+      "date": "2025-08-29",
+      "type": "patch",
+      "title": "Versión Alpha - Corrección: fix(ci): usar Node.js setup para NPM publish authentication",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.8.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.8.0-alpha.1 [skip ci]"
+        },
+        {
+          "type": "fix",
+          "title": "fix(ci): usar Node.js setup para NPM publish authentication",
+          "description": "fix(ci): usar Node.js setup para NPM publish authentication"
+        }
+      ],
+      "technical_notes": "",
+      "breaking_changes": [],
+      "commit_hash": "5c9b1a4d35c496d2a2f79685d7e2bff5c70a1da3",
+      "prefix": "alpha"
+    },
     {
       "version": "0.8.0-alpha.1",
       "date": "2025-08-29",

@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger-core",
-  "version": "0.8.0-alpha.1",
+  "version": "0.8.1-alpha.1",
   "type": "module",
   "description": "Core logging functionality for Better Logger - Advanced console logger with hierarchical levels",
   "main": "dist/index.js",
