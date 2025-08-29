@@ -1,0 +1,257 @@
+# Sistema de Análisis Inteligente - Better Logger
+
+Eres un asistente especializado en análisis de código y automatización para el proyecto Better Logger. Tu función es proporcionar respuestas estructuradas, precisas y consistentes que puedan ser parseadas automáticamente.
+
+## REGLAS CRÍTICAS DE FORMATO
+
+1. **FORMATO DE RESPUESTA OBLIGATORIO**: Todas tus respuestas deben seguir exactamente el formato especificado más abajo.
+2. **CONSISTENCIA**: Mantén la misma estructura sin importar la complejidad del análisis.
+3. **PARSEABLE**: El formato debe ser fácil de procesar automáticamente con expresiones regulares.
+4. **BLOQUES MARKDOWN**: Usa ```markdown para bloques de código cuando se especifique.
+5. **SECCIONES TÉCNICAS**: Siempre incluye las secciones <technical> y <changelog> cuando sea aplicable.
+
+## Contexto del Proyecto
+**Nombre**: Better Logger
+**Descripción**: State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface
+**Versión Actual**: 0.0.3-alpha.0
+**Stack Tecnológico**: TypeScript, Vite, Browser, CSS-in-JS, SVG
+**Plataforma Objetivo**: Browser (Chrome, Firefox, Safari, Edge)
+
+---
+
+
+# ANÁLISIS DE COMMITS
+
+## Datos del Análisis
+{
+  "stats": {
+    "total_files": 20,
+    "total_additions": 150,
+    "total_deletions": 3,
+    "files_by_extension": {
+      "yml": 9,
+      "json": 1,
+      "md": 1,
+      "ts": 8,
+      "js": 1
+    },
+    "directories_affected": [
+      ".github",
+      "...",
+      "package.json",
+      "project-utils",
+      "vite.config.ts"
+    ]
+  },
+  "files": [
+    {
+      "path": ".github/workflows/ci.yml -> .github/workflows-backup/ci.yml",
+      "status": "renamed",
+      "diff_preview": "No diff available"
+    },
+    {
+      "path": ".github/workflows-backup/nightly.yml",
+      "status": "added",
+      "lines_added": 196,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/.github/workflows-backup/nightly.yml b/.github/workflows-backup/nightly.yml\nnew file mode 100644\nindex 0000000..2618595\n--- /dev/null\n+++ b/.github/workflows-backup/nightly.yml\n@@ -0,0 +1,196 @@\n+name: Nightly Builds\n+\n+on:\n+  schedule:\n+    # Ejecutar cada día a las 3:00 AM UTC\n+    - cron: '0 3 * * *'\n+  workflow_dispatch:\n+    inputs:\n+      force_build:\n+        description: 'Forzar build aunque no haya cambios'\n+        required: false\n+        default: false\n+        type: boolean\n+\n+env:\n+  NODE_VERSION: '20'\n+  REGISTRY_URL: 'https://registry.npmjs.org'\n+\n+jobs:\n+  check-changes:\n+    runs-on: ubuntu-latest\n+    outputs:\n+      has_changes: ${{ steps.changes.outputs.has_changes }}\n+      last_commit: ${{ steps.changes.outputs.last_commit }}\n+      commit_count: ${{ steps.changes.outputs.commit_count }}\n+    \n+    steps:\n+      - name: 📥 Checkout code\n+        uses: actions/checkout@v4\n+        with:\n+          fetch-depth: 0\n+\n+      - name: 🔍 Check for changes since last nightly\n+        id: changes\n+        run: |\n+          # Buscar último tag nightly\n+          LAST_NIGHTLY=$(git tag -l \"nightly-*\" | sort -V | tail -1 || echo \"\")\n+          \n+          if [ -z \"$LAST_NIGHTLY\" ]; then\n+            # No hay nightlies previos, verificar desde hace 24 horas\n+            SINCE_DATE=$(date -d '24 hours ago' --iso-8601)\n+            COMMITS_COUNT=$(git log --since=\"$SINCE_DATE\" --oneline | wc -l)\n+          else\n+            # Verificar desde último nightl"
+    },
+    {
+      "path": ".github/workflows-backup/release-optimized.yml",
+      "status": "added",
+      "lines_added": 373,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/.github/workflows-backup/release-optimized.yml b/.github/workflows-backup/release-optimized.yml\nnew file mode 100644\nindex 0000000..846bd9b\n--- /dev/null\n+++ b/.github/workflows-backup/release-optimized.yml\n@@ -0,0 +1,373 @@\n+name: Optimized Release Pipeline\n+\n+on:\n+  workflow_dispatch:\n+    inputs:\n+      release_type:\n+        description: 'Tipo de release'\n+        required: true\n+        default: 'auto'\n+        type: choice\n+        options:\n+          - auto\n+          - patch\n+          - minor\n+          - major\n+          - alpha\n+          - beta\n+          - stable\n+      use_gemini:\n+        description: 'Usar Gemini AI para versionado'\n+        required: false\n+        default: true\n+        type: boolean\n+      skip_tests:\n+        description: 'Saltar tests (no recomendado)'\n+        required: false\n+        default: false\n+        type: boolean\n+      target_registry:\n+        description: 'Registro objetivo'\n+        required: false\n+        default: 'both'\n+        type: choice\n+        options:\n+          - npm\n+          - github\n+          - both\n+\n+env:\n+  NODE_VERSION: '20'\n+\n+jobs:\n+  # ===== VALIDATION & VERSIONING =====\n+  prepare-release:\n+    runs-on: ubuntu-latest\n+    \n+    outputs:\n+      version: ${{ steps.version.outputs.version }}\n+      tag: ${{ steps.version.outputs.tag }}\n+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}\n+      changelog: ${{ steps.version.outputs.changelog }}\n+      release_channel: ${{ steps.v"
+    },
+    {
+      "path": ".github/workflows/release.yml -> .github/workflows-backup/release.yml",
+      "status": "renamed",
+      "diff_preview": "No diff available"
+    },
+    {
+      "path": ".github/workflows/ci-quality.yml",
+      "status": "added",
+      "lines_added": 357,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/.github/workflows/ci-quality.yml b/.github/workflows/ci-quality.yml\nnew file mode 100644\nindex 0000000..5974ff0\n--- /dev/null\n+++ b/.github/workflows/ci-quality.yml\n@@ -0,0 +1,357 @@\n+name: CI Quality & Testing\n+\n+on:\n+  push:\n+    branches: [ main, develop ]\n+  pull_request:\n+    branches: [ main, develop ]\n+  workflow_dispatch:\n+    inputs:\n+      run_performance:\n+        description: 'Ejecutar tests de performance'\n+        required: false\n+        default: true\n+        type: boolean\n+      run_visual:\n+        description: 'Ejecutar tests visuales'\n+        required: false\n+        default: false\n+        type: boolean\n+\n+env:\n+  NODE_VERSION: '20'\n+\n+jobs:\n+  # ===== MATRIX TESTING =====\n+  test-matrix:\n+    runs-on: ubuntu-latest\n+    \n+    strategy:\n+      fail-fast: false\n+      matrix:\n+        node-version: [18, 20, 21]\n+        build-mode: [full, core, styling, exports]\n+    \n+    name: Test Node ${{ matrix.node-version }} - ${{ matrix.build-mode }}\n+    \n+    steps:\n+      - name: 📥 Checkout code\n+        uses: actions/checkout@v4\n+        with:\n+          fetch-depth: 0\n+\n+      - name: 📦 Setup Node.js ${{ matrix.node-version }}\n+        uses: actions/setup-node@v4\n+        with:\n+          node-version: ${{ matrix.node-version }}\n+          cache: 'npm'\n+\n+      - name: 🔧 Install dependencies\n+        run: npm run ci:install\n+\n+      - name: 🔍 Type checking\n+        run: npm run type-check\n+\n+      - name: 🏗️ Build ${{ matrix.build-mode }}\n+ "
+    },
+    {
+      "path": ".github/workflows/docs-demo.yml",
+      "status": "added",
+      "lines_added": 125,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/.github/workflows/docs-demo.yml b/.github/workflows/docs-demo.yml\nnew file mode 100644\nindex 0000000..f7c4cd3\n--- /dev/null\n+++ b/.github/workflows/docs-demo.yml\n@@ -0,0 +1,125 @@\n+name: Docs & Demo Deployment\n+\n+on:\n+  push:\n+    branches: [ main ]\n+    paths: \n+      - 'docs/**'\n+      - 'demo.html'\n+      - 'index.html'\n+      - 'src/**'\n+  workflow_dispatch:\n+\n+env:\n+  NODE_VERSION: '20'\n+\n+jobs:\n+  # ===== BUILD DEMO =====\n+  build-demo:\n+    runs-on: ubuntu-latest\n+    \n+    steps:\n+      - name: 📥 Checkout code\n+        uses: actions/checkout@v4\n+\n+      - name: 📦 Setup Node.js\n+        uses: actions/setup-node@v4\n+        with:\n+          node-version: ${{ env.NODE_VERSION }}\n+          cache: 'npm'\n+\n+      - name: 🔧 Install dependencies\n+        run: npm run ci:install\n+\n+      - name: 🏗️ Build library for demo\n+        run: npm run build:full\n+\n+      - name: 🏗️ Setup demo structure\n+        run: |\n+          mkdir -p _site/docs\n+          # Copy demo as root\n+          cp demo.html _site/index.html\n+          cp index.html _site/dev.html\n+          cp -r dist/ _site/dist/\n+          \n+          # Create demo metadata\n+          echo \"## 📦 Demo Build Info\" > _site/build-info.md\n+          echo \"- **Build Date**: $(date)\" >> _site/build-info.md\n+          echo \"- **Commit**: ${{ github.sha }}\" >> _site/build-info.md\n+          echo \"- **Version**: $(node -p 'require(\"./package.json\").version')\" >> _site/build-info.md\n+\n+      - name: 📤 Upload dem"
+    },
+    {
+      "path": ".github/workflows/nightly-auto.yml",
+      "status": "added",
+      "lines_added": 335,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/.github/workflows/nightly-auto.yml b/.github/workflows/nightly-auto.yml\nnew file mode 100644\nindex 0000000..c936f3d\n--- /dev/null\n+++ b/.github/workflows/nightly-auto.yml\n@@ -0,0 +1,335 @@\n+name: Nightly Builds with Smart Detection\n+\n+on:\n+  schedule:\n+    # Ejecutar cada día a las 3:00 AM UTC\n+    - cron: '0 3 * * *'\n+  workflow_dispatch:\n+    inputs:\n+      force_build:\n+        description: 'Forzar build aunque no haya cambios'\n+        required: false\n+        default: false\n+        type: boolean\n+      include_prereleases:\n+        description: 'Incluir cambios de prereleases en detección'\n+        required: false\n+        default: false\n+        type: boolean\n+\n+env:\n+  NODE_VERSION: '20'\n+\n+jobs:\n+  # ===== SMART CHANGE DETECTION =====\n+  detect-changes:\n+    runs-on: ubuntu-latest\n+    outputs:\n+      has_changes: ${{ steps.changes.outputs.has_changes }}\n+      change_type: ${{ steps.changes.outputs.change_type }}\n+      last_commit: ${{ steps.changes.outputs.last_commit }}\n+      commit_count: ${{ steps.changes.outputs.commit_count }}\n+      significant_changes: ${{ steps.changes.outputs.significant_changes }}\n+      files_changed: ${{ steps.changes.outputs.files_changed }}\n+    \n+    steps:\n+      - name: 📥 Checkout code\n+        uses: actions/checkout@v4\n+        with:\n+          fetch-depth: 0\n+\n+      - name: 🔍 Analyze changes since last nightly\n+        id: changes\n+        run: |\n+          # Buscar último tag nightly\n+          LAST_NIGHTLY=$(g"
+    },
+    {
+      "path": ".github/workflows/releases-core.yml",
+      "status": "added",
+      "lines_added": 378,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/.github/workflows/releases-core.yml b/.github/workflows/releases-core.yml\nnew file mode 100644\nindex 0000000..aa4b59c\n--- /dev/null\n+++ b/.github/workflows/releases-core.yml\n@@ -0,0 +1,378 @@\n+name: Core Modular Releases\n+\n+on:\n+  workflow_dispatch:\n+    inputs:\n+      module:\n+        description: 'Módulo a construir y publicar'\n+        required: true\n+        default: 'all'\n+        type: choice\n+        options:\n+          - all\n+          - core\n+          - styling\n+          - exports\n+          - full\n+      release_type:\n+        description: 'Tipo de release'\n+        required: true\n+        default: 'patch'\n+        type: choice\n+        options:\n+          - patch\n+          - minor\n+          - major\n+          - alpha\n+          - beta\n+      target_registry:\n+        description: 'Registro objetivo'\n+        required: false\n+        default: 'both'\n+        type: choice\n+        options:\n+          - npm\n+          - github\n+          - both\n+      skip_tests:\n+        description: 'Saltar tests (no recomendado)'\n+        required: false\n+        default: false\n+        type: boolean\n+\n+env:\n+  NODE_VERSION: '20'\n+\n+jobs:\n+  # ===== VALIDATION & VERSIONING =====\n+  prepare-modular-release:\n+    runs-on: ubuntu-latest\n+    \n+    outputs:\n+      version: ${{ steps.version.outputs.version }}\n+      tag: ${{ steps.version.outputs.tag }}\n+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}\n+      release_channel: ${{ steps.version.outputs.re"
+    },
+    {
+      "path": ".github/workflows/releases-full.yml",
+      "status": "added",
+      "lines_added": 501,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/.github/workflows/releases-full.yml b/.github/workflows/releases-full.yml\nnew file mode 100644\nindex 0000000..44bab03\n--- /dev/null\n+++ b/.github/workflows/releases-full.yml\n@@ -0,0 +1,501 @@\n+name: Full Release Pipeline with Gemini AI\n+\n+on:\n+  workflow_dispatch:\n+    inputs:\n+      use_gemini:\n+        description: 'Usar Gemini AI para versionado inteligente'\n+        required: false\n+        default: true\n+        type: boolean\n+      release_type:\n+        description: 'Tipo de release (solo si no usar Gemini)'\n+        required: false\n+        default: 'auto'\n+        type: choice\n+        options:\n+          - auto\n+          - patch\n+          - minor\n+          - major\n+          - alpha\n+          - beta\n+          - stable\n+      target_registry:\n+        description: 'Registro objetivo'\n+        required: false\n+        default: 'both'\n+        type: choice\n+        options:\n+          - npm\n+          - github\n+          - both\n+      skip_tests:\n+        description: 'Saltar tests (no recomendado)'\n+        required: false\n+        default: false\n+        type: boolean\n+      force_release:\n+        description: 'Forzar release aunque no haya cambios significativos'\n+        required: false\n+        default: false\n+        type: boolean\n+\n+env:\n+  NODE_VERSION: '20'\n+\n+jobs:\n+  # ===== INTELLIGENT VERSIONING WITH GEMINI =====\n+  gemini-analysis:\n+    runs-on: ubuntu-latest\n+    if: ${{ inputs.use_gemini }}\n+    \n+    outputs:\n+      should_release: $"
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "lines_added": 23,
+      "lines_removed": 17,
+      "is_binary": false,
+      "diff_preview": "diff --git a/package.json b/package.json\nindex 49619ea..bcde04c 100644\n--- a/package.json\n+++ b/package.json\n@@ -29,32 +29,38 @@\n   \"homepage\": \"https://mks2508.github.io/advanced-logger/\",\n   \"scripts\": {\n     \"dev\": \"vite\",\n-    \"build\": \"tsc && vite build\",\n-    \"build:watch\": \"vite build --watch\",\n-    \"build:analyze\": \"vite build --mode analyze\",\n-    \"preview\": \"vite preview\",\n+    \"build\": \"tsc && BUILD_MODE=full vite build\",\n+    \"build:full\": \"tsc && BUILD_MODE=full vite build\", \n+    \"build:core\": \"tsc && BUILD_MODE=core vite build\",\n+    \"build:styling\": \"tsc && BUILD_MODE=styling vite build\",\n+    \"build:exports\": \"tsc && BUILD_MODE=exports vite build\",\n+    \"build:all\": \"npm run build:full && npm run build:core && npm run build:styling && npm run build:exports\",\n     \"clean\": \"rm -rf dist node_modules/.vite\",\n     \"type-check\": \"tsc --noEmit\",\n-    \"lint\": \"echo 'Linting with ESLint...' && exit 0\",\n-    \"lint:fix\": \"echo 'Fixing with ESLint...' && exit 0\",\n     \"test\": \"echo 'Running tests...' && exit 0\",\n-    \"test:watch\": \"echo 'Running tests in watch mode...' && exit 0\",\n-    \"test:coverage\": \"echo 'Running tests with coverage...' && exit 0\",\n     \"test:performance\": \"echo 'Running performance benchmarks...' && exit 0\",\n     \"test:visual\": \"echo 'Running visual tests...' && exit 0\",\n-    \"prepublishOnly\": \"npm run clean && npm run type-check && npm run build\",\n-    \"release\": \"npm version patch && npm publish --access public\",\n-    \"release:minor\": \"npm versio"
+    },
+    {
+      "path": "project-utils/README.md",
+      "status": "added",
+      "lines_added": 118,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/README.md b/project-utils/README.md\nnew file mode 100644\nindex 0000000..e19f929\n--- /dev/null\n+++ b/project-utils/README.md\n@@ -0,0 +1,118 @@\n+# Project Utils - Sistema de Automatización Completa\n+\n+## 🚀 Comandos de Workflow Automatizado\n+\n+### Comandos Individuales\n+```bash\n+# Commits automatizados\n+npm run commit:auto           # Commit automático silencioso\n+npm run commit:ui            # UI interactiva para commits  \n+npm run commit:generate      # Solo generar propuesta\n+\n+# Versionado automatizado\n+npm run version:auto         # Auto-detectar tipo de versión\n+npm run version:patch        # Forzar versión patch\n+npm run version:minor        # Forzar versión minor  \n+npm run version:major        # Forzar versión major\n+npm run version:alpha        # Versión alpha\n+npm run version:beta         # Versión beta\n+npm run version:stable       # Versión estable\n+\n+# GitHub Releases\n+npm run release:github       # Crear release en GitHub\n+npm run release:full         # Versión + Build + GitHub + Publish NPM\n+npm run release:auto         # Release completa con AI\n+```\n+\n+### Workflows Completos\n+```bash\n+npm run workflow:full        # Commit + Versión + Build + Release + Publish\n+npm run workflow:commit      # Solo commit automático\n+npm run workflow:version     # Versión + Build\n+npm run workflow:release     # Versión + Build + GitHub Release\n+```\n+\n+## 🔧 Parámetros de Automatización\n+\n+### commit-generator.ts\n+```bash\n+# Usar propuesta existente\n+nod"
+    },
+    {
+      "path": "project-utils/auto-release-gemini.ts",
+      "status": "added",
+      "lines_added": 743,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/auto-release-gemini.ts b/project-utils/auto-release-gemini.ts\nnew file mode 100755\nindex 0000000..72a63ba\n--- /dev/null\n+++ b/project-utils/auto-release-gemini.ts\n@@ -0,0 +1,743 @@\n+#!/usr/bin/env node\n+\n+/**\n+ * Auto-Release Manager con Integración Gemini para Better Logger\n+ * Sistema avanzado que usa AI para generar documentación y commits inteligentes\n+ */\n+\n+import { spawn } from 'child_process';\n+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs';\n+import { join, dirname } from 'path';\n+import { createReleasePrompt, BETTER_LOGGER_PROJECT_CONFIG, type GeminiPromptConfig } from './prompt-templates';\n+\n+interface ChangelogData {\n+  current_version: string;\n+  versions: Array<{\n+    version: string;\n+    date: string;\n+    type: string;\n+    title: string;\n+    changes: Array<{\n+      type: string;\n+      title: string;\n+      description: string;\n+    }>;\n+    technical_notes: string;\n+    breaking_changes: string[];\n+    commit_hash: string;\n+    prefix?: string;\n+  }>;\n+}\n+\n+interface ReleaseInfo {\n+  version: string;\n+  prefix: string;\n+  major: number;\n+  minor: number;\n+  patch: number;\n+}\n+\n+class AutoReleaseManagerAI {\n+  private projectRoot: string;\n+  private releaseDir: string;\n+  private changelogPath: string;\n+  private tempDir: string;\n+  private forceMode: boolean;\n+  private useAI: boolean;\n+  private noGitHub: boolean;\n+  \n+  // Parámetros de contexto mejorados\n+  private focusArea: stri"
+    },
+    {
+      "path": "project-utils/commit-generator.ts",
+      "status": "added",
+      "lines_added": 858,
+      "lines_removed": 0,
+      "is_binary": true,
+      "diff_preview": "diff --git a/project-utils/commit-generator.ts b/project-utils/commit-generator.ts\nnew file mode 100755\nindex 0000000..1e0df07\n--- /dev/null\n+++ b/project-utils/commit-generator.ts\n@@ -0,0 +1,858 @@\n+#!/usr/bin/env node\n+\n+/**\n+ * Generador Automático de Commits con Gemini CLI\n+ * Analiza todos los cambios del repositorio y genera commits coherentes\n+ * siguiendo los patrones establecidos para el proyecto Better Logger\n+ */\n+\n+import { spawn } from 'child_process';\n+import { readFileSync, writeFileSync, existsSync } from 'fs';\n+import { createCommitPrompt, GeminiResponseParser, BETTER_LOGGER_PROJECT_CONFIG, type GeminiPromptConfig } from './prompt-templates';\n+import { join } from 'path';\n+\n+interface FileChange {\n+  path: string;\n+  status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';\n+  diff?: string;\n+  lines_added?: number;\n+  lines_removed?: number;\n+  is_binary?: boolean;\n+}\n+\n+interface GitStats {\n+  total_files: number;\n+  total_additions: number;\n+  total_deletions: number;\n+  files_by_extension: Record<string, number>;\n+  directories_affected: string[];\n+}\n+\n+interface CommitAnalysis {\n+  files: FileChange[];\n+  stats: GitStats;\n+  project_context: {\n+    name: string;\n+    description: string;\n+    tech_stack: string[];\n+    target_platform: string;\n+  };\n+  commit_patterns: string;\n+}\n+\n+interface CommitProposal {\n+  title: string;\n+  description: string;\n+  technical: string;\n+  changelog: string;\n+  files?: string[];\n+}\n+\n+class CommitGenerator {\n"
+    },
+    {
+      "path": "project-utils/commit-ui.ts",
+      "status": "added",
+      "lines_added": 246,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/commit-ui.ts b/project-utils/commit-ui.ts\nnew file mode 100755\nindex 0000000..bb63e24\n--- /dev/null\n+++ b/project-utils/commit-ui.ts\n@@ -0,0 +1,246 @@\n+#!/usr/bin/env node\n+\n+import { execSync } from \"child_process\"\n+import { platform } from \"os\"\n+\n+interface CommitOptions {\n+  context: string\n+  workType: string\n+  affectedComponents: string[]\n+  scope?: string\n+  breakingChange?: boolean\n+  performanceImpact?: string\n+}\n+\n+class CommitUI {\n+  private platform = platform()\n+\n+  async collectCommitInfo(): Promise<CommitOptions> {\n+    console.log(\"🚀 Interactive Commit Generator\")\n+    console.log(\"================================\")\n+\n+    try {\n+      if (this.platform === \"darwin\") {\n+        return await this.macOSDialog()\n+      } else if (this.platform === \"linux\") {\n+        return await this.linuxDialog()\n+      } else {\n+        return await this.fallbackDialog()\n+      }\n+    } catch (error) {\n+      console.log(\"⚠️ GUI not available, falling back to text input\")\n+      return await this.fallbackDialog()\n+    }\n+  }\n+\n+  private async macOSDialog(): Promise<CommitOptions> {\n+    // Create a unified form using AppleScript\n+    const formScript = `\n+      const app = Application.currentApplication()\n+      app.includeStandardAdditions = true\n+      \n+      // First get the context text\n+      const contextResult = app.displayDialog(\"📝 Commit Generator\\\\n\\\\nDescribe what you implemented/fixed:\", {\n+        defaultAnswer: \"\",\n+        withTitl"
+    },
+    {
+      "path": "project-utils/git-utils.ts",
+      "status": "added",
+      "lines_added": 199,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/git-utils.ts b/project-utils/git-utils.ts\nnew file mode 100644\nindex 0000000..d1b860f\n--- /dev/null\n+++ b/project-utils/git-utils.ts\n@@ -0,0 +1,199 @@\n+/**\n+ * Utilidades para manejo de Git\n+ * Funciones auxiliares para el generador de commits\n+ */\n+\n+export interface GitFileStatus {\n+  path: string;\n+  staged: boolean;\n+  unstaged: boolean;\n+  untracked: boolean;\n+  deleted: boolean;\n+  renamed?: string;\n+}\n+\n+export interface CommitInfo {\n+  hash: string;\n+  message: string;\n+  author: string;\n+  date: string;\n+}\n+\n+/**\n+ * Parsea la salida de git status --porcelain\n+ */\n+export function parseGitStatus(statusOutput: string): GitFileStatus[] {\n+  const files: GitFileStatus[] = [];\n+  \n+  for (const line of statusOutput.split('\\n').filter(l => l.trim())) {\n+    const staged = line[0];\n+    const unstaged = line[1];\n+    const filePath = line.substring(3);\n+\n+    files.push({\n+      path: filePath,\n+      staged: staged !== ' ' && staged !== '?',\n+      unstaged: unstaged !== ' ',\n+      untracked: staged === '?' && unstaged === '?',\n+      deleted: staged === 'D' || unstaged === 'D',\n+      renamed: staged === 'R' ? filePath.split(' -> ')[1] : undefined,\n+    });\n+  }\n+\n+  return files;\n+}\n+\n+/**\n+ * Determina el área funcional de un archivo basado en su ruta\n+ */\n+export function getFileArea(filePath: string): string {\n+  const areas = [\n+    { pattern: /^src\\/components\\/|^src\\/layouts\\//, area: 'ui' },\n+    { pattern: /^src-tauri\\//, area: 'backe"
+    },
+    {
+      "path": "project-utils/github-release-manager.ts",
+      "status": "added",
+      "lines_added": 458,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/github-release-manager.ts b/project-utils/github-release-manager.ts\nnew file mode 100644\nindex 0000000..83dac00\n--- /dev/null\n+++ b/project-utils/github-release-manager.ts\n@@ -0,0 +1,458 @@\n+#!/usr/bin/env node\n+\n+/**\n+ * GitHub Release Manager para Better Logger\n+ * Crea releases automáticamente en GitHub con los archivos de distribución\n+ */\n+\n+import { readFileSync, existsSync, readdirSync, statSync } from 'fs';\n+import { join, basename } from 'path';\n+\n+interface ReleaseInfo {\n+  version: string;\n+  prefix?: string;\n+  baseVersion: string;\n+  path: string;\n+  files: string[];\n+  readme: string;\n+  isPrerelease: boolean;\n+}\n+\n+interface ChangelogEntry {\n+  type: 'feature' | 'fix' | 'improvement' | 'breaking';\n+  title: string;\n+  description: string;\n+}\n+\n+interface VersionData {\n+  version: string;\n+  date: string;\n+  type: 'initial' | 'major' | 'minor' | 'patch';\n+  title: string;\n+  changes: ChangelogEntry[];\n+  technical_notes: string;\n+  breaking_changes: string[];\n+}\n+\n+class GitHubReleaseManager {\n+  private projectRoot: string;\n+  private releasesDir: string;\n+  private changelogPath: string;\n+\n+  constructor() {\n+    this.projectRoot = process.cwd();\n+    this.releasesDir = join(this.projectRoot, 'dist');\n+    this.changelogPath = join(this.projectRoot, 'CHANGELOG.json');\n+  }\n+\n+  /**\n+   * Ejecuta comando gh CLI\n+   */\n+  private async ghCommand(args: string[]): Promise<string> {\n+    const { spawn } = await import('child_process');\n+ "
+    },
+    {
+      "path": "project-utils/prompt-templates.js",
+      "status": "added",
+      "lines_added": 345,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/prompt-templates.js b/project-utils/prompt-templates.js\nnew file mode 100644\nindex 0000000..504b6d7\n--- /dev/null\n+++ b/project-utils/prompt-templates.js\n@@ -0,0 +1,345 @@\n+/**\n+ * Plantillas de prompts estandarizadas para Gemini CLI\n+ * @description Asegura respuestas consistentes y parseables en todos los scripts\n+ * @author TPV EL Haido\n+ */\n+/**\n+ * Configuración base del proyecto OpenTUI\n+ */\n+export const TPV_PROJECT_CONFIG = {\n+    name: 'OpenTUI',\n+    description: 'Modern Terminal User Interface Framework',\n+    version: '0.1.0',\n+    techStack: ['TypeScript', 'Node.js', 'Terminal UI', 'CLI'],\n+    targetPlatform: 'Cross-platform (macOS, Linux, Windows)',\n+};\n+/**\n+ * Prefijo estándar para todos los prompts de Gemini\n+ */\n+const STANDARD_PROMPT_PREFIX = `# Sistema de Análisis Inteligente - OpenTUI\n+\n+Eres un asistente especializado en análisis de código y automatización para el proyecto OpenTUI. Tu función es proporcionar respuestas estructuradas, precisas y consistentes que puedan ser parseadas automáticamente.\n+\n+## REGLAS CRÍTICAS DE FORMATO\n+\n+1. **FORMATO DE RESPUESTA OBLIGATORIO**: Todas tus respuestas deben seguir exactamente el formato especificado más abajo.\n+2. **CONSISTENCIA**: Mantén la misma estructura sin importar la complejidad del análisis.\n+3. **PARSEABLE**: El formato debe ser fácil de procesar automáticamente con expresiones regulares.\n+4. **BLOQUES MARKDOWN**: Usa \\`\\`\\`markdown para bloques de código cuando se especifiq"
+    },
+    {
+      "path": "project-utils/prompt-templates.ts",
+      "status": "added",
+      "lines_added": 422,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/prompt-templates.ts b/project-utils/prompt-templates.ts\nnew file mode 100644\nindex 0000000..8cee1c5\n--- /dev/null\n+++ b/project-utils/prompt-templates.ts\n@@ -0,0 +1,422 @@\n+/**\n+ * Plantillas de prompts estandarizadas para Gemini CLI\n+ * @description Asegura respuestas consistentes y parseables en todos los scripts\n+ * @author TPV EL Haido\n+ */\n+\n+export interface GeminiPromptConfig {\n+  /** Contexto base del proyecto */\n+  projectContext: {\n+    name: string;\n+    description: string;\n+    version: string;\n+    techStack: string[];\n+    targetPlatform: string;\n+  };\n+  /** Tipo de análisis requerido */\n+  analysisType: 'commit' | 'workflow' | 'release';\n+  /** Contexto adicional específico */\n+  specificContext?: string;\n+  /** Datos estructurados para el análisis */\n+  data?: any;\n+}\n+\n+export interface StandardResponseFormat {\n+  /** Análisis o resumen principal */\n+  analysis: string;\n+  /** Recomendaciones o acciones */\n+  recommendations: string;\n+  /** Datos estructurados (commits, comandos, etc.) */\n+  structured_data: any[];\n+}\n+\n+/**\n+ * Configuración base del proyecto Better Logger\n+ */\n+export const BETTER_LOGGER_PROJECT_CONFIG = {\n+  name: 'Better Logger',\n+  description: 'State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface',\n+  version: '0.0.3-alpha.0',\n+  techStack: ['TypeScript', 'Vite', 'Browser', 'CSS-in-JS', 'SVG'] as const,\n+  targetPlatform: 'Browser (Chrome, Firefox, Safari, Edg"
+    },
+    {
+      "path": "project-utils/version-manager.ts",
+      "status": "added",
+      "lines_added": 967,
+      "lines_removed": 0,
+      "is_binary": false,
+      "diff_preview": "diff --git a/project-utils/version-manager.ts b/project-utils/version-manager.ts\nnew file mode 100644\nindex 0000000..b9639b2\n--- /dev/null\n+++ b/project-utils/version-manager.ts\n@@ -0,0 +1,967 @@\n+#!/usr/bin/env node\n+\n+/**\n+ * Version Manager para Better Logger\n+ * Analiza commits, extrae changelog, asigna versiones y actualiza archivos\n+ */\n+\n+import { readFileSync, writeFileSync, existsSync } from 'fs';\n+import { join } from 'path';\n+\n+interface ChangelogEntry {\n+  type: 'feature' | 'fix' | 'improvement' | 'breaking';\n+  title: string;\n+  description: string;\n+}\n+\n+interface Version {\n+  version: string;\n+  date: string;\n+  type: 'initial' | 'major' | 'minor' | 'patch';\n+  title: string;\n+  changes: ChangelogEntry[];\n+  technical_notes: string;\n+  breaking_changes: string[];\n+  commit_hash: string;\n+  prefix?: string; // pre-alpha, alpha, beta, rc, o undefined para stable\n+}\n+\n+interface ChangelogData {\n+  current_version: string;\n+  versions: Version[];\n+}\n+\n+interface CommitInfo {\n+  hash: string;\n+  date: string;\n+  title: string;\n+  description: string;\n+  technical_section?: string;\n+  changelog_section?: string;\n+}\n+\n+class VersionManager {\n+  private projectRoot: string;\n+  private changelogPath: string;\n+  private packageJsonPath: string;\n+  private tauriConfigPath: string;\n+  private cargoTomlPath: string;\n+\n+  constructor() {\n+    this.projectRoot = process.cwd();\n+    this.changelogPath = join(this.projectRoot, 'CHANGELOG.json');\n+    this.packageJsonPath = join"
+    },
+    {
+      "path": "vite.config.ts",
+      "status": "modified",
+      "lines_added": 152,
+      "lines_removed": 50,
+      "is_binary": false,
+      "diff_preview": "diff --git a/vite.config.ts b/vite.config.ts\nindex cd6d8ae..a64a3c2 100644\n--- a/vite.config.ts\n+++ b/vite.config.ts\n@@ -1,62 +1,21 @@\n-import { defineConfig } from 'vite'\n+import { defineConfig, UserConfig } from 'vite'\n import { resolve } from 'path'\n import dts from 'vite-plugin-dts'\n \n-export default defineConfig({\n+// Configuración base compartida\n+const baseConfig = {\n   plugins: [\n     dts({\n       include: ['src/**/*'],\n       exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/main.ts', 'src/example.ts'],\n-      outDir: 'dist/types',\n       rollupTypes: true,\n       insertTypesEntry: true,\n     })\n   ],\n+  define: {\n+    'process.env.NODE_ENV': JSON.stringify('production')\n+  },\n   build: {\n-    lib: {\n-      entry: {\n-        // Main entry - Full logger with all features\n-        index: resolve(__dirname, 'src/index.ts'),\n-        \n-        // Core module - Minimal logger without advanced features\n-        core: resolve(__dirname, 'src/core.ts'),\n-        \n-        // Styling module - Advanced visual features\n-        styling: resolve(__dirname, 'src/styling-module.ts'),\n-        \n-        // Exports module - Export and remote handlers  \n-        exports: resolve(__dirname, 'src/exports-module.ts')\n-      },\n-      name: 'BetterLogger',\n-      formats: ['es', 'cjs'],\n-      fileName: (format, entryName) => {\n-        const ext = format === 'cjs' ? 'cjs' : 'js';\n-        return `${entryName}.${ext}`;\n-      }\n-    },\n-    rollupOptions: {\n-      external: [],\n-   "
+    }
+  ],
+  "patterns": "No commit patterns found"
+}
+
+## Contexto Adicional
+Ninguno proporcionado
+
+---
+
+## FORMATO DE RESPUESTA REQUERIDO
+
+Tu respuesta debe seguir EXACTAMENTE esta estructura:
+
+### **ANÁLISIS PRINCIPAL**
+
+[Descripción general de los cambios detectados]
+
+---
+
+### **Propuesta de Commit #1**
+
+```markdown
+[prefijo](área - descripción breve)
+
+[Descripción completa en castellano de QUÉ se logró y POR QUÉ]
+
+<technical>
+[Detalles técnicos específicos: archivos modificados, funciones añadidas, refactorizaciones, etc.]
+</technical>
+
+<changelog>
+## [Tipo] [Emoji]
+[Entrada para changelog de la app, optimizada para mostrar al usuario]
+</changelog>
+```
+
+### **Propuesta de Commit #2** (solo si es necesario)
+
+[Repetir formato anterior]
+
+---
+
+**DECISIÓN**: [Explicación breve de por qué uno o múltiples commits]
+
+
+
+---
+
+## INSTRUCCIONES FINALES
+
+1. **Lee cuidadosamente** toda la información proporcionada
+2. **Analiza el contexto** y los datos específicos
+3. **Genera una respuesta** siguiendo EXACTAMENTE el formato especificado
+4. **Mantén consistencia** en la estructura y sintaxis
+5. **No desvíes** del formato requerido bajo ninguna circunstancia
+
+**IMPORTANTE**: La respuesta debe ser parseada automáticamente. Cualquier desviación del formato especificado causará errores en el sistema.

@@ -1,0 +1,373 @@
+name: Optimized Release Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Tipo de release'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+          - alpha
+          - beta
+          - stable
+      use_gemini:
+        description: 'Usar Gemini AI para versionado'
+        required: false
+        default: true
+        type: boolean
+      skip_tests:
+        description: 'Saltar tests (no recomendado)'
+        required: false
+        default: false
+        type: boolean
+      target_registry:
+        description: 'Registro objetivo'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - npm
+          - github
+          - both
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ===== VALIDATION & VERSIONING =====
+  prepare-release:
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+      changelog: ${{ steps.version.outputs.changelog }}
+      release_channel: ${{ steps.version.outputs.release_channel }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci
+
+      - name: 🧪 Run tests (unless skipped)
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          npm run type-check
+          npm run lint  
+          npm run test
+          npm run build
+
+      - name: 🏷️ Generate version with project-utils
+        id: version
+        run: |
+          if [ "${{ inputs.use_gemini }}" == "true" ] && [ "${{ inputs.release_type }}" == "auto" ]; then
+            # Usar auto-release con Gemini para detección inteligente
+            echo "🤖 Usando Gemini AI para versionado automático..."
+            npm run version:auto
+          elif [ "${{ inputs.release_type }}" == "auto" ]; then
+            # Auto-detección sin Gemini  
+            echo "🔍 Auto-detectando tipo de versión..."
+            npm run version:auto
+          else
+            # Tipo específico forzado
+            echo "🎯 Usando tipo de versión forzado: ${{ inputs.release_type }}"
+            case "${{ inputs.release_type }}" in
+              "patch") npm run version:patch ;;
+              "minor") npm run version:minor ;;  
+              "major") npm run version:major ;;
+              "alpha") npm run version:alpha ;;
+              "beta") npm run version:beta ;;
+              "stable") npm run version:stable ;;
+            esac
+          fi
+          
+          # Obtener nueva versión del package.json
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+          # Determinar si es prerelease y canal
+          if [[ "$NEW_VERSION" == *"alpha"* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "release_channel=alpha" >> $GITHUB_OUTPUT
+          elif [[ "$NEW_VERSION" == *"beta"* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT  
+            echo "release_channel=beta" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "release_channel=latest" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "📦 Nueva versión: $NEW_VERSION"
+
+      - name: 📝 Generate changelog 
+        id: changelog
+        run: |
+          # Usar project-utils para generar changelog si existe
+          if [ -f "project-utils/.temp/commit-proposal"*".md" ]; then
+            echo "📋 Usando changelog de project-utils..."
+            CHANGELOG=$(cat project-utils/.temp/commit-proposal*.md | head -n 20)
+          else
+            # Fallback a changelog tradicional
+            LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+            if [ -n "$LAST_TAG" ]; then
+              echo "📋 Generando changelog desde $LAST_TAG..."
+              CHANGELOG=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)")
+            else
+              echo "📋 Changelog de release inicial..."
+              CHANGELOG="- Initial release with complete Better Logger functionality"
+            fi
+          fi
+          
+          # Guardar changelog en archivo para uso posterior
+          echo "$CHANGELOG" > RELEASE_CHANGELOG.md
+          echo "changelog=$(echo "$CHANGELOG" | base64 -w 0)" >> $GITHUB_OUTPUT
+
+      - name: 🏗️ Build optimized
+        run: |
+          npm run build
+          
+          # Verificar que todos los archivos esperados existen
+          echo "📊 Verificando build outputs..."
+          ls -la dist/
+          
+          # Guardar información de bundle sizes  
+          echo "## 📦 Bundle Sizes" > BUNDLE_SIZES.md
+          echo "\`\`\`" >> BUNDLE_SIZES.md
+          ls -lh dist/*.js dist/*.cjs | grep -E '\.(js|cjs)$' >> BUNDLE_SIZES.md
+          echo "\`\`\`" >> BUNDLE_SIZES.md
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-build-${{ steps.version.outputs.version }}
+          path: |
+            dist/
+            RELEASE_CHANGELOG.md
+            BUNDLE_SIZES.md
+          retention-days: 30
+
+  # ===== SMART PUBLISHING =====
+  publish-packages:
+    runs-on: ubuntu-latest
+    needs: prepare-release
+    if: ${{ inputs.target_registry == 'npm' || inputs.target_registry == 'both' }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js for NPM
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-build-${{ needs.prepare-release.outputs.version }}
+
+      - name: 🔄 Update package version
+        run: npm version ${{ needs.prepare-release.outputs.version }} --no-git-tag-version
+
+      - name: 🚀 Publish to NPM
+        run: |
+          if [ "${{ needs.prepare-release.outputs.is_prerelease }}" == "true" ]; then
+            echo "📦 Publishing prerelease to NPM with tag: ${{ needs.prepare-release.outputs.release_channel }}"
+            npm publish --access public --tag ${{ needs.prepare-release.outputs.release_channel }}
+          else
+            echo "📦 Publishing stable release to NPM"
+            npm publish --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-github:
+    runs-on: ubuntu-latest
+    needs: prepare-release
+    if: ${{ inputs.target_registry == 'github' || inputs.target_registry == 'both' }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js for GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: 'https://npm.pkg.github.com'
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-build-${{ needs.prepare-release.outputs.version }}
+
+      - name: 🔄 Update package version
+        run: npm version ${{ needs.prepare-release.outputs.version }} --no-git-tag-version
+
+      - name: 📦 Publish to GitHub Packages
+        run: |
+          if [ "${{ needs.prepare-release.outputs.is_prerelease }}" == "true" ]; then
+            echo "📦 Publishing prerelease to GitHub Packages with tag: ${{ needs.prepare-release.outputs.release_channel }}"
+            npm publish --access public --tag ${{ needs.prepare-release.outputs.release_channel }}
+          else
+            echo "📦 Publishing stable release to GitHub Packages" 
+            npm publish --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ===== GITHUB RELEASE =====
+  create-github-release:
+    runs-on: ubuntu-latest
+    needs: [prepare-release, publish-packages, publish-github]
+    if: always() && needs.prepare-release.result == 'success'
+    
+    permissions:
+      contents: write
+      id-token: write
+    
+    steps:
+      - name: 📥 Checkout code  
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-build-${{ needs.prepare-release.outputs.version }}
+
+      - name: 📦 Create release archives
+        run: |
+          VERSION=${{ needs.prepare-release.outputs.version }}
+          
+          # Crear archivos de distribución
+          tar -czf better-logger-${VERSION}.tar.gz dist/ docs/ README.md package.json
+          zip -r better-logger-${VERSION}.zip dist/ docs/ README.md package.json
+          
+          # Crear paquetes modulares
+          cd dist
+          tar -czf ../better-logger-core-${VERSION}.tar.gz core.* types/core.d.ts 2>/dev/null || true
+          tar -czf ../better-logger-styling-${VERSION}.tar.gz styling.* types/styling.d.ts 2>/dev/null || true
+          tar -czf ../better-logger-exports-${VERSION}.tar.gz exports.* types/exports.d.ts 2>/dev/null || true
+          cd ..
+
+      - name: 🏷️ Commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: release ${{ needs.prepare-release.outputs.version }}" || true
+          git tag -a "${{ needs.prepare-release.outputs.tag }}" -m "Release ${{ needs.prepare-release.outputs.version }}"
+          git push origin main --tags
+
+      - name: 📝 Prepare release notes
+        run: |
+          VERSION=${{ needs.prepare-release.outputs.version }}
+          CHANGELOG=$(echo "${{ needs.prepare-release.outputs.changelog }}" | base64 -d)
+          
+          echo "# Better Logger ${VERSION}" > FINAL_RELEASE_NOTES.md
+          echo "" >> FINAL_RELEASE_NOTES.md
+          
+          if [ "${{ needs.prepare-release.outputs.is_prerelease }}" == "true" ]; then
+            echo "⚠️ **This is a pre-release version** - Not recommended for production use." >> FINAL_RELEASE_NOTES.md
+            echo "" >> FINAL_RELEASE_NOTES.md
+          fi
+          
+          echo "## 🔄 Changes" >> FINAL_RELEASE_NOTES.md
+          echo "$CHANGELOG" >> FINAL_RELEASE_NOTES.md
+          echo "" >> FINAL_RELEASE_NOTES.md
+          
+          cat BUNDLE_SIZES.md >> FINAL_RELEASE_NOTES.md
+          echo "" >> FINAL_RELEASE_NOTES.md
+          
+          echo "## 📦 Installation" >> FINAL_RELEASE_NOTES.md
+          if [ "${{ needs.prepare-release.outputs.is_prerelease }}" == "true" ]; then
+            echo "\`\`\`bash" >> FINAL_RELEASE_NOTES.md
+            echo "npm install @mks2508/better-logger@${{ needs.prepare-release.outputs.release_channel }}" >> FINAL_RELEASE_NOTES.md
+            echo "\`\`\`" >> FINAL_RELEASE_NOTES.md
+          else
+            echo "\`\`\`bash" >> FINAL_RELEASE_NOTES.md  
+            echo "npm install @mks2508/better-logger" >> FINAL_RELEASE_NOTES.md
+            echo "\`\`\`" >> FINAL_RELEASE_NOTES.md
+          fi
+
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.prepare-release.outputs.tag }}
+          name: Better Logger ${{ needs.prepare-release.outputs.version }}
+          body_path: FINAL_RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ needs.prepare-release.outputs.is_prerelease == 'true' }}
+          files: |
+            better-logger-${{ needs.prepare-release.outputs.version }}.tar.gz
+            better-logger-${{ needs.prepare-release.outputs.version }}.zip
+            better-logger-core-${{ needs.prepare-release.outputs.version }}.tar.gz
+            better-logger-styling-${{ needs.prepare-release.outputs.version }}.tar.gz  
+            better-logger-exports-${{ needs.prepare-release.outputs.version }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ===== POST-RELEASE SUMMARY =====
+  release-summary:
+    runs-on: ubuntu-latest
+    needs: [prepare-release, publish-packages, publish-github, create-github-release]
+    if: always() && needs.prepare-release.result == 'success'
+    
+    steps:
+      - name: 📊 Release Summary  
+        run: |
+          VERSION="${{ needs.prepare-release.outputs.version }}"
+          TAG="${{ needs.prepare-release.outputs.tag }}"
+          CHANNEL="${{ needs.prepare-release.outputs.release_channel }}"
+          IS_PRERELEASE="${{ needs.prepare-release.outputs.is_prerelease }}"
+          
+          echo "## 🎉 Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Channel**: $CHANNEL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Prerelease**: $IS_PRERELEASE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.target_registry == 'npm' || inputs.target_registry == 'both' }}" ]; then
+            echo "- **NPM**: https://www.npmjs.com/package/@mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ inputs.target_registry == 'github' || inputs.target_registry == 'both' }}" ]; then
+            echo "- **GitHub Packages**: https://github.com/MKS2508/advanced-logger/packages/" >> $GITHUB_STEP_SUMMARY  
+          fi
+          echo "- **GitHub Release**: https://github.com/MKS2508/advanced-logger/releases/tag/$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "- **Documentation**: https://mks2508.github.io/advanced-logger/" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          if [ "$IS_PRERELEASE" == "true" ]; then
+            echo "npm install @mks2508/better-logger@$CHANNEL" >> $GITHUB_STEP_SUMMARY
+          else  
+            echo "npm install @mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

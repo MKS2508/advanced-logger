@@ -1,0 +1,125 @@
+name: Docs & Demo Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'docs/**'
+      - 'demo.html'
+      - 'index.html'
+      - 'src/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ===== BUILD DEMO =====
+  build-demo:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm run ci:install
+
+      - name: 🏗️ Build library for demo
+        run: npm run build:full
+
+      - name: 🏗️ Setup demo structure
+        run: |
+          mkdir -p _site/docs
+          # Copy demo as root
+          cp demo.html _site/index.html
+          cp index.html _site/dev.html
+          cp -r dist/ _site/dist/
+          
+          # Create demo metadata
+          echo "## 📦 Demo Build Info" > _site/build-info.md
+          echo "- **Build Date**: $(date)" >> _site/build-info.md
+          echo "- **Commit**: ${{ github.sha }}" >> _site/build-info.md
+          echo "- **Version**: $(node -p 'require("./package.json").version')" >> _site/build-info.md
+
+      - name: 📤 Upload demo artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-site
+          path: _site/
+          retention-days: 30
+
+  # ===== BUILD DOCS =====
+  build-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📤 Build Jekyll documentation
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site/docs
+
+      - name: 📤 Upload docs artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-site
+          path: _site/docs/
+          retention-days: 30
+
+  # ===== DEPLOY TO GITHUB PAGES =====
+  deploy-pages:
+    runs-on: ubuntu-latest
+    needs: [build-demo, build-docs]
+    if: github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: 📥 Download demo artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: demo-site
+          path: _site/
+
+      - name: 📥 Download docs artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-site
+          path: _site/docs/
+
+      - name: 📤 Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📤 Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: 📊 Deployment summary
+        run: |
+          echo "## 📝 Documentation & Demo Deployed!" >> $GITHUB_STEP_SUMMARY
+          echo "- **Demo URL**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY  
+          echo "- **Docs URL**: ${{ steps.deployment.outputs.page_url }}docs/" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dev Demo**: ${{ steps.deployment.outputs.page_url }}dev.html" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Info**: ${{ steps.deployment.outputs.page_url }}build-info.md" >> $GITHUB_STEP_SUMMARY
