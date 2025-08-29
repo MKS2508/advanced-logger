@@ -1,4 +1,4 @@
-name: Core Modular Releases - AI Enhanced
+name: Core Modular Releases - AI Enhanced (Manual Only)
 
 on:
   workflow_dispatch:

@@ -42,6 +42,12 @@ on:
         required: false
         default: false
         type: boolean
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/workflows/docs-demo.yml'
 
 env:
   NODE_VERSION: '20'
@@ -88,9 +94,21 @@ jobs:
         run: |
           echo "🤖 === PASO 1: ANÁLISIS Y GENERACIÓN DE VERSIÓN CON AI ==="
           
-          # Configurar parámetros
-          VERSION_TYPE="${{ inputs.version_type }}"
-          VERSION_PREFIX="${{ inputs.version_prefix }}"
+          # Detectar contexto de ejecución y configurar parámetros
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION_TYPE="${{ inputs.version_type || 'auto' }}"
+            VERSION_PREFIX="${{ inputs.version_prefix || 'stable' }}"
+            TARGET_REGISTRY="${{ inputs.target_registry || 'both' }}"
+            DRY_RUN="${{ inputs.dry_run || 'false' }}"
+            echo "📝 Ejecutando en modo manual con parámetros especificados"
+          else
+            # Defaults para push automático
+            VERSION_TYPE="auto"
+            VERSION_PREFIX="stable"
+            TARGET_REGISTRY="npm"
+            DRY_RUN="false"
+            echo "🔄 Ejecutando automáticamente desde push - usando defaults"
+          fi
           
           # Preparar argumentos para version-manager
           ARGS="--auto-approve"
@@ -106,7 +124,7 @@ jobs:
           # Mostrar comando que se ejecutará
           echo "📋 Ejecutando: bun project-utils/version-manager.ts $ARGS"
           
-          if [ "${{ inputs.dry_run }}" == "true" ]; then
+          if [ "$DRY_RUN" == "true" ]; then
             echo "🔍 [DRY RUN] Se generaría nueva versión con: $ARGS"
             echo "should_skip=true" >> $GITHUB_OUTPUT
             echo "version=dry-run" >> $GITHUB_OUTPUT
@@ -143,7 +161,7 @@ jobs:
           fi
 
       - name: 🏷️ Commit and push version changes
-        if: inputs.dry_run != true
+        if: needs.ai-version-generation.outputs.should_skip != 'true'
         run: |
           echo "🏷️ Commiteando cambios de versión..."
           git config user.name "github-actions[bot]"
@@ -189,7 +207,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: 🧪 Step 2: Run tests (unless skipped)
-        if: ${{ !inputs.skip_tests }}
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_tests != 'true'
         run: |
           echo "🧪 === PASO 2: EJECUTANDO TESTS Y VALIDACIONES ==="
           bun run type-check
@@ -217,7 +235,7 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     needs: [ai-version-generation, build-and-prepare]
-    if: needs.ai-version-generation.outputs.should_skip != 'true' && (inputs.target_registry == 'npm' || inputs.target_registry == 'both')
+    if: needs.ai-version-generation.outputs.should_skip != 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'npm' || github.event.inputs.target_registry == 'both')))
     
     steps:
       - name: 📥 Checkout code
@@ -255,7 +273,7 @@ jobs:
   publish-github:
     runs-on: ubuntu-latest
     needs: [ai-version-generation, build-and-prepare]
-    if: needs.ai-version-generation.outputs.should_skip != 'true' && (inputs.target_registry == 'github' || inputs.target_registry == 'both')
+    if: needs.ai-version-generation.outputs.should_skip != 'true' && github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'github' || github.event.inputs.target_registry == 'both')
     
     steps:
       - name: 📥 Checkout code
@@ -364,10 +382,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ inputs.target_registry == 'npm' || inputs.target_registry == 'both' }}" == "true" ]; then
+          if [ "${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'npm' || github.event.inputs.target_registry == 'both')) }}" == "true" ]; then
             echo "- **NPM**: https://www.npmjs.com/package/@mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ "${{ inputs.target_registry == 'github' || inputs.target_registry == 'both' }}" == "true" ]; then
+          if [ "${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'github' || github.event.inputs.target_registry == 'both') }}" == "true" ]; then
             echo "- **GitHub Packages**: https://github.com/MKS2508/advanced-logger/packages/" >> $GITHUB_STEP_SUMMARY  
           fi
           echo "- **GitHub Release**: https://github.com/MKS2508/advanced-logger/releases/tag/$TAG" >> $GITHUB_STEP_SUMMARY
