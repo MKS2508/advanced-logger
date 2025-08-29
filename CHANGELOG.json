@@ -1,6 +1,58 @@
 {
-  "current_version": "0.8.1-alpha.1",
+  "current_version": "0.9.0-alpha.1",
   "versions": [
+    {
+      "version": "0.9.0-alpha.1",
+      "date": "2025-08-29",
+      "type": "minor",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.8.1-alpha.1 [skip ci]",
+          "description": "chore: release 0.8.1-alpha.1 [skip ci]"
+        },
+        {
+          "type": "improvement",
+          "title": "**YAML Syntax Fixes**: todos los workflows ahora pasan yamllint validation",
+          "description": "**YAML Syntax Fixes**: todos los workflows ahora pasan yamllint validation"
+        },
+        {
+          "type": "improvement",
+          "title": "**Bash Compatibility**: correcciones de sintaxis bash para mejor compatibilidad",
+          "description": "**Bash Compatibility**: correcciones de sintaxis bash para mejor compatibilidad"
+        },
+        {
+          "type": "improvement",
+          "title": "**Integrated Docs Deployment**: docs deployment integrado en release pipeline",
+          "description": "**Integrated Docs Deployment**: docs deployment integrado en release pipeline"
+        },
+        {
+          "type": "improvement",
+          "title": "**Pattern Matching**: uso de case statements para pattern matching robusto",
+          "description": "**Pattern Matching**: uso de case statements para pattern matching robusto"
+        },
+        {
+          "type": "improvement",
+          "title": "Workflows listos para ejecutar releases automáticos",
+          "description": "Workflows listos para ejecutar releases automáticos"
+        },
+        {
+          "type": "improvement",
+          "title": "Sub-packages publishing configurado correctamente",
+          "description": "Sub-packages publishing configurado correctamente"
+        },
+        {
+          "type": "improvement",
+          "title": "Docs deployment integrado en release completo",
+          "description": "Docs deployment integrado en release completo"
+        }
+      ],
+      "technical_notes": "- Sincronizar versiones 0.1.0-rc.1 en package.json y packages/*/package.json\n- Modificar releases-full.yml: añadir job publish-subpackages, integrar docs deployment\n- Eliminar paths-ignore de package.json/CHANGELOG.json para triggerear releases correctamente\n- Hacer docs-demo.yml workflow_call solo, no push automático\n- CommandProcessor: añadir ICLIPlugin, historial, aliases, modo interactivo\n- Crear HistoryCommand.ts con commands: history, clearhistory, interactive, plugins\n- Registrar nuevos comandos en createDefaultCLI() en index.ts\n- API.md: documentar plugin system, interactive mode, nuevos comandos\n- README.md: actualizar installation con packages modulares, enhanced CLI\n- PACKAGES.md: guía completa de sub-packages con ejemplos de uso\n- Añadir document start (---) en workflows que faltaban\n- Corregir espacios en brackets: [condition] → [ condition ]\n- Cambiar == por = en comparaciones bash de strings\n- Convertir if/elif/else con patterns a case statements para compatibilidad\n- Eliminar trailing spaces y asegurar newline al final\n- Simplificar docs deployment integrando pasos en lugar de workflow_call\n- Fix sintaxis de bash en condiciones con variables de GitHub Actions",
+      "breaking_changes": [],
+      "commit_hash": "3dd474a2fd4c64e64a35b3bed2931dca4ea9e678",
+      "prefix": "alpha"
+    },
     {
       "version": "0.8.1-alpha.1",
       "date": "2025-08-29",
