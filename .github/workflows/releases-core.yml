@@ -57,6 +57,8 @@ jobs:
   # ===== STEP 1: AI VERSION ANALYSIS FOR MODULAR RELEASE =====
   ai-modular-version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     outputs:
       version: ${{ steps.version.outputs.version }}

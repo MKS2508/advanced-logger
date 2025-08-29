@@ -61,6 +61,8 @@ jobs:
   ai-version-generation:
     runs-on: ubuntu-latest
     if: github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
 
     outputs:
       version: ${{ steps.version.outputs.version }}
