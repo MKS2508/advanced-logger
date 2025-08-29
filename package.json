@@ -27,9 +27,6 @@
     "url": "https://github.com/MKS2508/advanced-logger/issues"
   },
   "homepage": "https://mks2508.github.io/advanced-logger/",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
