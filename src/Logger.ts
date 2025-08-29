@@ -594,4 +594,4 @@ export const cli = (command: string) => defaultLogger.cli(command);
 
 // Re-export handlers and utilities for backward compatibility
 export { FileLogHandler, RemoteLogHandler, AnalyticsLogHandler, ExportLogHandler } from './handlers/index.js';
-export { StyleBuilder, StylePresets as Styles } from './styling/index.js';
+export { StyleBuilder, StylePresets as Styles } from './styling/index.js';// Test change to trigger workflow
