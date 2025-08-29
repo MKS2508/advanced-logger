@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger-exports",
-  "version": "alpha-0.5.0",
+  "version": "alpha-0.6.0",
   "type": "module",
   "description": "Export handlers for Better Logger - File, Remote, Analytics and custom log destinations",
   "main": "dist/index.js",
@@ -36,6 +36,6 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@mks2508/better-logger-core": "^alpha-0.5.0"
+    "@mks2508/better-logger-core": "^alpha-0.6.0"
   }
 }

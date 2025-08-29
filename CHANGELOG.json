@@ -1,6 +1,23 @@
 {
-  "current_version": "alpha-0.5.0",
+  "current_version": "alpha-0.6.0",
   "versions": [
+    {
+      "version": "alpha-0.6.0",
+      "date": "2025-08-29",
+      "type": "minor",
+      "title": "Versión Alpha - Nueva funcionalidad: feat(core): mejoras y actualizaciones automáticas",
+      "changes": [
+        {
+          "type": "feature",
+          "title": "feat(core): mejoras y actualizaciones automáticas",
+          "description": "feat(core): mejoras y actualizaciones automáticas"
+        }
+      ],
+      "technical_notes": "",
+      "breaking_changes": [],
+      "commit_hash": "3f9a76116a5a6dcde8b7e35810c3b155850a2ce1",
+      "prefix": "alpha"
+    },
     {
       "version": "alpha-0.5.0",
       "date": "2025-08-29",
