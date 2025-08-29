@@ -1,6 +1,128 @@
 {
-  "current_version": "0.7.2-alpha.1",
+  "current_version": "0.8.0-alpha.1",
   "versions": [
+    {
+      "version": "0.8.0-alpha.1",
+      "date": "2025-08-29",
+      "type": "minor",
+      "title": "Versión Alpha - Nueva funcionalidad: Introduces core functionality updates and adds optimized ARM64 binaries for Raspberry Pi",
+      "changes": [
+        {
+          "type": "feature",
+          "title": "Introduces core functionality updates and adds optimized ARM64 binaries for Raspberry Pi",
+          "description": "Introduces core functionality updates and adds optimized ARM64 binaries for Raspberry Pi."
+        },
+        {
+          "type": "fix",
+          "title": "✅ **GitHub Actions Workflows**: Se solucionaron los fallos de workflows releases-full",
+          "description": "✅ **GitHub Actions Workflows**: Se solucionaron los fallos de workflows releases-full.yml y releases-core.yml que impedían la publicación automática de releases"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Automatización CI/CD**: releases-full",
+          "description": "✅ **Automatización CI/CD**: releases-full.yml ahora se ejecuta automáticamente en push a main y también manual, releases-core.yml solo manual para releases modulares específicos"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Sintaxis YAML**: Se corrigieron errores de sintaxis en variables undefined que causaban fallos inmediatos de workflows",
+          "description": "✅ **Sintaxis YAML**: Se corrigieron errores de sintaxis en variables undefined que causaban fallos inmediatos de workflows"
+        },
+        {
+          "type": "fix",
+          "title": "fix(ci): corregir referencia incorrecta en condition de workflow",
+          "description": "fix(ci): corregir referencia incorrecta en condition de workflow"
+        },
+        {
+          "type": "fix",
+          "title": "fix(ci): usar github.event.inputs en lugar de inputs en workflow",
+          "description": "fix(ci): usar github.event.inputs en lugar de inputs en workflow"
+        },
+        {
+          "type": "fix",
+          "title": "fix(ci): usar variables de entorno para inputs condicionales en workflow",
+          "description": "fix(ci): usar variables de entorno para inputs condicionales en workflow"
+        },
+        {
+          "type": "fix",
+          "title": "fix(ci): simplificar variables de entorno en workflow",
+          "description": "fix(ci): simplificar variables de entorno en workflow"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Error Crítico YAML**: Se resolvió el error de sintaxis en línea 92 que causaba fallo inmediato de workflows",
+          "description": "✅ **Error Crítico YAML**: Se resolvió el error de sintaxis en línea 92 que causaba fallo inmediato de workflows"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Emojis en Steps**: Todos los nombres de steps con emojis ahora tienen comillas para evitar conflictos de parsing",
+          "description": "✅ **Emojis en Steps**: Todos los nombres de steps con emojis ahora tienen comillas para evitar conflictos de parsing"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Formato YAML**: Se limpiaron trailing spaces y se agregó document start para cumplir estándares",
+          "description": "✅ **Formato YAML**: Se limpiaron trailing spaces y se agregó document start para cumplir estándares"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Workflows Funcionales**: releases-full",
+          "description": "✅ **Workflows Funcionales**: releases-full.yml ahora puede ejecutarse tanto automática como manualmente sin errores"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Ciclos Infinitos**: Se previenen completamente los ciclos infinitos de workflows cuando se commitean version changes",
+          "description": "✅ **Ciclos Infinitos**: Se previenen completamente los ciclos infinitos de workflows cuando se commitean version changes"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Skip CI Pattern**: Implementación del patrón estándar [skip ci] en commits automatizados",
+          "description": "✅ **Skip CI Pattern**: Implementación del patrón estándar [skip ci] en commits automatizados"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Path Filtering**: Los cambios en archivos de versioning ya no triggereean workflows automáticamente",
+          "description": "✅ **Path Filtering**: Los cambios en archivos de versioning ya no triggereean workflows automáticamente"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Actor Protection**: Verificación adicional para prevenir que github-actions[bot] ejecute workflows",
+          "description": "✅ **Actor Protection**: Verificación adicional para prevenir que github-actions[bot] ejecute workflows"
+        },
+        {
+          "type": "improvement",
+          "title": "test: trigger workflow to verify anti-cycle protections",
+          "description": "test: trigger workflow to verify anti-cycle protections"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Git Push Permissions**: Se corrigió el error 403 de permisos que impedía que workflows commiteen cambios de versión",
+          "description": "✅ **Git Push Permissions**: Se corrigió el error 403 de permisos que impedía que workflows commiteen cambios de versión"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Workflows Completamente Funcionales**: releases-full",
+          "description": "✅ **Workflows Completamente Funcionales**: releases-full.yml y releases-core.yml ahora pueden ejecutar completamente sin errores"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Version Commits**: Los workflows pueden ahora actualizar package",
+          "description": "✅ **Version Commits**: Los workflows pueden ahora actualizar package.json y CHANGELOG.json correctamente"
+        },
+        {
+          "type": "fix",
+          "title": "✅ **Release Pipeline**: Pipeline completo de release automatizado ahora funciona end-to-end",
+          "description": "✅ **Release Pipeline**: Pipeline completo de release automatizado ahora funciona end-to-end"
+        },
+        {
+          "type": "improvement",
+          "title": "test: verify workflow permissions fix",
+          "description": "test: verify workflow permissions fix"
+        }
+      ],
+      "technical_notes": "- Version bumped to `0.7.2-alpha.1` in `package.json`, `package-lock.json`, `packages/core/package.json`, `packages/exports/package.json`, and `packages/styling/package.json`.\n- `CHANGELOG.json` updated to document the new version and its changes.\n- Includes pre-compiled and optimized ARM64 binaries for Raspberry Pi 3B+.\n- AI-assisted generation for detailed documentation and release notes.\n- Se arregló releases-full.yml para soportar tanto triggers automáticos (push) como manuales (workflow_dispatch) mediante lógica condicional que detecta el contexto de ejecución\n- Se corrigieron todas las referencias a ${{ inputs.* }} que causaban errores cuando el workflow era ejecutado por push events en lugar de workflow_dispatch\n- Se actualizó releases-core.yml para ser solo manual agregando \"(Manual Only)\" al nombre y manteniendo solo workflow_dispatch como trigger\n- Se implementó lógica condicional usando github.event_name para proporcionar valores por defecto cuando se ejecuta automáticamente (push context)\n- Se corrigieron condiciones de jobs para usar github.event.inputs.* en lugar de inputs.* para acceso correcto a los inputs\n- Se solucionó el error crítico de sintaxis en línea 92 de releases-full.yml que impedía la ejecución de workflows\n- Se agregaron comillas dobles a TODOS los nombres de steps que contienen emojis para evitar conflictos de parsing YAML\n- Se eliminaron trailing spaces en ambos workflows usando sed\n- Se agregó document start (---) al inicio de ambos workflows para cumplir con estándares YAML\n- Se corrigió espaciado en brackets de array [main] en lugar de [ main ]\n- Se agregó newline al final del archivo releases-full.yml\n- Se mantuvieron las referencias inputs.* en releases-core.yml ya que es solo manual (workflow_dispatch)\n- Se agregó [skip ci] al commit message de version changes para evitar que triggereen nuevos workflows\n- Se añadieron package.json, CHANGELOG.json y packages/*/package.json al path filtering de push triggers\n- Se implementó verificación github.actor != 'github-actions[bot]' para prevenir que el bot triggeree workflows\n- Triple protección: [skip ci] + path filtering + actor filtering\n- Se aplicaron las mismas correcciones tanto a releases-full.yml como releases-core.yml\n- Se agregó permissions: contents: write al job ai-version-generation en releases-full.yml\n- Se agregó permissions: contents: write al job ai-modular-version en releases-core.yml\n- Esto resuelve el error 403 \"Permission denied to github-actions[bot]\" al hacer git push\n- Los workflows ahora pueden commitear y pushear cambios de versión correctamente\n- Mantiene todas las protecciones anti-ciclo: [skip ci] + path filtering + actor filtering",
+      "breaking_changes": [],
+      "commit_hash": "9d12dc8cb0439207a37d59923827ea76f748c10e",
+      "prefix": "alpha"
+    },
     {
       "version": "0.7.2-alpha.1",
       "date": "2025-08-29",
