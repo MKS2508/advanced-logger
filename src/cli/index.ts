@@ -33,6 +33,12 @@ import {
     ClearBufferCommand, 
     BufferInfoCommand 
 } from './commands/ExportCommand.js';
+import { 
+    HistoryCommand, 
+    ClearHistoryCommand, 
+    InteractiveCommand, 
+    PluginsCommand 
+} from './commands/HistoryCommand.js';
 
 /**
  * Create and configure default CLI processor
@@ -54,6 +60,12 @@ export function createDefaultCLI(): CommandProcessor {
     processor.registerCommand(new BufferSizeCommand());
     processor.registerCommand(new ClearBufferCommand());
     processor.registerCommand(new BufferInfoCommand());
+    
+    // Register new enhanced commands
+    processor.registerCommand(new HistoryCommand());
+    processor.registerCommand(new ClearHistoryCommand());
+    processor.registerCommand(new InteractiveCommand());
+    processor.registerCommand(new PluginsCommand());
     
     return processor;
 }

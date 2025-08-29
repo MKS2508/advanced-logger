@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger",
-  "version": "0.8.1-alpha.1",
+  "version": "0.1.0-rc.1",
   "type": "module",
   "description": "State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface",
   "main": "dist/index.js",
@@ -58,6 +58,10 @@
     "release:github": "bun project-utils/github-release-manager.ts --auto-approve",
     "release:full": "npm run version:auto && npm run build:all && npm run release:github && npm run ci:publish",
     "release:auto": "bun project-utils/auto-release-gemini.ts --ai --auto-approve",
+    "publish:core": "cd packages/core && npm publish --access public",
+    "publish:styling": "cd packages/styling && npm publish --access public",
+    "publish:exports": "cd packages/exports && npm publish --access public",
+    "publish:all-packages": "npm run publish:core && npm run publish:styling && npm run publish:exports",
     "workflow:full": "npm run commit:auto && npm run release:full",
     "workflow:commit": "npm run commit:auto",
     "workflow:release": "npm run version:auto && npm run build:all && npm run release:github"

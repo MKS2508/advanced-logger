@@ -276,18 +276,102 @@ console.log('%c🎯 Accent', stylePresets.accent);
 
 ## 💻 CLI Interface
 
-Interactive command-line interface for logger configuration.
+Enhanced interactive command-line interface with plugin support, command history, and intelligent suggestions.
 
-### Available Commands
+### 🔌 Plugin System
 
-#### `/help`
+Extend CLI functionality with custom plugins:
+
+```typescript
+import { logger } from '@mks2508/better-logger';
+
+// Create a custom plugin
+const analyticsPlugin = {
+    name: 'analytics',
+    version: '1.0.0', 
+    description: 'Analytics tracking commands',
+    commands: [{
+        name: 'track',
+        description: 'Track user events',
+        usage: '/track <event> <data>',
+        category: 'analytics',
+        aliases: ['t'],
+        execute: (args, logger) => {
+            const [event, ...data] = args.split(' ');
+            logger.info(`📊 Tracking: ${event}`, data.join(' '));
+        }
+    }]
+};
+
+// Register the plugin
+logger.cliProcessor.registerPlugin(analyticsPlugin, logger);
+```
+
+### 🌐 Interactive Mode
+
+Enter interactive mode for streamlined browser console usage:
+
+```typescript
+// Enter interactive mode
+logger.executeCommand('/interactive');
+
+// Now use commands directly:
+cli('help');           // Instead of logger.executeCommand('/help')  
+cli('theme matrix');   // Change theme interactively
+cli('history 5');      // Show last 5 commands
+```
+
+### 📋 Enhanced Commands
+
+#### Core Commands
+
+##### `/help`
 Display help information and available commands.
+```typescript
+logger.executeCommand('/help');
+```
 
-#### `/config`
+##### `/config`  
 Show current logger configuration.
 ```typescript
-/config
+logger.executeCommand('/config');
 // Displays: Theme: default, Level: info, Stack traces: enabled
+```
+
+##### `/history [limit]` | Aliases: `/hist`, `/h`
+View command execution history with success/failure status.
+```typescript
+logger.executeCommand('/history 10');     // Show last 10 commands
+logger.executeCommand('/hist');           // Show default (10) recent commands
+// ✅ [14:32:15] /theme matrix
+// ❌ [14:31:45] /invalid-command  
+// ✅ [14:30:22] /export csv
+```
+
+##### `/clearhistory` | Aliases: `/clrhist`
+Clear all command history.
+```typescript
+logger.executeCommand('/clearhistory');
+// 🗑️ Command history cleared
+```
+
+##### `/interactive` | Aliases: `/i`, `/repl`
+Enter interactive CLI mode for browser console.
+```typescript
+logger.executeCommand('/interactive');
+// 🔧 Interactive CLI mode activated. Type /exit to quit, /help for commands.
+// 💡 Use cli("command") to execute CLI commands in browser console.
+```
+
+##### `/plugins` | Aliases: `/plug`
+List all registered plugins and their commands.
+```typescript
+logger.executeCommand('/plugins');
+// 🔌 Loaded plugins (2):
+//   📦 analytics v1.0.0 - Analytics tracking commands
+//      Commands: track, event
+//   📦 performance v2.1.0 - Performance monitoring tools  
+//      Commands: benchmark, profile
 ```
 
 #### `/theme [name]`

@@ -1,14 +1,9 @@
 name: Docs & Demo Deployment
 
 on:
-  push:
-    branches: [ main ]
-    paths: 
-      - 'docs/**'
-      - 'demo.html'
-      - 'index.html'
-      - 'src/**'
   workflow_dispatch:
+  # Solo se ejecuta manualmente o cuando se llama desde otro workflow
+  workflow_call:
 
 env:
   NODE_VERSION: '20'

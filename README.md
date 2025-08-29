@@ -24,9 +24,26 @@ Transform your console logging experience with beautiful styling, professional t
 
 ## 📦 Installation
 
+### Full Package (Recommended)
 ```bash
 npm install @mks2508/better-logger
 ```
+
+### Modular Installation  
+Choose only the functionality you need:
+
+```bash
+# Core logging only (~15KB)
+npm install @mks2508/better-logger-core
+
+# Add styling capabilities (~12KB)  
+npm install @mks2508/better-logger-styling
+
+# Add export handlers (~18KB)
+npm install @mks2508/better-logger-exports
+```
+
+> 📋 **[View Complete Packages Guide →](https://mks2508.github.io/advanced-logger/packages/)**
 
 ## 🚀 Quick Start
 
@@ -45,6 +62,35 @@ logger.error('API request failed', { status: 500 });
 logger.time('operation');
 await performOperation();
 logger.timeEnd('operation'); // Shows duration with beautiful styling
+```
+
+## 🔧 Enhanced CLI Interface
+
+New in v0.1.0-rc.1! Interactive CLI with plugin support and command history:
+
+```typescript
+import { Logger } from '@mks2508/better-logger';
+
+const logger = new Logger();
+
+// Enter interactive mode
+logger.executeCommand('/interactive');
+
+// Use enhanced CLI in browser console:
+cli('help');             // Show all commands
+cli('theme cyberpunk');  // Change theme
+cli('history 5');        // View command history  
+cli('plugins');          // List loaded plugins
+
+// Create custom plugins
+const myPlugin = {
+  name: 'analytics',
+  commands: [{ 
+    name: 'track', 
+    execute: (args, logger) => logger.info(`Tracking: ${args}`) 
+  }]
+};
+logger.cliProcessor.registerPlugin(myPlugin);
 ```
 
 ## 🔧 Modular Usage

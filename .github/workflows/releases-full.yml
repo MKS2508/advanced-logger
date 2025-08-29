@@ -46,12 +46,8 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'docs/**'
       - '*.md'
       - '.github/workflows/docs-demo.yml'
-      - 'package.json'
-      - 'CHANGELOG.json'
-      - 'packages/*/package.json'
 
 env:
   NODE_VERSION: '20'
@@ -234,10 +230,72 @@ jobs:
           path: dist/
           retention-days: 30
 
-  # ===== STEP 3: NPM PUBLISHING =====
-  publish-npm:
+  # ===== STEP 3: PUBLISH SUB-PACKAGES =====
+  publish-subpackages:
     runs-on: ubuntu-latest
     needs: [ai-version-generation, build-and-prepare]
+    if: needs.ai-version-generation.outputs.should_skip != 'true'
+
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: "📦 Setup Node.js with NPM registry"
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: "📥 Download build artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ needs.ai-version-generation.outputs.version }}
+          path: dist/
+
+      - name: "🚀 Step 3a: Publish Sub-Packages to NPM"
+        run: |
+          echo "🚀 === PASO 3a: PUBLICANDO SUB-PACKAGES EN NPM ==="
+          
+          # Core package
+          echo "📦 Publishing @mks2508/better-logger-core"
+          cd packages/core
+          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+            npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
+          else
+            npm publish --access public
+          fi
+          cd ../..
+          
+          # Styling package
+          echo "📦 Publishing @mks2508/better-logger-styling"
+          cd packages/styling
+          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+            npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
+          else
+            npm publish --access public
+          fi
+          cd ../..
+          
+          # Exports package
+          echo "📦 Publishing @mks2508/better-logger-exports"
+          cd packages/exports
+          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+            npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
+          else
+            npm publish --access public
+          fi
+          cd ../..
+          
+          echo "✅ Sub-packages published successfully"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # ===== STEP 4: NPM MAIN PACKAGE PUBLISHING =====
+  publish-npm:
+    runs-on: ubuntu-latest
+    needs: [ai-version-generation, build-and-prepare, publish-subpackages]
     if: needs.ai-version-generation.outputs.should_skip != 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'npm' || github.event.inputs.target_registry == 'both')))
 
     steps:
@@ -272,10 +330,16 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+  # ===== STEP 4.5: DOCS & DEMO DEPLOYMENT =====
+  deploy-docs-demo:
+    uses: ./.github/workflows/docs-demo.yml
+    needs: [ai-version-generation, build-and-prepare]
+    if: needs.ai-version-generation.outputs.should_skip != 'true'
+
   # ===== STEP 4: GITHUB PACKAGES PUBLISHING =====
   publish-github:
     runs-on: ubuntu-latest
-    needs: [ai-version-generation, build-and-prepare]
+    needs: [ai-version-generation, build-and-prepare, publish-subpackages]
     if: needs.ai-version-generation.outputs.should_skip != 'true' && github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'github' || github.event.inputs.target_registry == 'both')
 
     steps:
@@ -313,7 +377,7 @@ jobs:
   # ===== STEP 5: GITHUB RELEASE WITH AI =====
   create-github-release:
     runs-on: ubuntu-latest
-    needs: [ai-version-generation, build-and-prepare, publish-npm, publish-github]
+    needs: [ai-version-generation, build-and-prepare, publish-subpackages, publish-npm, publish-github, deploy-docs-demo]
     if: always() && needs.ai-version-generation.outputs.should_skip != 'true' && needs.build-and-prepare.result == 'success'
 
     permissions:
@@ -359,7 +423,7 @@ jobs:
   # ===== RELEASE SUMMARY =====
   release-summary:
     runs-on: ubuntu-latest
-    needs: [ai-version-generation, build-and-prepare, publish-npm, publish-github, create-github-release]
+    needs: [ai-version-generation, build-and-prepare, publish-subpackages, publish-npm, publish-github, deploy-docs-demo, create-github-release]
     if: always() && needs.ai-version-generation.outputs.should_skip != 'true'
 
     steps:
@@ -379,14 +443,19 @@ jobs:
           echo "### 📊 Pipeline Steps Results" >> $GITHUB_STEP_SUMMARY
           echo "1. **AI Version Generation**: ✅ $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "2. **Build & Prepare**: ${{ needs.build-and-prepare.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "3. **NPM Publishing**: ${{ needs.publish-npm.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "4. **GitHub Packages**: ${{ needs.publish-github.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "5. **GitHub Release**: ${{ needs.create-github-release.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Sub-Packages Publishing**: ${{ needs.publish-subpackages.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "4. **Main NPM Publishing**: ${{ needs.publish-npm.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "5. **GitHub Packages**: ${{ needs.publish-github.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "6. **Docs & Demo Deployment**: ${{ needs.deploy-docs-demo.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "7. **GitHub Release**: ${{ needs.create-github-release.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
           if [ "${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'npm' || github.event.inputs.target_registry == 'both')) }}" == "true" ]; then
-            echo "- **NPM**: https://www.npmjs.com/package/@mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
+            echo "- **Main Package**: https://www.npmjs.com/package/@mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
+            echo "- **Core Package**: https://www.npmjs.com/package/@mks2508/better-logger-core" >> $GITHUB_STEP_SUMMARY
+            echo "- **Styling Package**: https://www.npmjs.com/package/@mks2508/better-logger-styling" >> $GITHUB_STEP_SUMMARY
+            echo "- **Exports Package**: https://www.npmjs.com/package/@mks2508/better-logger-exports" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'github' || github.event.inputs.target_registry == 'both') }}" == "true" ]; then
             echo "- **GitHub Packages**: https://github.com/MKS2508/advanced-logger/packages/" >> $GITHUB_STEP_SUMMARY
