@@ -87,7 +87,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: 🖼️ Run visual tests
-        run: npm run ci:test:visual
+        run: npm run test:visual
 
       - name: 📤 Upload test results
         uses: actions/upload-artifact@v4
@@ -296,7 +296,7 @@ jobs:
           path: dist/
 
       - name: ⚡ Performance benchmarks
-        run: npm run ci:test:performance
+        run: npm run test:performance
 
       - name: 📊 Bundle analysis
         run: |
