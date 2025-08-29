@@ -49,6 +49,9 @@ on:
       - 'docs/**'
       - '*.md'
       - '.github/workflows/docs-demo.yml'
+      - 'package.json'
+      - 'CHANGELOG.json'
+      - 'packages/*/package.json'
 
 env:
   NODE_VERSION: '20'
@@ -57,6 +60,7 @@ jobs:
   # ===== STEP 1: AI VERSION ANALYSIS & GENERATION =====
   ai-version-generation:
     runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
 
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -164,7 +168,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json CHANGELOG.json packages/*/package.json
-          git commit -m "chore: release ${{ steps.version.outputs.version }}" || echo "No changes to commit"
+          git commit -m "chore: release ${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
           git push origin main
 
       - name: "📤 Upload version artifacts"
