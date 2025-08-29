@@ -103,7 +103,7 @@ jobs:
           echo "🤖 === PASO 1: ANÁLISIS Y GENERACIÓN DE VERSIÓN CON AI ==="
 
           # Mostrar contexto de ejecución
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [  "${{ github.event_name }}" = "workflow_dispatch"  ]; then
             echo "📝 Ejecutando en modo manual con parámetros especificados"
           else
             echo "🔄 Ejecutando automáticamente desde push - usando defaults"
@@ -112,18 +112,18 @@ jobs:
           # Preparar argumentos para version-manager usando variables de entorno
           ARGS="--auto-approve"
 
-          if [ "$VERSION_TYPE" != "auto" ]; then
+          if [  "$VERSION_TYPE" != "auto"  ]; then
             ARGS="$ARGS --type $VERSION_TYPE"
           fi
 
-          if [ "$VERSION_PREFIX" != "stable" ]; then
+          if [  "$VERSION_PREFIX" != "stable"  ]; then
             ARGS="$ARGS --prefix $VERSION_PREFIX"
           fi
 
           # Mostrar comando que se ejecutará
           echo "📋 Ejecutando: bun project-utils/version-manager.ts $ARGS"
 
-          if [ "$DRY_RUN" = "true" ]; then
+          if [  "$DRY_RUN" = "true"  ]; then
             echo "🔍 [DRY RUN] Se generaría nueva versión con: $ARGS"
             echo "should_skip=true" >> $GITHUB_OUTPUT
             echo "version=dry-run" >> $GITHUB_OUTPUT
@@ -141,19 +141,24 @@ jobs:
             echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
 
             # Determinar si es prerelease y canal
-            if [[ "$NEW_VERSION" == *"alpha"* ]]; then
-              echo "is_prerelease=true" >> $GITHUB_OUTPUT
-              echo "release_channel=alpha" >> $GITHUB_OUTPUT
-            elif [[ "$NEW_VERSION" == *"beta"* ]]; then
-              echo "is_prerelease=true" >> $GITHUB_OUTPUT
-              echo "release_channel=beta" >> $GITHUB_OUTPUT
-            elif [[ "$NEW_VERSION" == *"rc"* ]]; then
-              echo "is_prerelease=true" >> $GITHUB_OUTPUT
-              echo "release_channel=rc" >> $GITHUB_OUTPUT
-            else
-              echo "is_prerelease=false" >> $GITHUB_OUTPUT
-              echo "release_channel=latest" >> $GITHUB_OUTPUT
-            fi
+            case "$NEW_VERSION" in
+              *alpha*)
+                echo "is_prerelease=true" >> $GITHUB_OUTPUT
+                echo "release_channel=alpha" >> $GITHUB_OUTPUT
+                ;;
+              *beta*)
+                echo "is_prerelease=true" >> $GITHUB_OUTPUT
+                echo "release_channel=beta" >> $GITHUB_OUTPUT
+                ;;
+              *rc*)
+                echo "is_prerelease=true" >> $GITHUB_OUTPUT
+                echo "release_channel=rc" >> $GITHUB_OUTPUT
+                ;;
+              *)
+                echo "is_prerelease=false" >> $GITHUB_OUTPUT
+                echo "release_channel=latest" >> $GITHUB_OUTPUT
+                ;;
+            esac
 
             echo "should_skip=false" >> $GITHUB_OUTPUT
             echo "✅ Nueva versión generada: $NEW_VERSION"
@@ -257,37 +262,37 @@ jobs:
       - name: "🚀 Step 3a: Publish Sub-Packages to NPM"
         run: |
           echo "🚀 === PASO 3a: PUBLICANDO SUB-PACKAGES EN NPM ==="
-          
+
           # Core package
           echo "📦 Publishing @mks2508/better-logger-core"
           cd packages/core
-          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+          if [  "${{ needs.ai-version-generation.outputs.is_prerelease }}" = "true"  ]; then
             npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
           else
             npm publish --access public
           fi
           cd ../..
-          
+
           # Styling package
           echo "📦 Publishing @mks2508/better-logger-styling"
           cd packages/styling
-          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+          if [  "${{ needs.ai-version-generation.outputs.is_prerelease }}" = "true"  ]; then
             npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
           else
             npm publish --access public
           fi
           cd ../..
-          
+
           # Exports package
           echo "📦 Publishing @mks2508/better-logger-exports"
           cd packages/exports
-          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+          if [  "${{ needs.ai-version-generation.outputs.is_prerelease }}" = "true"  ]; then
             npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
           else
             npm publish --access public
           fi
           cd ../..
-          
+
           echo "✅ Sub-packages published successfully"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -319,7 +324,7 @@ jobs:
       - name: "🚀 Step 4: Publish to NPM Registry"
         run: |
           echo "🚀 === PASO 4: PUBLICANDO EN NPM REGISTRY ==="
-          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+          if [  "${{ needs.ai-version-generation.outputs.is_prerelease }}" = "true"  ]; then
             echo "📦 Publishing prerelease to NPM with tag: ${{ needs.ai-version-generation.outputs.release_channel }}"
             npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
           else
@@ -332,9 +337,54 @@ jobs:
 
   # ===== STEP 4.5: DOCS & DEMO DEPLOYMENT =====
   deploy-docs-demo:
-    uses: ./.github/workflows/docs-demo.yml
+    runs-on: ubuntu-latest
     needs: [ai-version-generation, build-and-prepare]
     if: needs.ai-version-generation.outputs.should_skip != 'true'
+
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "📦 Setup Bun"
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: "🔧 Install dependencies"
+        run: bun install --frozen-lockfile
+
+      - name: "🏗️ Build library for demo"
+        run: bun run build:full
+
+      - name: "🏗️ Setup demo structure"
+        run: |
+          mkdir -p _site/docs
+          cp demo.html _site/index.html
+          cp index.html _site/dev.html
+          cp -r dist/ _site/dist/
+
+      - name: "📤 Build Jekyll documentation"
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site/docs
+
+      - name: "📤 Setup Pages"
+        uses: actions/configure-pages@v4
+
+      - name: "📤 Upload to Pages"
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+      - name: "🚀 Deploy to GitHub Pages"
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
 
   # ===== STEP 4: GITHUB PACKAGES PUBLISHING =====
   publish-github:
@@ -363,7 +413,7 @@ jobs:
       - name: "📦 Step 5: Publish to GitHub Packages"
         run: |
           echo "📦 === PASO 5: PUBLICANDO EN GITHUB PACKAGES ==="
-          if [ "${{ needs.ai-version-generation.outputs.is_prerelease }}" == "true" ]; then
+          if [  "${{ needs.ai-version-generation.outputs.is_prerelease }}" = "true"  ]; then
             echo "📦 Publishing prerelease to GitHub Packages with tag: ${{ needs.ai-version-generation.outputs.release_channel }}"
             npm publish --access public --tag ${{ needs.ai-version-generation.outputs.release_channel }}
           else
@@ -451,13 +501,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'npm' || github.event.inputs.target_registry == 'both')) }}" == "true" ]; then
+          if [  "${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'npm' || github.event.inputs.target_registry == 'both')) }}" = "true"  ]; then
             echo "- **Main Package**: https://www.npmjs.com/package/@mks2508/better-logger" >> $GITHUB_STEP_SUMMARY
             echo "- **Core Package**: https://www.npmjs.com/package/@mks2508/better-logger-core" >> $GITHUB_STEP_SUMMARY
             echo "- **Styling Package**: https://www.npmjs.com/package/@mks2508/better-logger-styling" >> $GITHUB_STEP_SUMMARY
             echo "- **Exports Package**: https://www.npmjs.com/package/@mks2508/better-logger-exports" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ "${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'github' || github.event.inputs.target_registry == 'both') }}" == "true" ]; then
+          if [  "${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.target_registry == 'github' || github.event.inputs.target_registry == 'both') }}" = "true"  ]; then
             echo "- **GitHub Packages**: https://github.com/MKS2508/advanced-logger/packages/" >> $GITHUB_STEP_SUMMARY
           fi
           echo "- **GitHub Release**: https://github.com/MKS2508/advanced-logger/releases/tag/$TAG" >> $GITHUB_STEP_SUMMARY
@@ -465,7 +515,7 @@ jobs:
 
           echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          if [ "$IS_PRERELEASE" == "true" ]; then
+          if [  "$IS_PRERELEASE" = "true"  ]; then
             echo "npm install @mks2508/better-logger@$CHANNEL" >> $GITHUB_STEP_SUMMARY
           else
             echo "npm install @mks2508/better-logger" >> $GITHUB_STEP_SUMMARY

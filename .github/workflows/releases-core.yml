@@ -92,7 +92,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: 🤖 Step 1: AI Version Analysis for Modular Release
+      - name: "🤖 Step 1: AI Version Analysis for Modular Release"
         id: version
         run: |
           echo "🤖 === PASO 1: ANÁLISIS AI PARA RELEASE MODULAR ==="
@@ -128,19 +128,24 @@ jobs:
           echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
 
           # Determinar si es prerelease y canal
-          if [[ "$NEW_VERSION" == *"alpha"* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "release_channel=alpha" >> $GITHUB_OUTPUT
-          elif [[ "$NEW_VERSION" == *"beta"* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "release_channel=beta" >> $GITHUB_OUTPUT
-          elif [[ "$NEW_VERSION" == *"rc"* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "release_channel=rc" >> $GITHUB_OUTPUT
-          else
-            echo "is_prerelease=false" >> $GITHUB_OUTPUT
-            echo "release_channel=latest" >> $GITHUB_OUTPUT
-          fi
+          case "$NEW_VERSION" in
+            *alpha*)
+              echo "is_prerelease=true" >> $GITHUB_OUTPUT
+              echo "release_channel=alpha" >> $GITHUB_OUTPUT
+              ;;
+            *beta*)
+              echo "is_prerelease=true" >> $GITHUB_OUTPUT
+              echo "release_channel=beta" >> $GITHUB_OUTPUT
+              ;;
+            *rc*)
+              echo "is_prerelease=true" >> $GITHUB_OUTPUT
+              echo "release_channel=rc" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "is_prerelease=false" >> $GITHUB_OUTPUT
+              echo "release_channel=latest" >> $GITHUB_OUTPUT
+              ;;
+          esac
 
           echo "✅ Versión generada para release modular: $NEW_VERSION"
 
@@ -250,7 +255,7 @@ jobs:
 
           # Mostrar archivos generados
           echo "📊 Archivos generados para ${{ matrix.module }}:"
-          if [ "${{ matrix.module }}" == "full" ] || [ "${{ matrix.module }}" == "all" ]; then
+          if [ "${{ matrix.module }}" == "full" ] || ["${{ matrix.module }}" == "all"]; then
             ls -la dist/
           else
             ls -la dist/modular/${{ matrix.module }}/ || ls -la dist/
@@ -294,7 +299,7 @@ jobs:
           echo "🚀 === PASO 4: PUBLICANDO RELEASES MODULARES EN NPM ==="
 
           # Determinar tag de publicación
-          if [ "${{ needs.ai-modular-version.outputs.is_prerelease }}" == "true" ]; then
+          if [ "${{ needs.ai-modular-version.outputs.is_prerelease }}" = "true" ]; then
             PUBLISH_TAG="${{ needs.ai-modular-version.outputs.release_channel }}"
             echo "📦 Publicando como prerelease con tag: $PUBLISH_TAG"
           else
@@ -303,7 +308,7 @@ jobs:
           fi
 
           # Publicar dependiendo del módulo seleccionado
-          if [ "${{ inputs.module }}" == "all" ] || [ "${{ inputs.module }}" == "full" ]; then
+          if [ "${{ inputs.module }}" == "all" ] || ["${{ inputs.module }}" == "full"]; then
             echo "📦 Publicando paquete completo..."
             npm publish --access public --tag $PUBLISH_TAG
           else
@@ -345,7 +350,7 @@ jobs:
         run: |
           echo "📦 === PASO 5: PUBLICANDO EN GITHUB PACKAGES ==="
 
-          if [ "${{ needs.ai-modular-version.outputs.is_prerelease }}" == "true" ]; then
+          if [ "${{ needs.ai-modular-version.outputs.is_prerelease }}" = "true" ]; then
             echo "📦 Publishing prerelease to GitHub Packages with tag: ${{ needs.ai-modular-version.outputs.release_channel }}"
             npm publish --access public --tag ${{ needs.ai-modular-version.outputs.release_channel }}
           else
@@ -440,7 +445,7 @@ jobs:
 
           echo "### 📦 Module-Specific Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          if [ "$IS_PRERELEASE" == "true" ]; then
+          if [ "$IS_PRERELEASE" = "true" ]; then
             echo "npm install @mks2508/better-logger@$CHANNEL  # $MODULE module included" >> $GITHUB_STEP_SUMMARY
           else
             echo "npm install @mks2508/better-logger  # $MODULE module included" >> $GITHUB_STEP_SUMMARY

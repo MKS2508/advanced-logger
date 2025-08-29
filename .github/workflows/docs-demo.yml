@@ -1,3 +1,4 @@
+---
 name: Docs & Demo Deployment
 
 on:
@@ -12,7 +13,7 @@ jobs:
   # ===== BUILD DEMO =====
   build-demo:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -20,7 +21,7 @@ jobs:
       - name: 📦 Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest          
+          bun-version: latest
       - name: 🔧 Install dependencies
         run: bun install --frozen-lockfile
 
@@ -34,7 +35,7 @@ jobs:
           cp demo.html _site/index.html
           cp index.html _site/dev.html
           cp -r dist/ _site/dist/
-          
+
           # Create demo metadata
           echo "## 📦 Demo Build Info" > _site/build-info.md
           echo "- **Build Date**: $(date)" >> _site/build-info.md
@@ -51,7 +52,7 @@ jobs:
   # ===== BUILD DOCS =====
   build-docs:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -74,16 +75,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-demo, build-docs]
     if: github.ref == 'refs/heads/main'
-    
+
     permissions:
       contents: read
       pages: write
       id-token: write
-    
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
       - name: 📥 Download demo artifacts
         uses: actions/download-artifact@v4
@@ -112,7 +113,7 @@ jobs:
       - name: 📊 Deployment summary
         run: |
           echo "## 📝 Documentation & Demo Deployed!" >> $GITHUB_STEP_SUMMARY
-          echo "- **Demo URL**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY  
+          echo "- **Demo URL**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Docs URL**: ${{ steps.deployment.outputs.page_url }}docs/" >> $GITHUB_STEP_SUMMARY
           echo "- **Dev Demo**: ${{ steps.deployment.outputs.page_url }}dev.html" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Info**: ${{ steps.deployment.outputs.page_url }}build-info.md" >> $GITHUB_STEP_SUMMARY

@@ -1,10 +1,11 @@
+---
 name: CI Quality & Testing
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
     inputs:
       run_performance:
@@ -25,15 +26,15 @@ jobs:
   # ===== MATRIX TESTING =====
   test-matrix:
     runs-on: ubuntu-latest
-    
+
     strategy:
       fail-fast: false
       matrix:
         bun-version: ["1.0", "latest"]
         build-mode: [full, core, styling, exports]
-    
+
     name: Test Bun ${{ matrix.bun-version }} - ${{ matrix.build-mode }}
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -78,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-matrix
     if: ${{ inputs.run_performance != false }}
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -108,7 +109,7 @@ jobs:
           echo "\`\`\`" >> performance-report.md
           ls -la dist/ >> performance-report.md
           echo "\`\`\`" >> performance-report.md
-          
+
           echo "### File Sizes by Module" >> performance-report.md
           for module in core styling exports; do
             if [ -d "dist/modular/$module" ]; then
@@ -118,7 +119,7 @@ jobs:
               echo "\`\`\`" >> performance-report.md
             fi
           done
-          
+
           echo "### Performance Metrics" >> performance-report.md
           echo "- **Build Time**: $(date)" >> performance-report.md
           echo "- **Node Version**: ${{ env.NODE_VERSION }}" >> performance-report.md
@@ -135,7 +136,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-matrix
     if: ${{ inputs.run_visual == true }}
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -180,7 +181,7 @@ jobs:
   # ===== SECURITY AUDIT =====
   security-audit:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -208,7 +209,7 @@ jobs:
           echo "\`\`\`" >> security-report.md
           npm audit --audit-level=moderate >> security-report.md || echo "No critical vulnerabilities" >> security-report.md
           echo "\`\`\`" >> security-report.md
-          
+
           echo "### Outdated Packages" >> security-report.md
           echo "\`\`\`" >> security-report.md
           npm outdated >> security-report.md || echo "All packages up to date" >> security-report.md
@@ -225,7 +226,7 @@ jobs:
   code-quality:
     runs-on: ubuntu-latest
     needs: test-matrix
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -242,14 +243,14 @@ jobs:
       - name: 🔍 Code analysis
         run: |
           echo "🔍 Analyzing code quality..."
-          
+
           # Análisis básico de código
           echo "## 📊 Code Quality Report" > quality-report.md
           echo "### TypeScript Analysis" >> quality-report.md
           echo "\`\`\`" >> quality-report.md
           bun run type-check >> quality-report.md 2>&1 || echo "TypeScript issues detected" >> quality-report.md
           echo "\`\`\`" >> quality-report.md
-          
+
           echo "### File Statistics" >> quality-report.md
           echo "- **Total TypeScript files**: $(find src/ -name '*.ts' | wc -l)" >> quality-report.md
           echo "- **Total lines of code**: $(find src/ -name '*.ts' -exec wc -l {} + | tail -1 | awk '{print $1}')" >> quality-report.md
@@ -265,7 +266,7 @@ jobs:
   # ===== PROJECT UTILS VALIDATION =====
   validate-project-utils:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -282,10 +283,10 @@ jobs:
       - name: 🧪 Test project-utils scripts
         run: |
           echo "🧪 Validating project-utils scripts..."
-          
+
           # Verificar que los scripts existan y sean ejecutables
           SCRIPTS=("commit-generator.ts" "version-manager.ts" "github-release-manager.ts" "auto-release-gemini.ts")
-          
+
           for script in "${SCRIPTS[@]}"; do
             if [ -f "project-utils/$script" ]; then
               echo "✅ $script exists"
@@ -299,10 +300,10 @@ jobs:
       - name: 📊 Validate package.json scripts
         run: |
           echo "📊 Validating package.json scripts..."
-          
+
           # Verificar scripts críticos
           CRITICAL_SCRIPTS=("build" "build:all" "commit:auto" "version:auto" "workflow:full")
-          
+
           for script in "${CRITICAL_SCRIPTS[@]}"; do
             if bun run --silent "$script" --help >/dev/null 2>&1; then
               echo "✅ Script '$script' is valid"
@@ -316,13 +317,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-matrix, performance-tests, visual-tests, security-audit, code-quality, validate-project-utils]
     if: always()
-    
+
     steps:
       - name: 📊 CI Quality Summary
         run: |
           echo "## 📊 CI Quality & Testing Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Status de cada job
           echo "### 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
           echo "- **Matrix Testing**: ${{ needs.test-matrix.result }}" >> $GITHUB_STEP_SUMMARY
@@ -332,22 +333,22 @@ jobs:
           echo "- **Code Quality**: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Project Utils**: ${{ needs.validate-project-utils.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### 📋 Coverage Matrix" >> $GITHUB_STEP_SUMMARY
           echo "- **Node Versions**: 18, 20, 21" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Modes**: full, core, styling, exports" >> $GITHUB_STEP_SUMMARY
           echo "- **Test Types**: unit, performance, visual, security" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Determinar estado general
-          if [ "${{ needs.test-matrix.result }}" = "success" ] && [ "${{ needs.security-audit.result }}" = "success" ] && [ "${{ needs.code-quality.result }}" = "success" ]; then
+          if [ "${{ needs.test-matrix.result }}" = "success" ] && ["${{ needs.security-audit.result }}" = "success"] && ["${{ needs.code-quality.result }}" = "success"]; then
             echo "### ✅ Overall Status: PASSED" >> $GITHUB_STEP_SUMMARY
             echo "All critical quality checks passed successfully." >> $GITHUB_STEP_SUMMARY
           else
             echo "### ⚠️ Overall Status: ATTENTION REQUIRED" >> $GITHUB_STEP_SUMMARY
             echo "Some quality checks require attention. Review individual job results." >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📎 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
           echo "- Build artifacts for all modules" >> $GITHUB_STEP_SUMMARY
