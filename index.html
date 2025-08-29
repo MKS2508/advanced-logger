@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Logger Test Page - 2025</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .console-note {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #92400e;
+            font-weight: 500;
+        }
+
+        .devtools-button {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 8px 16px;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .devtools-button:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .log-button {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 60px;
+        }
+
+        .log-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .log-button.debug {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .log-button.debug:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .log-button.info {
+            border-color: #74b9ff;
+            color: #74b9ff;
+        }
+
+        .log-button.info:hover {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+        }
+
+        .log-button.warn {
+            border-color: #fdcb6e;
+            color: #e17055;
+        }
+
+        .log-button.warn:hover {
+            background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+            color: white;
+        }
+
+        .log-button.error {
+            border-color: #e84393;
+            color: #e84393;
+        }
+
+        .log-button.error:hover {
+            background: linear-gradient(135deg, #e84393 0%, #d63031 100%);
+            color: white;
+        }
+
+        .log-button.success {
+            border-color: #00b894;
+            color: #00b894;
+        }
+
+        .log-button.success:hover {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+        }
+
+        .log-button.critical {
+            border-color: #ff3838;
+            color: #ff3838;
+        }
+
+        .log-button.critical:hover {
+            background: linear-gradient(135deg, #ff3838 0%, #ff1744 100%);
+            color: white;
+        }
+
+        .advanced-section {
+            border-top: 2px solid #e2e8f0;
+            padding-top: 30px;
+            margin-top: 30px;
+        }
+
+        .advanced-section h2 {
+            color: #374151;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .button-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🚀 Advanced Logger Test</h1>
+            <p>State-of-the-art console logging with advanced styling</p>
+            <div class="console-note">
+                📝 Open your browser's Developer Console to see the styled log output
+                <button class="devtools-button" id="devtools-btn" onclick="tryOpenDevTools()">
+                    🔧 Press F12 to Open DevTools
+                </button>
+                <div id="devtools-status" style="margin-top: 8px; font-size: 12px; display: none;">
+                    ✅ DevTools detected! Check the Console tab
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="button-grid">
+                <button class="log-button debug" onclick="testDebug()">
+                    🐞 Debug Log
+                </button>
+                <button class="log-button info" onclick="testInfo()">
+                    ℹ️ Info Log
+                </button>
+                <button class="log-button warn" onclick="testWarn()">
+                    ⚠️ Warning Log
+                </button>
+                <button class="log-button error" onclick="testError()">
+                    ❌ Error Log
+                </button>
+                <button class="log-button success" onclick="testSuccess()">
+                    ✅ Success Log
+                </button>
+                <button class="log-button critical" onclick="testCritical()">
+                    🔥 Critical Log
+                </button>
+            </section>
+
+            <section class="advanced-section">
+                <h2>Advanced Features</h2>
+                <div class="button-grid">
+                    <button class="log-button info" onclick="testTable()">
+                        📊 Table Display
+                    </button>
+                    <button class="log-button debug" onclick="testGrouping()">
+                        📁 Grouped Logs
+                    </button>
+                    <button class="log-button warn" onclick="testTiming()">
+                        ⏱️ Performance Timer
+                    </button>
+                    <button class="log-button info" onclick="testScopedLogger()">
+                        🎯 Scoped Logger
+                    </button>
+                    <button class="log-button debug" onclick="testTrace()">
+                        🔍 Stack Trace
+                    </button>
+                    <button class="log-button success" onclick="testAllFeatures()">
+                        🌟 Demo All Features
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>Advanced Logger v2.0.0 | Built with TypeScript & Modern Web Standards</p>
+        </footer>
+    </div>
+    <script>
+        let devToolsOpen = false;
+        
+        function detectDevTools() {
+            const threshold = 160;
+            const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            
+            return widthThreshold || heightThreshold;
+        }
+        
+        function updateDevToolsStatus() {
+            const isOpen = detectDevTools();
+            const btn = document.getElementById('devtools-btn');
+            const status = document.getElementById('devtools-status');
+            
+            if (isOpen && !devToolsOpen) {
+                devToolsOpen = true;
+                btn.textContent = '✅ DevTools Open - Check Console!';
+                btn.style.background = 'linear-gradient(135deg, #00b894 0%, #00a085 100%)';
+                status.style.display = 'block';
+                
+                // Welcome message when devtools opens
+                console.log('%c🎉 DevTools Detected! Welcome to Advanced Logger Demo', 
+                    'background: linear-gradient(135deg, #00b894 0%, #00a085 100%); color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14px;');
+            } else if (!isOpen && devToolsOpen) {
+                devToolsOpen = false;
+                btn.textContent = '🔧 Press F12 to Open DevTools';
+                btn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                status.style.display = 'none';
+            }
+        }
+        
+        function tryOpenDevTools() {
+            if (!devToolsOpen) {
+                // Simulate F12 keypress (doesn't actually open devtools, but is educational)
+                console.log('%c💡 Tip: Press F12 or right-click → Inspect Element to open DevTools!', 
+                    'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 15px; border-radius: 5px; font-weight: bold;');
+                
+                // Show platform-specific shortcuts
+                const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+                const shortcut = isMac ? 'Cmd+Option+I' : 'F12 or Ctrl+Shift+I';
+                
+                alert(`🔧 DevTools Shortcut:\n\n${shortcut}\n\nOnce open, check the Console tab to see styled logs!`);
+            } else {
+                console.log('%c🚀 DevTools already open! Check this console for styled logs!', 
+                    'background: linear-gradient(135deg, #00b894 0%, #00a085 100%); color: white; padding: 10px 15px; border-radius: 5px; font-weight: bold;');
+            }
+        }
+        
+        // Check devtools status every 500ms
+        setInterval(updateDevToolsStatus, 500);
+        
+        // Initial check
+        setTimeout(updateDevToolsStatus, 100);
+    </script>
+    <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
