@@ -50,6 +50,11 @@ on:
         default: false
         type: boolean
 
+# Concurrency control para evitar conflictos con otros releases
+concurrency:
+  group: release-pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: '20'
 

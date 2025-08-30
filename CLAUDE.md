@@ -36,6 +36,15 @@ npm run preview      # Preview production build
 - Use browser DevTools console to see styled output
 - Click buttons to test different log levels and features
 
+### Testing & Validation
+```bash
+# Validar workflows YAML y estructura
+./tests/validate-workflows.sh
+
+# Test completo de resolución de conflictos  
+bun tests/test-conflict-resolution.ts
+```
+
 ## Architecture Patterns
 
 ### Log Level Hierarchy

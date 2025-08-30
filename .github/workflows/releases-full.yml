@@ -49,6 +49,11 @@ on:
       - '*.md'
       - '.github/workflows/docs-demo.yml'
 
+# Concurrency control para evitar conflictos entre workflows de release
+concurrency:
+  group: release-pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: '20'
 

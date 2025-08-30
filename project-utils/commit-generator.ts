@@ -660,6 +660,153 @@ class CommitGenerator {
   }
 
   /**
+   * Detecta si estamos ejecutando en un contexto de release
+   * - GITHUB_ACTIONS: ejecutando desde workflow
+   * - RELEASE_WORKFLOW: variable específica de release workflow
+   * - Análisis de archivos modificados relacionados con release
+   */
+  private isReleaseWorkflowContext(): boolean {
+    // Contexto explícito de GitHub Actions release
+    if (process.env.GITHUB_ACTIONS === 'true' && process.env.RELEASE_WORKFLOW === 'true') {
+      return true;
+    }
+    
+    // Detección por archivos modificados relacionados con release
+    return this.hasReleaseRelatedFiles();
+  }
+
+  /**
+   * Verifica si los archivos modificados están relacionados con releases
+   */
+  private hasReleaseRelatedFiles(): boolean {
+    try {
+      // Obtener archivos staged (ya llamado en generateAnalysisContext)
+      const stagedFiles = this.getAllStagedFiles();
+      
+      const releasePatterns = [
+        'package.json',        // Cambios de versión
+        'packages/*/package.json', // Sub-packages
+        'CHANGELOG.json',      // Cambios en changelog
+        '.release-notes-',     // Archivos de release notes
+        'project-utils/.temp/' // Archivos temporales de release
+      ];
+      
+      return stagedFiles.some(file => 
+        releasePatterns.some(pattern => {
+          if (pattern.includes('*')) {
+            // Patrón con wildcard
+            const regex = new RegExp(pattern.replace('*', '.*'));
+            return regex.test(file);
+          } else {
+            // Patrón exacto
+            return file.includes(pattern);
+          }
+        })
+      );
+    } catch (error) {
+      // Si no podemos verificar, asumir contexto normal
+      return false;
+    }
+  }
+
+  /**
+   * Obtiene todos los archivos en staging area
+   */
+  private getAllStagedFiles(): string[] {
+    try {
+      const { spawnSync } = require('child_process');
+      const result = spawnSync('git', ['diff', '--cached', '--name-only'], {
+        cwd: this.projectRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      
+      if (result.status !== 0) {
+        return [];
+      }
+      
+      return (result.stdout || '').trim().split('\n').filter(Boolean);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
+   * Maneja commits en contexto de release con estrategia anti-conflictos
+   */
+  private async handleReleaseWorkflowCommit(): Promise<void> {
+    this.log('🔄 Contexto de release detectado - aplicando estrategia anti-conflictos...');
+    
+    try {
+      const currentBranch = await this.gitCommand(['branch', '--show-current']);
+      
+      // Estrategia: Pull-Rebase-Push con reintentos
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          // Paso 1: Fetch último estado del remote (git fetch origin)
+          this.log(`🔄 Intento ${retryCount + 1}/${maxRetries}: Sincronizando con remote...`);
+          await this.gitCommand(['fetch', 'origin', currentBranch]);
+          
+          // Paso 2: Intentar rebase automático (git rebase)
+          try {
+            await this.gitCommand(['rebase', `origin/${currentBranch}`]);
+            this.log('✅ Rebase completado exitosamente');
+          } catch (rebaseError) {
+            // Si hay conflictos, hacer reset hard (estrategia conservadora para releases)
+            this.log('⚠️ Conflictos detectados - aplicando reset hard (estrategia conservadora)');
+            await this.gitCommand(['rebase', '--abort']);
+            await this.gitCommand(['reset', '--hard', `origin/${currentBranch}`]);
+            
+            // Re-aplicar nuestros commits si es necesario
+            const hasLocalCommits = await this.hasUnpushedCommits();
+            if (hasLocalCommits) {
+              this.log('🔄 Re-aplicando cambios locales...');
+              // Los commits ya están hechos, necesitamos cherry-pick o similar
+              // Para simplificar, salir con error controlado
+              throw new Error('Conflictos no resolubles automáticamente - requiere intervención manual');
+            }
+          }
+          
+          // Paso 3: Push con fuerza controlled
+          await this.gitCommand(['push', 'origin', currentBranch]);
+          this.log('✅ Push en contexto release completado');
+          return;
+          
+        } catch (pushError) {
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            throw pushError;
+          }
+          
+          this.log(`⚠️ Push falló (intento ${retryCount}), reintentando en 2s...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Error en manejo de contexto release:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifica si hay commits locales no pusheados
+   */
+  private async hasUnpushedCommits(): Promise<boolean> {
+    try {
+      const currentBranch = await this.gitCommand(['branch', '--show-current']);
+      const unpushedOutput = await this.gitCommand(['log', `origin/${currentBranch}..HEAD`, '--oneline']);
+      return unpushedOutput.trim().length > 0;
+    } catch (error) {
+      // Si no podemos verificar, asumir que sí hay commits locales
+      return true;
+    }
+  }
+
+  /**
    * Ejecuta push de todos los commits
    */
   private async pushCommits(): Promise<void> {
@@ -670,14 +817,20 @@ class CommitGenerator {
     
     this.log('\n📤 Pushing commits to remote...');
     
+    // Detectar si estamos en contexto de release y usar estrategia especializada
+    if (this.isReleaseWorkflowContext()) {
+      return this.handleReleaseWorkflowCommit();
+    }
+    
+    // Push estándar para contexto de desarrollo
     try {
-      // Detectar rama actual para push
       const currentBranch = await this.gitCommand(['branch', '--show-current']);
       await this.gitCommand(['push', 'origin', currentBranch]);
       this.log('✅ Push completado exitosamente');
     } catch (error) {
       console.error('❌ Error en push:', error);
       this.log('💡 Los commits están en tu repositorio local');
+      throw error;
     }
   }
 
