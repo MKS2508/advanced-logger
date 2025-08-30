@@ -1,6 +1,28 @@
 {
-  "current_version": "0.9.0-alpha.1",
+  "current_version": "0.10.0-alpha.1",
   "versions": [
+    {
+      "version": "0.10.0-alpha.1",
+      "date": "2025-08-30",
+      "type": "minor",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.9.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.9.0-alpha.1 [skip ci]"
+        },
+        {
+          "type": "improvement",
+          "title": "Mejora la documentación interna para desarrolladores con nuevas guías sobre la creación de commits para prevenir conflictos",
+          "description": "Mejora la documentación interna para desarrolladores con nuevas guías sobre la creación de commits para prevenir conflictos."
+        }
+      ],
+      "technical_notes": "Funciones clave agregadas:\n- isReleaseWorkflowContext(): detección automática de contexto release\n- handleReleaseWorkflowCommit(): estrategia robusta pull-rebase-push con reintentos\n- hasReleaseRelatedFiles(): identificación inteligente de archivos de release\n- Concurrency groups en workflows: release-pipeline-ref\n- Scripts tests/validate-workflows.sh y tests/yaml-autofix.sh\n- Package.json con comandos: lint:yaml, fix:yaml, validate:workflows, test:workflows\nCambios aplicados:\n- .yamllint: configuración personalizada con line-length: 120\n- package.json: lint:yaml usa -c .yamllint\n- validate-workflows.sh: usa configuración personalizada\n- Auto-fix aplicado a workflows con quote de nombres especiales\n- Reglas truthy más permisivas para GitHub Actions syntax\nCambios implementados:\n- releases-full.yml: integración commit-generator + fallback con MAX_RETRIES=3, git fetch origin main, git rebase\n- releases-core.yml: misma integración para releases modulares\n- commit-generator.ts: MAX_RETRIES=3 añadido para el test\n- CLAUDE.md: documentación de comandos npm run test:workflows, validate:workflows\n- Trailing spaces limpiados en todos los workflows\n- Integración bun project-utils/commit-generator.ts con RELEASE_WORKFLOW=true\n- **Archivo Modificado**: `CLAUDE.md`\n- **Sección Añadida**: \"Commits Locales Anti-Conflictos\".\n- **Contenido Nuevo**:\n  - Instrucciones de uso para `npm run commit:auto` y `npm run commit:ui`.\n  - Lista detallada de parámetros para `commit-generator.ts`.\n  - Notas sobre la detección automática de conflictos.",
+      "breaking_changes": [],
+      "commit_hash": "b3ba9faf73a68b3feef4b836f17d2333592d85ce",
+      "prefix": "alpha"
+    },
     {
       "version": "0.9.0-alpha.1",
       "date": "2025-08-29",
