@@ -32,7 +32,7 @@ export class HistoryCommand implements ICommand {
 
         logger.info(`📋 Last ${history.length} commands:`);
         
-        history.forEach((entry, index) => {
+        history.forEach((entry: any, index: number) => {
             const status = entry.success ? '✅' : '❌';
             const time = entry.timestamp.toLocaleTimeString();
             logger.info(`${status} [${time}] ${entry.command}`);
@@ -109,9 +109,9 @@ export class PluginsCommand implements ICommand {
 
         logger.info(`🔌 Loaded plugins (${plugins.length}):`);
         
-        plugins.forEach(plugin => {
+        plugins.forEach((plugin: any) => {
             logger.info(`  📦 ${plugin.name} v${plugin.version} - ${plugin.description}`);
-            logger.info(`     Commands: ${plugin.commands.map(c => c.name).join(', ')}`);
+            logger.info(`     Commands: ${plugin.commands.map((c: any) => c.name).join(', ')}`);
         });
     }
 }

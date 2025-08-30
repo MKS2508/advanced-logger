@@ -163,3 +163,42 @@ src/
 ```
 
 The logger is designed as a single-file library with comprehensive TypeScript documentation and can be imported as individual functions or as a class instance.
+
+## Advanced Anti-Conflict System
+
+### Intelligent Conflict Detection
+The project includes an advanced conflict resolution system in `project-utils/commit-generator.ts` that:
+
+- **Type Analysis**: Detects different types of conflicts (merge, rebase, tmp-files, manual)
+- **Auto-Resolution**: Automatically resolves conflicts in temporary files
+- **Safety Backups**: Creates backup branches before dangerous operations
+- **Context Awareness**: Different strategies for local vs GitHub Actions environments
+
+### Conflict Types Handled
+- `tmp-files`: Conflicts in `.temp`, `tmp`, `.cache` directories - auto-resolvable
+- `merge`: Standard merge conflicts requiring analysis
+- `rebase`: Rebase conflicts with specialized handling
+- `manual`: Critical file conflicts requiring user intervention
+
+### Safety Features
+- **TypeCheck Integration**: Both commit-generator and commit-ui run `npm run type-check` before proceeding
+- **Backup Creation**: Automatic backup branches before risky operations (format: `backup-before-conflict-resolution-TIMESTAMP`)
+- **Critical File Protection**: Special handling for `src/`, `package.json`, `tsconfig.json`, `.github/workflows/`
+- **Manual Intervention Detection**: Identifies when user input is required vs auto-resolvable conflicts
+
+### Usage Commands
+```bash
+# Auto-commit with conflict resolution
+npm run commit:auto
+
+# Interactive UI with conflict handling
+npm run commit:ui
+
+# Test conflict resolution system
+npm run test:workflows
+```
+
+### Environment Variables
+- `GITHUB_ACTIONS=true`: Detects CI environment
+- `RELEASE_WORKFLOW=true`: Activates release-specific conflict strategies
+- `GITHUB_WORKFLOW`: Workflow name for logging and context

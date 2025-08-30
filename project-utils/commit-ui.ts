@@ -213,7 +213,25 @@ class CommitUI {
   }
 }
 
+async function runTypeCheck(): Promise<void> {
+  console.log('🔍 Ejecutando typecheck...')
+  
+  try {
+    execSync('npm run type-check', { 
+      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: 'utf-8'
+    })
+    console.log('✅ Typecheck completado correctamente')
+  } catch (error) {
+    console.log('❌ Typecheck falló:', error)
+    process.exit(1)
+  }
+}
+
 async function main() {
+  // Ejecutar typecheck antes de continuar
+  await runTypeCheck()
+  
   const ui = new CommitUI()
   
   // Check for quick mode

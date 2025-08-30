@@ -227,7 +227,12 @@ class ConflictResolutionTester {
       'handleReleaseWorkflowCommit',
       'hasReleaseRelatedFiles',
       'hasUnpushedCommits',
-      'getAllStagedFiles'
+      'getAllStagedFiles',
+      'analyzeConflictType',
+      'getConflictedFiles',
+      'autoResolveConflicts',
+      'createSafetyBackup',
+      'getCurrentBranch'
     ];
     
     for (const method of requiredMethods) {
@@ -243,7 +248,12 @@ class ConflictResolutionTester {
       'git fetch origin',
       'git rebase',
       'MAX_RETRIES=3',
-      'releasePatterns'
+      'releasePatterns',
+      'conflictType:',
+      'canAutoResolve',
+      'requiresManualIntervention',
+      'backup-before-conflict-resolution',
+      'type-check'
     ];
 
     for (const logic of requiredLogic) {

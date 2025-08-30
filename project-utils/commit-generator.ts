@@ -710,6 +710,174 @@ class CommitGenerator {
   }
 
   /**
+   * Detecta el tipo específico de conflictos de git
+   */
+  private async analyzeConflictType(): Promise<{
+    hasConflicts: boolean;
+    conflictType: 'none' | 'merge' | 'rebase' | 'tmp-files' | 'manual';
+    conflictedFiles: string[];
+    canAutoResolve: boolean;
+    requiresManualIntervention: boolean;
+  }> {
+    try {
+      // Verificar si hay archivos con conflictos de merge
+      const conflictedFiles = await this.getConflictedFiles();
+      
+      if (conflictedFiles.length === 0) {
+        return {
+          hasConflicts: false,
+          conflictType: 'none',
+          conflictedFiles: [],
+          canAutoResolve: true,
+          requiresManualIntervention: false
+        };
+      }
+
+      // Analizar tipo de conflictos
+      const tmpFiles = conflictedFiles.filter(file => 
+        file.includes('.temp') || 
+        file.includes('tmp') || 
+        file.includes('.cache') ||
+        file.startsWith('project-utils/.temp/')
+      );
+
+      const criticalFiles = conflictedFiles.filter(file => 
+        file.includes('src/') ||
+        file.includes('package.json') ||
+        file.includes('tsconfig.json') ||
+        file.includes('.github/workflows/')
+      );
+
+      // Determinar si es auto-resoluble
+      const canAutoResolve = tmpFiles.length > 0 && criticalFiles.length === 0;
+      
+      let conflictType: 'merge' | 'rebase' | 'tmp-files' | 'manual' = 'manual';
+      
+      if (tmpFiles.length === conflictedFiles.length) {
+        conflictType = 'tmp-files';
+      } else if (await this.isInRebaseState()) {
+        conflictType = 'rebase';
+      } else {
+        conflictType = 'merge';
+      }
+
+      return {
+        hasConflicts: true,
+        conflictType,
+        conflictedFiles,
+        canAutoResolve,
+        requiresManualIntervention: criticalFiles.length > 0
+      };
+    } catch (error) {
+      this.log(`❌ Error analizando conflictos: ${error}`);
+      return {
+        hasConflicts: false,
+        conflictType: 'none',
+        conflictedFiles: [],
+        canAutoResolve: false,
+        requiresManualIntervention: true
+      };
+    }
+  }
+
+  /**
+   * Obtiene archivos con conflictos de merge/rebase
+   */
+  private async getConflictedFiles(): Promise<string[]> {
+    try {
+      const { spawnSync } = require('child_process');
+      const result = spawnSync('git', ['diff', '--name-only', '--diff-filter=U'], {
+        cwd: this.projectRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      if (result.status !== 0) {
+        return [];
+      }
+
+      return (result.stdout || '').trim().split('\n').filter(line => line.length > 0);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
+   * Verifica si estamos en estado de rebase
+   */
+  private async isInRebaseState(): Promise<boolean> {
+    try {
+      const { existsSync } = require('fs');
+      const rebaseMergeDir = join(this.projectRoot, '.git', 'rebase-merge');
+      const rebaseApplyDir = join(this.projectRoot, '.git', 'rebase-apply');
+      return existsSync(rebaseMergeDir) || existsSync(rebaseApplyDir);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Resuelve conflictos automáticamente cuando es seguro
+   */
+  private async autoResolveConflicts(conflictAnalysis: any): Promise<boolean> {
+    if (!conflictAnalysis.canAutoResolve) {
+      return false;
+    }
+
+    this.log('🔧 Intentando resolución automática de conflictos...');
+
+    try {
+      // Para archivos temporales, usar la versión local (nuestra)
+      for (const file of conflictAnalysis.conflictedFiles) {
+        if (file.includes('.temp') || file.includes('tmp') || file.includes('.cache')) {
+          await this.gitCommand(['add', file]);
+          this.log(`✅ Auto-resuelto conflicto en archivo temporal: ${file}`);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      this.log(`❌ Error en resolución automática: ${error}`);
+      return false;
+    }
+  }
+
+  /**
+   * Crea backup de cambios importantes antes de operaciones peligrosas
+   */
+  private async createSafetyBackup(): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupBranch = `backup-before-conflict-resolution-${timestamp}`;
+    
+    try {
+      // Crear rama de backup
+      await this.gitCommand(['checkout', '-b', backupBranch]);
+      
+      // Volver a la rama original
+      const currentBranch = await this.getCurrentBranch();
+      await this.gitCommand(['checkout', currentBranch]);
+      
+      this.log(`💾 Backup creado en rama: ${backupBranch}`);
+      return backupBranch;
+    } catch (error) {
+      this.log(`⚠️ No se pudo crear backup: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene la rama actual
+   */
+  private async getCurrentBranch(): Promise<string> {
+    try {
+      const result = await this.gitCommand(['rev-parse', '--abbrev-ref', 'HEAD']);
+      return result.trim();
+    } catch {
+      return 'main';
+    }
+  }
+
+  /**
    * Obtiene todos los archivos en staging area
    */
   private getAllStagedFiles(): string[] {
@@ -756,8 +924,41 @@ class CommitGenerator {
             await this.gitCommand(['rebase', `origin/${currentBranch}`]);
             this.log('✅ Rebase completado exitosamente');
           } catch (rebaseError) {
-            // Si hay conflictos, hacer reset hard (estrategia conservadora para releases)
-            this.log('⚠️ Conflictos detectados - aplicando reset hard (estrategia conservadora)');
+            this.log('⚠️ Conflictos detectados durante rebase - analizando...');
+            
+            // Analizar tipo de conflictos
+            const conflictAnalysis = await this.analyzeConflictType();
+            
+            if (conflictAnalysis.hasConflicts) {
+              this.log(`📊 Análisis de conflictos:`);
+              this.log(`   Tipo: ${conflictAnalysis.conflictType}`);
+              this.log(`   Archivos: ${conflictAnalysis.conflictedFiles.join(', ')}`);
+              this.log(`   Auto-resoluble: ${conflictAnalysis.canAutoResolve ? 'Sí' : 'No'}`);
+              this.log(`   Intervención manual: ${conflictAnalysis.requiresManualIntervention ? 'Requerida' : 'No necesaria'}`);
+            }
+            
+            // Crear backup antes de intentar resolución
+            let backupBranch: string | null = null;
+            if (conflictAnalysis.requiresManualIntervention) {
+              try {
+                backupBranch = await this.createSafetyBackup();
+              } catch (backupError) {
+                this.log(`⚠️ No se pudo crear backup: ${backupError}`);
+              }
+            }
+            
+            // Intentar resolución automática
+            if (conflictAnalysis.canAutoResolve) {
+              const resolved = await this.autoResolveConflicts(conflictAnalysis);
+              if (resolved) {
+                this.log('✅ Conflictos resueltos automáticamente, continuando rebase...');
+                await this.gitCommand(['rebase', '--continue']);
+                return; // Continuar con el flujo normal
+              }
+            }
+            
+            // Si no se pudo resolver automáticamente, aplicar estrategia conservadora
+            this.log('⚠️ Aplicando estrategia conservadora (reset hard)');
             await this.gitCommand(['rebase', '--abort']);
             await this.gitCommand(['reset', '--hard', `origin/${currentBranch}`]);
             
@@ -765,9 +966,8 @@ class CommitGenerator {
             const hasLocalCommits = await this.hasUnpushedCommits();
             if (hasLocalCommits) {
               this.log('🔄 Re-aplicando cambios locales...');
-              // Los commits ya están hechos, necesitamos cherry-pick o similar
-              // Para simplificar, salir con error controlado
-              throw new Error('Conflictos no resolubles automáticamente - requiere intervención manual');
+              const errorMsg = `Conflictos no resolubles automáticamente - requiere intervención manual.${backupBranch ? ` Backup disponible en rama: ${backupBranch}` : ''}`;
+              throw new Error(errorMsg);
             }
           }
           
@@ -921,6 +1121,34 @@ class CommitGenerator {
   }
 
   /**
+   * Ejecuta typecheck para validar tipos antes del commit
+   */
+  private async runTypeCheck(): Promise<void> {
+    this.log('🔍 Ejecutando typecheck...');
+    
+    try {
+      const { spawnSync } = await import('child_process');
+      const result = spawnSync('npm', ['run', 'type-check'], {
+        cwd: this.projectRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      if (result.status !== 0) {
+        const error = result.stderr || result.stdout || 'Typecheck failed';
+        this.log(`❌ Typecheck falló:`);
+        this.log(error);
+        throw new Error(`Typecheck failed: ${error}`);
+      }
+
+      this.log('✅ Typecheck completado correctamente');
+    } catch (error) {
+      this.log(`❌ Error ejecutando typecheck: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
    * Ejecuta el generador completo
    */
   async generate(): Promise<void> {
@@ -930,6 +1158,9 @@ class CommitGenerator {
     }
 
     this.log(`🚀 Iniciando generador de commits...${this.autoApprove ? ' (AUTO-APPROVE MODE)' : ''}\n`);
+
+    // Ejecutar typecheck antes de continuar
+    await this.runTypeCheck();
 
     const args = process.argv.slice(2);
     const isExhaustive = args.includes('-exhaustive');
