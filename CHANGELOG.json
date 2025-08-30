@@ -1,6 +1,23 @@
 {
-  "current_version": "0.10.0-alpha.1",
+  "current_version": "0.11.0-alpha.1",
   "versions": [
+    {
+      "version": "0.11.0-alpha.1",
+      "date": "2025-08-30",
+      "type": "minor",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.10.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.10.0-alpha.1 [skip ci]"
+        }
+      ],
+      "technical_notes": "- **`project-utils/commit-generator.ts`**: Añadida la función `analyzeConflictType` para detectar y clasificar conflictos.\n- **`project-utils/commit-ui.ts`**: Integrada la ejecución de `npm run type-check` antes de iniciar la interfaz de commit.\n- **`tests/test-conflict-resolution.ts`**: Actualizadas las pruebas para cubrir la nueva lógica de detección de conflictos.\n- **`CLAUDE.md`**: Documentado el nuevo sistema \"Advanced Anti-Conflict System\".\n- **`src/cli/commands/HistoryCommand.ts`**: Añadidos tipos explícitos para robustecer el código.",
+      "breaking_changes": [],
+      "commit_hash": "59e328d7348ad9a0b138ff285564c69bc3f81de9",
+      "prefix": "alpha"
+    },
     {
       "version": "0.10.0-alpha.1",
       "date": "2025-08-30",
