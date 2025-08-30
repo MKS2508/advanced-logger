@@ -53,6 +53,41 @@ npm run fix:yaml
 
 **IMPORTANTE**: Siempre ejecutar `npm run test:workflows` antes de commits que modifiquen workflows para verificar que la resolución de conflictos esté intacta.
 
+### Commits Locales Anti-Conflictos
+Para evitar conflictos localmente, **SIEMPRE usa los comandos project-utils** en lugar de `git commit` manual:
+
+```bash
+# Commit automático con AI (RECOMENDADO)
+npm run commit:auto
+
+# Commit interactivo con UI  
+npm run commit:ui
+
+# Para releases específicos
+npm run commit:auto --context "fix critical bug" --work-type "fix"
+npm run commit:auto --context "new feature" --work-type "feature"
+```
+
+**Parámetros disponibles para commit-generator:**
+```bash
+bun project-utils/commit-generator.ts [opciones]
+
+--auto-approve                # Ejecutar automáticamente sin confirmación
+--quiet                      # Ejecución silenciosa 
+--context <texto>            # Contexto del trabajo
+--work-type <tipo>           # feature|fix|refactor|docs|test
+--affected-components <lista> # Componentes: core,styling,exports,cli,docs
+--performance-impact <tipo>   # none|minor|major
+--no-push                    # Solo commit, no push
+--proposal-file <ruta>       # Usar propuesta existente
+```
+
+**Detección automática de conflictos:**
+- ✅ **Local**: Detecta automáticamente archivos de release (package.json, CHANGELOG.json) 
+- ✅ **GitHub Actions**: Detecta contexto de workflow via RELEASE_WORKFLOW=true
+- ✅ **Estrategia dual**: Pull-rebase-push con MAX_RETRIES=3 + fallback manual
+- ✅ **Smart push**: Sincronización inteligente antes de push
+
 ## Architecture Patterns
 
 ### Log Level Hierarchy
