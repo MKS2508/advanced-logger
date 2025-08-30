@@ -1,0 +1,28 @@
+extends: default
+
+rules:
+  # Permitir líneas más largas para GitHub Actions
+  line-length:
+    max: 120
+    level: warning
+  
+  # Permitir valores boolean como arrays (GitHub Actions syntax)
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']
+    check-keys: false
+  
+  # Permitir indentación más flexible
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+  
+  # Menos estricto con comentarios
+  comments:
+    min-spaces-from-content: 1
+    
+  # Permitir líneas vacías
+  empty-lines:
+    max-start: 3
+    max-end: 3
+    max: 3

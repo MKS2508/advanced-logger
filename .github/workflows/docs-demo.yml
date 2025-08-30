@@ -15,20 +15,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Bun
+      - name: "📦 Setup Bun"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: 🔧 Install dependencies
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 🏗️ Build library for demo
+      - name: "🏗️ Build library for demo"
         run: bun run build:full
 
-      - name: 🏗️ Setup demo structure
+      - name: "🏗️ Setup demo structure"
         run: |
           mkdir -p _site/docs
           # Copy demo as root
@@ -42,7 +42,7 @@ jobs:
           echo "- **Commit**: ${{ github.sha }}" >> _site/build-info.md
           echo "- **Version**: $(node -p 'require("./package.json").version')" >> _site/build-info.md
 
-      - name: 📤 Upload demo artifacts
+      - name: "📤 Upload demo artifacts"
         uses: actions/upload-artifact@v4
         with:
           name: demo-site
@@ -54,16 +54,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: 📤 Build Jekyll documentation
+      - name: "📤 Build Jekyll documentation"
         uses: actions/jekyll-build-pages@v1
         with:
           source: ./docs
           destination: ./_site/docs
 
-      - name: 📤 Upload docs artifacts
+      - name: "📤 Upload docs artifacts"
         uses: actions/upload-artifact@v4
         with:
           name: docs-site
@@ -86,27 +86,27 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: 📥 Download demo artifacts
+      - name: "📥 Download demo artifacts"
         uses: actions/download-artifact@v4
         with:
           name: demo-site
           path: _site/
 
-      - name: 📥 Download docs artifacts
+      - name: "📥 Download docs artifacts"
         uses: actions/download-artifact@v4
         with:
           name: docs-site
           path: _site/docs/
 
-      - name: 📤 Setup Pages
+      - name: "📤 Setup Pages"
         uses: actions/configure-pages@v4
 
-      - name: 📤 Upload to Pages
+      - name: "📤 Upload to Pages"
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./_site
 
-      - name: 🚀 Deploy to GitHub Pages
+      - name: "🚀 Deploy to GitHub Pages"
         id: deployment
         uses: actions/deploy-pages@v4
 

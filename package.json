@@ -41,7 +41,7 @@
     "test:performance": "echo 'Running performance benchmarks...' && exit 0",
     "test:visual": "echo 'Running visual tests...' && exit 0",
     "test:workflows": "bun tests/test-conflict-resolution.ts",
-    "lint:yaml": "yamllint .github/workflows/",
+    "lint:yaml": "yamllint -c .yamllint .github/workflows/",
     "fix:yaml": "./tests/yaml-autofix.sh",
     "validate:workflows": "./tests/validate-workflows.sh",
     "size-limit": "echo 'Checking bundle sizes...' && ls -la dist/",

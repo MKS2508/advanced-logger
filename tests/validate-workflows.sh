@@ -18,7 +18,7 @@ validate_yaml() {
     # Validar sintaxis YAML básica
     if command -v yamllint >/dev/null 2>&1; then
         echo "  🔧 Verificando sintaxis con yamllint..."
-        if yamllint "$file"; then
+        if yamllint -c .yamllint "$file"; then
             echo "  ✅ Sintaxis YAML válida"
         else
             echo "  ❌ Error de sintaxis YAML"

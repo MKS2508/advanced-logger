@@ -36,23 +36,23 @@ jobs:
     name: Test Bun ${{ matrix.bun-version }} - ${{ matrix.build-mode }}
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 📦 Setup Bun ${{ matrix.bun-version }}
+      - name: "📦 Setup Bun ${{ matrix.bun-version }}"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ matrix.bun-version }}
 
-      - name: 🔧 Install dependencies
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
       - name: 🔍 Type checking
         run: bun run type-check
 
-      - name: 🏗️ Build ${{ matrix.build-mode }}
+      - name: "🏗️ Build ${{ matrix.build-mode }}"
         run: |
           if [ "${{ matrix.build-mode }}" = "full" ]; then
             bun run build:all
@@ -60,13 +60,13 @@ jobs:
             bun run build:${{ matrix.build-mode }}
           fi
 
-      - name: 🧪 Run tests
+      - name: "🧪 Run tests"
         run: bun run ci:test
 
       - name: 📊 Check bundle sizes
         run: bun run size-limit
 
-      - name: 📤 Upload build artifacts (Node 20 only)
+      - name: "📤 Upload build artifacts (Node 20 only)"
         uses: actions/upload-artifact@v4
         if: matrix.node-version == 20
         with:
@@ -81,19 +81,19 @@ jobs:
     if: ${{ inputs.run_performance != false }}
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
+      - name: "📦 Setup Node.js"
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 🔧 Install dependencies
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 📥 Download build artifacts
+      - name: "📥 Download build artifacts"
         uses: actions/download-artifact@v4
         with:
           name: build-full-node20
@@ -124,7 +124,7 @@ jobs:
           echo "- **Build Time**: $(date)" >> performance-report.md
           echo "- **Node Version**: ${{ env.NODE_VERSION }}" >> performance-report.md
 
-      - name: 📤 Upload performance report
+      - name: "📤 Upload performance report"
         uses: actions/upload-artifact@v4
         with:
           name: performance-report
@@ -138,19 +138,19 @@ jobs:
     if: ${{ inputs.run_visual == true }}
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
+      - name: "📦 Setup Node.js"
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 🔧 Install dependencies
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 📥 Download build artifacts
+      - name: "📥 Download build artifacts"
         uses: actions/download-artifact@v4
         with:
           name: build-full-node20
@@ -159,10 +159,10 @@ jobs:
       - name: 🎭 Install Playwright
         run: npx playwright install --with-deps chromium
 
-      - name: 🖼️ Run visual tests
+      - name: "🖼️ Run visual tests"
         run: bun run test:visual
 
-      - name: 📤 Upload test results
+      - name: "📤 Upload test results"
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -170,7 +170,7 @@ jobs:
           path: test-results/
           retention-days: 30
 
-      - name: 📤 Upload screenshots
+      - name: "📤 Upload screenshots"
         uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -183,10 +183,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
+      - name: "📦 Setup Node.js"
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -215,7 +215,7 @@ jobs:
           npm outdated >> security-report.md || echo "All packages up to date" >> security-report.md
           echo "\`\`\`" >> security-report.md
 
-      - name: 📤 Upload security report
+      - name: "📤 Upload security report"
         uses: actions/upload-artifact@v4
         with:
           name: security-report
@@ -228,16 +228,16 @@ jobs:
     needs: test-matrix
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
+      - name: "📦 Setup Node.js"
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 🔧 Install dependencies
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
       - name: 🔍 Code analysis
@@ -256,7 +256,7 @@ jobs:
           echo "- **Total lines of code**: $(find src/ -name '*.ts' -exec wc -l {} + | tail -1 | awk '{print $1}')" >> quality-report.md
           echo "- **Build date**: $(date)" >> quality-report.md
 
-      - name: 📤 Upload quality report
+      - name: "📤 Upload quality report"
         uses: actions/upload-artifact@v4
         with:
           name: code-quality-report
@@ -268,19 +268,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
+      - name: "📦 Setup Node.js"
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 🔧 Install dependencies
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 🧪 Test project-utils scripts
+      - name: "🧪 Test project-utils scripts"
         run: |
           echo "🧪 Validating project-utils scripts..."
 

@@ -73,21 +73,21 @@ jobs:
       modules_to_build: ${{ steps.modules.outputs.modules }}
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Setup Bun
+      - name: "📦 Setup Bun"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: 🔧 Install dependencies
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 🤖 Setup Gemini CLI
+      - name: "🤖 Setup Gemini CLI"
         run: |
           echo "🤖 Configurando Gemini CLI para release modular..."
           # Install Gemini CLI
@@ -154,7 +154,7 @@ jobs:
 
           echo "✅ Versión generada para release modular: $NEW_VERSION"
 
-      - name: 📋 Step 2: Determine modules to build
+      - name: "📋 Step 2: Determine modules to build"
         id: modules
         run: |
           echo "📋 === PASO 2: DETERMINANDO MÓDULOS A CONSTRUIR ==="
@@ -175,7 +175,7 @@ jobs:
           echo "modules=$MODULES" >> $GITHUB_OUTPUT
           echo "✅ Módulos a construir: $MODULES"
 
-      - name: 🏷️ Commit version changes
+      - name: "🏷️ Commit version changes"
         run: |
           echo "🏷️ Commiteando cambios de versión modular..."
           git config user.name "github-actions[bot]"
@@ -184,7 +184,7 @@ jobs:
           git commit -m "chore: modular release ${{ steps.version.outputs.version }} (${{ inputs.module }}) [skip ci]" || echo "No changes to commit"
           git push origin main
 
-      - name: 📤 Upload version artifacts
+      - name: "📤 Upload version artifacts"
         uses: actions/upload-artifact@v4
         with:
           name: modular-version-artifacts
@@ -204,25 +204,25 @@ jobs:
         module: ${{ fromJson(format('["{0}"]', needs.ai-modular-version.outputs.modules_to_build)) }}
 
     steps:
-      - name: 📥 Checkout code with version changes
+      - name: "📥 Checkout code with version changes"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: main
 
-      - name: 🔄 Pull latest changes
+      - name: "🔄 Pull latest changes"
         run: git pull origin main
 
-      - name: 📦 Setup Bun
+      - name: "📦 Setup Bun"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: 🔧 Install dependencies
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 🧪 Run tests for module (unless skipped)
+      - name: "🧪 Run tests for module (unless skipped)"
         if: ${{ !inputs.skip_tests }}
         run: |
           echo "🧪 === EJECUTANDO TESTS PARA MÓDULO: ${{ matrix.module }} ==="
@@ -230,7 +230,7 @@ jobs:
           bun run test
           echo "✅ Tests completados para ${{ matrix.module }}"
 
-      - name: 🏗️ Step 3: Build specific module
+      - name: "🏗️ Step 3: Build specific module"
         run: |
           echo "🏗️ === PASO 3: CONSTRUYENDO MÓDULO: ${{ matrix.module }} ==="
 
@@ -266,7 +266,7 @@ jobs:
             ls -la dist/modular/${{ matrix.module }}/ || ls -la dist/
           fi
 
-      - name: 📤 Upload build artifacts for module
+      - name: "📤 Upload build artifacts for module"
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.module }}-${{ needs.ai-modular-version.outputs.version }}
@@ -281,25 +281,25 @@ jobs:
     if: inputs.target_registry == 'npm' || inputs.target_registry == 'both'
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
         with:
           ref: main
 
-      - name: 📦 Setup Bun with NPM registry
+      - name: "📦 Setup Bun with NPM registry"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
           registry-url: 'https://registry.npmjs.org'
 
-      - name: 📥 Download all build artifacts
+      - name: "📥 Download all build artifacts"
         uses: actions/download-artifact@v4
         with:
           pattern: build-*-${{ needs.ai-modular-version.outputs.version }}
           path: builds/
           merge-multiple: true
 
-      - name: 🚀 Step 4: Publish modular releases to NPM
+      - name: "🚀 Step 4: Publish modular releases to NPM"
         run: |
           echo "🚀 === PASO 4: PUBLICANDO RELEASES MODULARES EN NPM ==="
 
@@ -333,25 +333,25 @@ jobs:
     if: inputs.target_registry == 'github' || inputs.target_registry == 'both'
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
         with:
           ref: main
 
-      - name: 📦 Setup Bun with GitHub registry
+      - name: "📦 Setup Bun with GitHub registry"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
           registry-url: 'https://npm.pkg.github.com'
 
-      - name: 📥 Download all build artifacts
+      - name: "📥 Download all build artifacts"
         uses: actions/download-artifact@v4
         with:
           pattern: build-*-${{ needs.ai-modular-version.outputs.version }}
           path: builds/
           merge-multiple: true
 
-      - name: 📦 Step 5: Publish to GitHub Packages
+      - name: "📦 Step 5: Publish to GitHub Packages"
         run: |
           echo "📦 === PASO 5: PUBLICANDO EN GITHUB PACKAGES ==="
 
@@ -376,28 +376,28 @@ jobs:
       contents: write
 
     steps:
-      - name: 📥 Checkout code
+      - name: "📥 Checkout code"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: main
 
-      - name: 📦 Setup Bun
+      - name: "📦 Setup Bun"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: 🔧 Install dependencies
+      - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: 📥 Download build artifacts
+      - name: "📥 Download build artifacts"
         uses: actions/download-artifact@v4
         with:
           pattern: build-*-${{ needs.ai-modular-version.outputs.version }}
           path: builds/
           merge-multiple: true
 
-      - name: 🏷️ Create git tag for modular release
+      - name: "🏷️ Create git tag for modular release"
         run: |
           echo "🏷️ Creando tag para release modular..."
           git config user.name "github-actions[bot]"
@@ -406,7 +406,7 @@ jobs:
           git tag -a "$TAG_NAME" -m "Modular release ${{ needs.ai-modular-version.outputs.version }} (${{ inputs.module }})"
           git push origin --tags
 
-      - name: 🚀 Step 6: Create Modular GitHub Release with AI
+      - name: "🚀 Step 6: Create Modular GitHub Release with AI"
         run: |
           echo "🚀 === PASO 6: CREANDO GITHUB RELEASE MODULAR CON AI ==="
 
