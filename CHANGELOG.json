@@ -1,6 +1,23 @@
 {
-  "current_version": "0.11.0-alpha.1",
+  "current_version": "0.12.0-alpha.1",
   "versions": [
+    {
+      "version": "0.12.0-alpha.1",
+      "date": "2025-08-30",
+      "type": "minor",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.11.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.11.0-alpha.1 [skip ci]"
+        }
+      ],
+      "technical_notes": "- **Añadido `project-utils/auto-release-ui.ts`**: Nuevo script para la gestión interactiva de releases.\n- **Añadido `project-utils/project-config.ts`**: Módulo de configuración centralizado para componentes, tipos de trabajo y constantes del proyecto.\n- **Modificado `package.json`**: Se agregaron nuevos scripts `release:ui`, `release:hotfix`, `release:feature`, `release:alpha` y `release:major` para invocar el nuevo sistema.\n- **Modificado `project-utils/commit-ui.ts`**: Se corrigió el comando de ejecución para usar `bun` y la ruta correcta del script, estandarizando el uso de herramientas.",
+      "breaking_changes": [],
+      "commit_hash": "5f77a38c720017efa4dfd15c4ce07f0b07514c19",
+      "prefix": "alpha"
+    },
     {
       "version": "0.11.0-alpha.1",
       "date": "2025-08-30",
