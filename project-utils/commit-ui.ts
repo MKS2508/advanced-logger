@@ -200,7 +200,7 @@ class CommitUI {
     console.log(`📦 Components: ${options.affectedComponents.join(", ")}`)
     console.log(`⚡ Performance: ${options.performanceImpact}`)
 
-    const command = `node src/commit-generator.ts ${args.join(" ")} --auto-approve`
+    const command = `bun project-utils/commit-generator.ts ${args.join(" ")} --auto-approve`
     console.log(`\n🚀 Running: ${command}`)
     
     try {
