@@ -39,11 +39,19 @@ npm run preview      # Preview production build
 ### Testing & Validation
 ```bash
 # Validar workflows YAML y estructura
-./tests/validate-workflows.sh
+npm run validate:workflows
 
 # Test completo de resolución de conflictos  
-bun tests/test-conflict-resolution.ts
+npm run test:workflows
+
+# Lint YAML con configuración personalizada
+npm run lint:yaml
+
+# Auto-fix problemas YAML comunes
+npm run fix:yaml
 ```
+
+**IMPORTANTE**: Siempre ejecutar `npm run test:workflows` antes de commits que modifiquen workflows para verificar que la resolución de conflictos esté intacta.
 
 ## Architecture Patterns
 

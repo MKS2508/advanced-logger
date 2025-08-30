@@ -740,9 +740,10 @@ class CommitGenerator {
     try {
       const currentBranch = await this.gitCommand(['branch', '--show-current']);
       
-      // Estrategia: Pull-Rebase-Push con reintentos
+      // Estrategia: Pull-Rebase-Push con reintentos (MAX_RETRIES=3)
       let retryCount = 0;
       const maxRetries = 3;
+      const MAX_RETRIES = 3;
       
       while (retryCount < maxRetries) {
         try {
