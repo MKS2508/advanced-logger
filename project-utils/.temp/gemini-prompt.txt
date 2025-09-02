@@ -25,99 +25,51 @@ Eres un asistente especializado en análisis de código y automatización para e
 ## Datos del Análisis
 {
   "stats": {
-    "total_files": 5,
-    "total_additions": 24,
-    "total_deletions": 7,
+    "total_files": 3,
+    "total_additions": 21,
+    "total_deletions": 36,
     "files_by_extension": {
-      "json": 5
+      "json": 1,
+      "txt": 1,
+      "md": 1
     },
     "directories_affected": [
-      "CHANGELOG.json",
-      "package.json",
-      "packages"
+      "project-utils"
     ]
   },
   "files": [
     {
-      "path": "CHANGELOG.json",
+      "path": "project-utils/.temp/analysis-context.json",
       "status": "modified",
-      "lines_added": 18,
-      "lines_removed": 1,
+      "lines_added": 22,
+      "lines_removed": 30,
       "is_binary": false,
-      "diff_preview": "diff --git a/CHANGELOG.json b/CHANGELOG.json\nindex 26db34b..09b3006 100644\n--- a/CHANGELOG.json\n+++ b/CHANGELOG.json\n@@ -1,6 +1,23 @@\n {\n-  \"current_version\": \"0.7.0-alpha.1\",\n+  \"current_version\": \"0.7.1-alpha.1\",\n   \"versions\": [\n+    {\n+      \"version\": \"0.7.1-alpha.1\",\n+      \"date\": \"2025-08-29\",\n+      \"type\": \"patch\",\n+      \"title\": \"Versión Alpha - Nueva funcionalidad: feat(core): mejoras y actualizaciones automáticas\",\n+      \"changes\": [\n+        {\n+          \"type\": \"feature\",\n+          \"title\": \"feat(core): mejoras y actualizaciones automáticas\",\n+          \"description\": \"feat(core): mejoras y actualizaciones automáticas\"\n+        }\n+      ],\n+      \"technical_notes\": \"\",\n+      \"breaking_changes\": [],\n+      \"commit_hash\": \"0e5c697086454b1a56cee3696d08e38515449217\",\n+      \"prefix\": \"alpha\"\n+    },\n     {\n       \"version\": \"0.7.0-alpha.1\",\n       \"date\": \"2025-08-29\","
+      "diff_preview": "diff --git a/project-utils/.temp/analysis-context.json b/project-utils/.temp/analysis-context.json\nindex 85bf651..398cf26 100644\n--- a/project-utils/.temp/analysis-context.json\n+++ b/project-utils/.temp/analysis-context.json\n@@ -1,57 +1,49 @@\n {\n   \"files\": [\n     {\n-      \"path\": \"CHANGELOG.json\",\n+      \"path\": \"package.json\",\n       \"status\": \"modified\",\n-      \"diff\": \"diff --git a/CHANGELOG.json b/CHANGELOG.json\\nindex 26db34b..09b3006 100644\\n--- a/CHANGELOG.json\\n+++ b/CHANGELOG.json\\n@@ -1,6 +1,23 @@\\n {\\n-  \\\"current_version\\\": \\\"0.7.0-alpha.1\\\",\\n+  \\\"current_version\\\": \\\"0.7.1-alpha.1\\\",\\n   \\\"versions\\\": [\\n+    {\\n+      \\\"version\\\": \\\"0.7.1-alpha.1\\\",\\n+      \\\"date\\\": \\\"2025-08-29\\\",\\n+      \\\"type\\\": \\\"patch\\\",\\n+      \\\"title\\\": \\\"Versión Alpha - Nueva funcionalidad: feat(core): mejoras y actualizaciones automáticas\\\",\\n+      \\\"changes\\\": [\\n+        {\\n+          \\\"type\\\": \\\"feature\\\",\\n+          \\\"title\\\": \\\"feat(core): mejoras y actualizaciones automáticas\\\",\\n+          \\\"description\\\": \\\"feat(core): mejoras y actualizaciones automáticas\\\"\\n+        }\\n+      ],\\n+      \\\"technical_notes\\\": \\\"\\\",\\n+      \\\"breaking_changes\\\": [],\\n+      \\\"commit_hash\\\": \\\"0e5c697086454b1a56cee3696d08e38515449217\\\",\\n+      \\\"prefix\\\": \\\"alpha\\\"\\n+    },\\n     {\\n       \\\"version\\\": \\\"0.7.0-alpha.1\\\",\\n       \\\"date\\\": \\\"2025-08-29\\\",\",\n-      \"lines_added\": 18,\n-      \"lines_removed\": 1,\n+      \"diff\": \"diff --git a/package.json b/package.json\\nindex d55f58e..ab09913 1"
     },
     {
-      "path": "package.json",
+      "path": "project-utils/.temp/gemini-prompt.txt",
       "status": "modified",
-      "lines_added": 1,
-      "lines_removed": 1,
+      "lines_added": 25,
+      "lines_removed": 53,
       "is_binary": false,
-      "diff_preview": "diff --git a/package.json b/package.json\nindex 8701d95..eaafac6 100644\n--- a/package.json\n+++ b/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger\",\n-  \"version\": \"0.7.0-alpha.1\",\n+  \"version\": \"0.7.1-alpha.1\",\n   \"type\": \"module\",\n   \"description\": \"State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface\",\n   \"main\": \"dist/index.js\","
+      "diff_preview": "diff --git a/project-utils/.temp/gemini-prompt.txt b/project-utils/.temp/gemini-prompt.txt\nindex c100161..8a2a8c3 100644\n--- a/project-utils/.temp/gemini-prompt.txt\n+++ b/project-utils/.temp/gemini-prompt.txt\n@@ -25,99 +25,61 @@ Eres un asistente especializado en análisis de código y automatización para e\n ## Datos del Análisis\n {\n   \"stats\": {\n-    \"total_files\": 5,\n-    \"total_additions\": 24,\n-    \"total_deletions\": 7,\n+    \"total_files\": 4,\n+    \"total_additions\": 48,\n+    \"total_deletions\": 1,\n     \"files_by_extension\": {\n-      \"json\": 5\n+      \"json\": 1,\n+      \"ts\": 3\n     },\n     \"directories_affected\": [\n-      \"CHANGELOG.json\",\n       \"package.json\",\n-      \"packages\"\n+      \"project-utils\"\n     ]\n   },\n   \"files\": [\n     {\n-      \"path\": \"CHANGELOG.json\",\n+      \"path\": \"package.json\",\n       \"status\": \"modified\",\n-      \"lines_added\": 18,\n-      \"lines_removed\": 1,\n+      \"lines_added\": 5,\n+      \"lines_removed\": 0,\n       \"is_binary\": false,\n-      \"diff_preview\": \"diff --git a/CHANGELOG.json b/CHANGELOG.json\\nindex 26db34b..09b3006 100644\\n--- a/CHANGELOG.json\\n+++ b/CHANGELOG.json\\n@@ -1,6 +1,23 @@\\n {\\n-  \\\"current_version\\\": \\\"0.7.0-alpha.1\\\",\\n+  \\\"current_version\\\": \\\"0.7.1-alpha.1\\\",\\n   \\\"versions\\\": [\\n+    {\\n+      \\\"version\\\": \\\"0.7.1-alpha.1\\\",\\n+      \\\"date\\\": \\\"2025-08-29\\\",\\n+      \\\"type\\\": \\\"patch\\\",\\n+      \\\"title\\\": \\\"Versión Alpha - Nueva funcionalidad: feat(core): mejoras y actualizaciones automáticas\\\",\\n+      \\\"changes\\\": [\\n+        {\\"
     },
     {
-      "path": "packages/core/package.json",
+      "path": "project-utils/.temp/gemini-response.md",
       "status": "modified",
-      "lines_added": 1,
-      "lines_removed": 1,
+      "lines_added": 11,
+      "lines_removed": 7,
       "is_binary": false,
-      "diff_preview": "diff --git a/packages/core/package.json b/packages/core/package.json\nindex dbfe4fb..eb22893 100644\n--- a/packages/core/package.json\n+++ b/packages/core/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-core\",\n-  \"version\": \"0.7.0-alpha.1\",\n+  \"version\": \"0.7.1-alpha.1\",\n   \"type\": \"module\",\n   \"description\": \"Core logging functionality for Better Logger - Advanced console logger with hierarchical levels\",\n   \"main\": \"dist/index.js\","
-    },
-    {
-      "path": "packages/exports/package.json",
-      "status": "modified",
-      "lines_added": 2,
-      "lines_removed": 2,
-      "is_binary": false,
-      "diff_preview": "diff --git a/packages/exports/package.json b/packages/exports/package.json\nindex de76514..368f605 100644\n--- a/packages/exports/package.json\n+++ b/packages/exports/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-exports\",\n-  \"version\": \"0.7.0-alpha.1\",\n+  \"version\": \"0.7.1-alpha.1\",\n   \"type\": \"module\",\n   \"description\": \"Export handlers for Better Logger - File, Remote, Analytics and custom log destinations\",\n   \"main\": \"dist/index.js\",\n@@ -36,6 +36,6 @@\n     \"README.md\"\n   ],\n   \"peerDependencies\": {\n-    \"@mks2508/better-logger-core\": \"^0.7.0-alpha.1\"\n+    \"@mks2508/better-logger-core\": \"^0.7.1-alpha.1\"\n   }\n }"
-    },
-    {
-      "path": "packages/styling/package.json",
-      "status": "modified",
-      "lines_added": 2,
-      "lines_removed": 2,
-      "is_binary": false,
-      "diff_preview": "diff --git a/packages/styling/package.json b/packages/styling/package.json\nindex e70e550..bfe4e09 100644\n--- a/packages/styling/package.json\n+++ b/packages/styling/package.json\n@@ -1,6 +1,6 @@\n {\n   \"name\": \"@mks2508/better-logger-styling\",\n-  \"version\": \"0.7.0-alpha.1\",\n+  \"version\": \"0.7.1-alpha.1\",\n   \"type\": \"module\",\n   \"description\": \"Advanced CSS styling system for Better Logger - Console styling with gradients, animations and SVG support\",\n   \"main\": \"dist/index.js\",\n@@ -36,6 +36,6 @@\n     \"README.md\"\n   ],\n   \"peerDependencies\": {\n-    \"@mks2508/better-logger-core\": \"^0.7.0-alpha.1\"\n+    \"@mks2508/better-logger-core\": \"^0.7.1-alpha.1\"\n   }\n }"
+      "diff_preview": "diff --git a/project-utils/.temp/gemini-response.md b/project-utils/.temp/gemini-response.md\nindex d15b161..57cb3af 100644\n--- a/project-utils/.temp/gemini-response.md\n+++ b/project-utils/.temp/gemini-response.md\n@@ -1,31 +1,31 @@\n ### **ANÁLISIS PRINCIPAL**\n \n-Los cambios detectados consisten en la actualización de la versión a `0.7.1-alpha.1` en los archivos `package.json` del proyecto principal y de los sub-paquetes (`core`, `exports`, `styling`). Además, se ha actualizado el `CHANGELOG.json` para reflejar la nueva versión y sus características, incluyendo la funcionalidad `feat(core): mejoras y actualizaciones automáticas`.\n+Se ha introducido un nuevo y avanzado sistema de gestión de releases (`auto-release-ui.ts`) que permite la creación de versiones de forma interactiva y mediante comandos específicos. Para dar soporte a esta nueva herramienta, se ha realizado una refactorización clave, centralizando toda la configuración del proyecto (componentes, tipos de trabajo, etc.) en un único archivo (`project-config.ts`), mejorando la mantenibilidad y consistencia de las herramientas internas. Adicionalmente, se han añadido los scripts correspondientes en `package.json` y se ha corregido una ruta de ejecución en la herramienta de commits.\n \n ---\n \n ### **Propuesta de Commit #1**\n \n ```markdown\n-release(0.7.1-alpha.1): Publicación automatizada de la versión 0.7.1-alpha.1\n+feat(tooling): introduce sistema de release interactivo y centraliza configuración\n \n-Este es un commit de p"
     }
   ],
   "patterns": "No commit patterns found"
 }
 
 ## Contexto Adicional
-AUTO-RELEASE CONTEXT - Version 0.7.1-alpha.1
-
-Esto es un auto-release generado automáticamente para la versión 0.7.1-alpha.1.
-Se han compilado y añadido binarios ARM64 optimizados para Raspberry Pi 3B+.
-
-ARCHIVOS INCLUIDOS:
-- Binario ejecutable nativo ARM64
-- Paquete Debian (.deb) para fácil instalación
-- Paquete RPM (.rpm) para distribuciones basadas en RPM
-- README detallado generado con AI
-- Documentación adicional generada por AI
-
-CARACTERÍSTICAS DE ESTA VERSIÓN:
-- feature: feat(core): mejoras y actualizaciones automáticas
-
-NOTAS TÉCNICAS:
-- Compilado nativamente en ARM64 con optimizaciones específicas
-- OpenSSL configurado para cross-compilation
-- Todos los tests pasaron exitosamente
-- Documentación mejorada con inteligencia artificial
-
-Por favor genera un commit tipo 'release(0.7.1-alpha.1)' que refleje adecuadamente:
-1. Que es un auto-release automatizado
-2. Las características principales de esta versión
-3. Que incluye binarios optimizados para RPi
-4. Que usa AI para documentación mejorada
-
-Mantén el mensaje profesional pero informativo.
-
 ## Contexto Estructurado
 
-**Descripción del trabajo**: arreglar formato de versiones para compatibilidad NPM semver
-**Tipo de trabajo**: fix - fix
-**Componentes afectados**: version-manager
-**Impacto en rendimiento**: none - none
+**Descripción del trabajo**: Pre-release changes
 
 ---
 

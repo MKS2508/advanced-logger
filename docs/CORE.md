@@ -25,7 +25,7 @@ import { debug, info, warn, error } from '@mks2508/better-logger/core'
 ```typescript
 import { 
   debug, info, warn, error, critical,
-  createScopedLogger, time, timeEnd,
+  scope, time, timeEnd,
   table, group, groupEnd
 } from '@mks2508/better-logger/core'
 
@@ -42,7 +42,7 @@ time('database-query')
 timeEnd('database-query') // Logs: database-query: 45.32ms
 
 // Scoped logging
-const apiLogger = createScopedLogger('API')
+const apiLogger = scope('API')
 apiLogger.info('Request received', { endpoint: '/users' })
 
 // Structured data
@@ -89,7 +89,7 @@ groupEnd(): void                              // End current group
 ### Logger Management
 
 ```typescript
-createScopedLogger(prefix: string): CoreLogger    // Create prefixed logger
+scope(prefix: string): CoreLogger    // Create prefixed logger
 setGlobalPrefix(prefix: string): void             // Set global prefix
 setVerbosity(level: Verbosity): void              // Filter log levels
 addHandler(handler: ILogHandler): void            // Add custom handler
@@ -127,9 +127,9 @@ addHandler(new FileHandler())
 
 ```typescript
 // logger.ts - internal logger for your library
-import { createScopedLogger } from '@mks2508/better-logger/core'
+import { scope } from '@mks2508/better-logger/core'
 
-export const logger = createScopedLogger('MyLibrary')
+export const logger = scope('MyLibrary')
 
 // usage.ts
 import { logger } from './logger'
@@ -156,15 +156,15 @@ export function processData(data: any) {
 ### Microservices
 
 ```typescript
-import { createScopedLogger, setGlobalPrefix } from '@mks2508/better-logger/core'
+import { scope, setGlobalPrefix } from '@mks2508/better-logger/core'
 
 // Configure service-wide prefix
 setGlobalPrefix('UserService')
 
 // Create domain-specific loggers
-const dbLogger = createScopedLogger('DB')
-const authLogger = createScopedLogger('AUTH')  
-const apiLogger = createScopedLogger('API')
+const dbLogger = scope('DB')
+const authLogger = scope('AUTH')  
+const apiLogger = scope('API')
 
 // Usage across service
 dbLogger.time('user-query')
@@ -238,7 +238,7 @@ import type {
 } from '@mks2508/better-logger/core'
 
 // Strongly typed logger instance
-const logger: CoreLogger = createScopedLogger('TypedLogger')
+const logger: CoreLogger = scope('TypedLogger')
 
 // Type-safe verbosity setting
 const level: Verbosity = 'debug'

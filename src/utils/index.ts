@@ -14,5 +14,8 @@ export {
     generateLogId, 
     escapeHtml, 
     safeStringify,
+    detectDevToolsTheme,
+    getAdaptiveColor,
+    setupThemeChangeListener,
     type LevelStyleConfig 
 } from './output.js';

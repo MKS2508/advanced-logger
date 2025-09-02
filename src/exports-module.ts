@@ -280,7 +280,7 @@ export const groupEnd = () => exportLogger.groupEnd();
 export const time = (label: string) => exportLogger.time(label);
 export const timeEnd = (label: string) => exportLogger.timeEnd(label);
 export const setGlobalPrefix = (prefix: string) => exportLogger.setGlobalPrefix(prefix);
-export const createScopedLogger = (prefix: string) => exportLogger.createScopedLogger(prefix);
+export const scope = (prefix: string) => exportLogger.scope(prefix);
 export const setVerbosity = (level: Verbosity) => exportLogger.setVerbosity(level);
 export const addHandler = (handler: ILogHandler) => exportLogger.addHandler(handler);
 

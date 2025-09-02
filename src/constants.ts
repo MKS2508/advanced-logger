@@ -2,7 +2,7 @@
  * @fileoverview Global constants for Advanced Logger
  */
 
-import type { LogLevel } from './types/index.js';
+import type { LogLevel, AdaptiveColors } from './types/index.js';
 
 /**
  * Default configuration values
@@ -15,6 +15,7 @@ export const DEFAULT_CONFIG = {
     theme: 'default' as const,
     bannerType: 'simple' as const,
     bufferSize: 1000,
+    autoDetectTheme: true,
 } as const;
 
 /**
@@ -87,3 +88,29 @@ export const LEVEL_PRIORITIES: Record<LogLevel, number> = {
     error: 3,
     critical: 4,
 } as const;
+
+/**
+ * Adaptive color configurations for DevTools theme compatibility
+ */
+export const ADAPTIVE_COLORS = {
+    timestamp: {
+        light: '#666666',
+        dark: '#a0a0a0',
+    },
+    messageText: {
+        light: '#2d3748',
+        dark: '#f7fafc',
+    },
+    prefix: {
+        light: '#2d3748',
+        dark: '#e2e8f0',
+    },
+    prefixBackground: {
+        light: '#2d3748',
+        dark: '#4a5568',
+    },
+    location: {
+        light: '#718096',
+        dark: '#a0aec0',
+    },
+} as const satisfies Record<string, AdaptiveColors>;

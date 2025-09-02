@@ -53,7 +53,7 @@ export const groupEnd = () => logger.groupEnd();
 export const time = (label: string) => logger.time(label);
 export const timeEnd = (label: string) => logger.timeEnd(label);
 export const setGlobalPrefix = (prefix: string) => logger.setGlobalPrefix(prefix);
-export const createScopedLogger = (prefix: string) => logger.createScopedLogger(prefix);
+export const scope = (prefix: string) => logger.scope(prefix);
 export const setVerbosity = (level: Verbosity) => logger.setVerbosity(level);
 export const addHandler = (handler: ILogHandler) => logger.addHandler(handler);
 export const setTheme = (theme: ThemeVariant) => logger.setTheme(theme);

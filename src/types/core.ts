@@ -29,6 +29,11 @@ export type Verbosity = LogLevel | 'silent';
 export type ThemeVariant = 'default' | 'dark' | 'light' | 'neon' | 'minimal' | 'cyberpunk';
 
 /**
+ * DevTools theme detection
+ */
+export type DevToolsTheme = 'light' | 'dark';
+
+/**
  * Banner types for different visual approaches
  */
 export type BannerType = 'simple' | 'ascii' | 'unicode' | 'svg' | 'animated';
@@ -50,6 +55,7 @@ export interface LoggerConfig {
     theme?: ThemeVariant;
     bannerType?: BannerType;
     bufferSize?: number;
+    autoDetectTheme?: boolean;
 }
 
 /**
@@ -77,4 +83,58 @@ export interface StyleOptions {
     width?: number;
     height?: number;
     padding?: string;
+}
+
+/**
+ * Adaptive color configuration for light/dark themes
+ */
+export interface AdaptiveColors {
+    light: string;
+    dark: string;
+}
+
+/**
+ * Spacing configuration for log elements
+ */
+export type SpacingType = 'compact' | 'normal' | 'spacious';
+
+/**
+ * Layout configuration for log structure
+ */
+export interface LogLayout {
+    spacing: SpacingType;
+    innerPadding?: string;
+    outerMargin?: string;
+    separator?: string;
+}
+
+/**
+ * Configuration for individual log parts
+ */
+export interface LogPartConfig {
+    show?: boolean;
+    style?: string;
+    font?: string;
+    size?: string;
+    color?: string; // Automatically adaptive by default
+    background?: string;
+    padding?: string;
+    margin?: string;
+    border?: string;
+    shadow?: string;
+    uppercase?: boolean;
+}
+
+/**
+ * Complete log styles configuration
+ */
+export interface LogStyles {
+    layout?: LogLayout;
+    timestamp?: LogPartConfig;
+    level?: LogPartConfig;
+    prefix?: LogPartConfig;
+    message?: LogPartConfig;
+    location?: LogPartConfig;
+    backdrop?: string;
+    transparency?: number;
 }

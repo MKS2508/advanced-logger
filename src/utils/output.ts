@@ -2,9 +2,10 @@
  * @fileoverview Styled output creation utilities for Advanced Logger
  */
 
-import type { LogLevel, StackInfo } from '../types/index.js';
+import type { LogLevel, StackInfo, DevToolsTheme, AdaptiveColors } from '../types/index.js';
 import { formatTimestamp } from './timestamps.js';
 import { StyleBuilder } from '../styling/index.js';
+import { ADAPTIVE_COLORS } from '../constants.js';
 
 /**
  * Style configuration for each log level
@@ -18,6 +19,61 @@ export interface LevelStyleConfig {
     shadow: string;
 }
 
+/**
+ * Detects the current DevTools theme preference
+ */
+export function detectDevToolsTheme(): DevToolsTheme {
+    try {
+        if (typeof window === 'undefined' || !window.matchMedia) {
+            return 'light'; // Safe fallback for SSR or older browsers
+        }
+        
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        return mediaQuery.matches ? 'dark' : 'light';
+    } catch (error) {
+        console.warn('Failed to detect DevTools theme:', error);
+        return 'light'; // Fallback to light theme
+    }
+}
+
+/**
+ * Gets adaptive color based on current DevTools theme
+ */
+export function getAdaptiveColor(colors: AdaptiveColors, theme?: DevToolsTheme): string {
+    const currentTheme = theme ?? detectDevToolsTheme();
+    return colors[currentTheme];
+}
+
+/**
+ * Sets up theme change listener for dynamic updates
+ */
+export function setupThemeChangeListener(callback: (theme: DevToolsTheme) => void): (() => void) | null {
+    try {
+        if (typeof window === 'undefined' || !window.matchMedia) {
+            return null;
+        }
+
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handler = (e: MediaQueryListEvent) => {
+            callback(e.matches ? 'dark' : 'light');
+        };
+
+        // Use newer addEventListener if available, fallback to addListener
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', handler);
+            return () => mediaQuery.removeEventListener('change', handler);
+        } else if (mediaQuery.addListener) {
+            mediaQuery.addListener(handler);
+            return () => mediaQuery.removeListener?.(handler);
+        }
+
+        return null;
+    } catch (error) {
+        console.warn('Failed to set up theme change listener:', error);
+        return null;
+    }
+}
+
 
 /**
  * Creates styled console output with multiple %c formatters
@@ -27,14 +83,16 @@ export function createStyledOutput(
     levelStyles: Record<LogLevel | 'success', LevelStyleConfig>,
     prefix: string | undefined,
     message: string,
-    stackInfo: StackInfo | null
+    stackInfo: StackInfo | null,
+    autoDetectTheme: boolean = true
 ): [string, ...string[]] {
     const levelConfig = levelStyles[level];
     const timestamp = formatTimestamp();
+    const currentTheme = autoDetectTheme ? detectDevToolsTheme() : 'light';
 
-    // Base styles
+    // Base styles with adaptive colors
     const timestampStyle = new StyleBuilder()
-        .color('#666')
+        .color(getAdaptiveColor(ADAPTIVE_COLORS.timestamp, currentTheme))
         .size('11px')
         .font('Monaco, Consolas, monospace')
         .build();
@@ -52,8 +110,8 @@ export function createStyledOutput(
         .build();
 
     const prefixStyle = new StyleBuilder()
-        .bg('#2d3748')
-        .color('#e2e8f0')
+        .bg(getAdaptiveColor(ADAPTIVE_COLORS.prefixBackground, currentTheme))
+        .color(getAdaptiveColor(ADAPTIVE_COLORS.prefix, currentTheme))
         .padding('2px 6px')
         .rounded('3px')
         .bold()
@@ -62,13 +120,13 @@ export function createStyledOutput(
         .build();
 
     const messageStyle = new StyleBuilder()
-        .color('#2d3748')
+        .color(getAdaptiveColor(ADAPTIVE_COLORS.messageText, currentTheme))
         .font('system-ui, -apple-system, sans-serif')
         .size('14px')
         .build();
 
     const locationStyle = new StyleBuilder()
-        .color('#718096')
+        .color(getAdaptiveColor(ADAPTIVE_COLORS.location, currentTheme))
         .size('11px')
         .font('Monaco, Consolas, monospace')
         .build();

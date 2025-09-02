@@ -20,7 +20,8 @@ import type {
 import {
     parseStackTrace,
     formatTimestamp,
-    createStyledOutput
+    createStyledOutput,
+    setupThemeChangeListener
 } from './utils/index.js';
 
 // Styling imports
@@ -31,6 +32,11 @@ import {
     StylePresets,
     StyleBuilder
 } from './styling/index.js';
+
+// Smart presets and scoped loggers
+import { getSmartPreset, getAvailablePresets, hasPreset } from './styling/SmartPresets.js';
+import { ScopedLogger, APILogger, ComponentLogger } from './ScopedLogger.js';
+import { createLogStyleBuilder } from './styling/LogStyleBuilder.js';
 
 // Handler imports
 import { ExportLogHandler } from './handlers/index.js';
@@ -57,6 +63,12 @@ export class Logger {
     private groupDepth: number = 0;
     private exportHandler?: ExportLogHandler;
     private cliProcessor?: CommandProcessor;
+    private themeChangeListener?: (() => void) | null;
+    private displaySettings = {
+        showTimestamp: true,
+        showLocation: true,
+        showBadges: true
+    };
 
     /**
      * Creates a new Logger instance
@@ -75,6 +87,31 @@ export class Logger {
 
         // Initialize CLI processor
         this.cliProcessor = createDefaultCLI();
+        
+        // Set up theme change listener if auto-detection is enabled
+        if (this.config.autoDetectTheme) {
+            this.setupAutoThemeDetection();
+        }
+    }
+
+    // ===== PRIVATE HELPER METHODS =====
+    
+    /**
+     * Sets up automatic theme detection with change listener
+     */
+    private setupAutoThemeDetection(): void {
+        // Clean up existing listener if any
+        if (this.themeChangeListener) {
+            this.themeChangeListener();
+            this.themeChangeListener = null;
+        }
+
+        // Set up new listener
+        this.themeChangeListener = setupThemeChangeListener((theme) => {
+            // Theme changed - logs will automatically use new colors on next call
+            // No need to update anything as colors are resolved dynamically
+            this.debug(`DevTools theme changed to: ${theme}`);
+        });
     }
 
     // ===== CONFIGURATION METHODS =====
@@ -90,7 +127,18 @@ export class Logger {
      * Update configuration
      */
     updateConfig(updates: Partial<LoggerConfig>): void {
+        const previousAutoDetect = this.config.autoDetectTheme;
         this.config = { ...this.config, ...updates };
+        
+        // Handle auto-detection changes
+        if (updates.autoDetectTheme !== undefined && updates.autoDetectTheme !== previousAutoDetect) {
+            if (updates.autoDetectTheme) {
+                this.setupAutoThemeDetection();
+            } else if (this.themeChangeListener) {
+                this.themeChangeListener();
+                this.themeChangeListener = null;
+            }
+        }
     }
 
     /**
@@ -111,6 +159,13 @@ export class Logger {
      * Sets the logger theme
      */
     setTheme(theme: ThemeVariant): void {
+        // First check if it's a smart preset
+        if (hasPreset(theme)) {
+            this.preset(theme);
+            return;
+        }
+        
+        // Fallback to old theme system
         if (theme in THEME_PRESETS) {
             LEVEL_STYLES = (THEME_PRESETS as any)[theme];
             this.config.theme = theme;
@@ -123,7 +178,7 @@ export class Logger {
             
             this.success(`Theme changed to: ${theme}`);
         } else {
-            this.error(`Invalid theme: ${theme}. Available themes:`, Object.keys(THEME_PRESETS));
+            this.error(`Invalid theme: ${theme}. Available:`, [...getAvailablePresets(), ...Object.keys(THEME_PRESETS)]);
         }
     }
 
@@ -139,22 +194,172 @@ export class Logger {
      * Reset logger to default configuration
      */
     resetConfig(): void {
+        // Clean up theme listener
+        if (this.themeChangeListener) {
+            this.themeChangeListener();
+            this.themeChangeListener = null;
+        }
+        
         this.config = { ...DEFAULT_CONFIG };
         LEVEL_STYLES = THEME_PRESETS.default;
+        
+        // Re-setup auto theme detection if enabled in default config
+        if (this.config.autoDetectTheme) {
+            this.setupAutoThemeDetection();
+        }
+        
         this.success('Logger configuration reset to defaults');
     }
 
-    // ===== SCOPED LOGGER =====
+    /**
+     * Cleanup method to remove event listeners and free resources
+     */
+    cleanup(): void {
+        if (this.themeChangeListener) {
+            this.themeChangeListener();
+            this.themeChangeListener = null;
+        }
+    }
+
+    // ===== SIMPLIFIED API =====
 
     /**
-     * Creates a scoped logger with a specific prefix
+     * Apply a smart preset - works perfectly out-of-the-box
      */
-    createScopedLogger(prefix: string): Logger {
-        const scopedLogger = new Logger(this.config);
-        scopedLogger.scopedPrefix = prefix;
-        scopedLogger.handlers = [...this.handlers];
-        scopedLogger.exportHandler = this.exportHandler;
-        return scopedLogger;
+    preset(name: string): void {
+        if (!hasPreset(name)) {
+            this.error(`Unknown preset: ${name}. Available presets:`, getAvailablePresets());
+            return;
+        }
+
+        const presetConfig = getSmartPreset(name);
+        if (presetConfig) {
+            // Apply the smart preset configuration
+            this.displaySettings.showTimestamp = presetConfig.timestamp?.show ?? true;
+            this.displaySettings.showLocation = presetConfig.location?.show ?? true;
+            
+            // Store the preset config for use in createStyledOutput
+            (this as any)._activePreset = presetConfig;
+            (this as any)._activePresetName = name;
+            
+            this.success(`Applied preset: ${name}`);
+        }
+    }
+
+    /**
+     * List available presets
+     */
+    presets(): string[] {
+        return getAvailablePresets();
+    }
+
+    // ===== TOGGLE METHODS =====
+
+    /**
+     * Hide timestamp in logs
+     */
+    hideTimestamp(): void {
+        this.displaySettings.showTimestamp = false;
+        this.success('Timestamp hidden');
+    }
+
+    /**
+     * Show timestamp in logs
+     */
+    showTimestamp(): void {
+        this.displaySettings.showTimestamp = true;
+        this.success('Timestamp shown');
+    }
+
+    /**
+     * Hide location info in logs
+     */
+    hideLocation(): void {
+        this.displaySettings.showLocation = false;
+        this.success('Location info hidden');
+    }
+
+    /**
+     * Show location info in logs
+     */
+    showLocation(): void {
+        this.displaySettings.showLocation = true;
+        this.success('Location info shown');
+    }
+
+    /**
+     * Hide badges in logs
+     */
+    hideBadges(): void {
+        this.displaySettings.showBadges = false;
+        this.success('Badges hidden');
+    }
+
+    /**
+     * Show badges in logs
+     */
+    showBadges(): void {
+        this.displaySettings.showBadges = true;
+        this.success('Badges shown');
+    }
+
+    // ===== SCOPED LOGGERS =====
+
+    /**
+     * Create a component logger with automatic styling
+     */
+    component(name: string): ComponentLogger {
+        return new ComponentLogger(this, name);
+    }
+
+    /**
+     * Create an API logger with automatic badges
+     */
+    api(name: string): APILogger {
+        return new APILogger(this, name);
+    }
+
+    /**
+     * Create a general scoped logger with badges support
+     */
+    scope(name: string): ScopedLogger {
+        return new ScopedLogger(this, name);
+    }
+
+    // ===== SIMPLE CUSTOMIZATION =====
+
+    /**
+     * Simple customization with minimal configuration
+     */
+    customize(overrides: {
+        message?: { color?: string; font?: string; size?: string };
+        timestamp?: { show?: boolean; color?: string };
+        location?: { show?: boolean; color?: string };
+        level?: { uppercase?: boolean; style?: string };
+        prefix?: { show?: boolean; style?: string };
+        spacing?: 'compact' | 'normal' | 'spacious';
+    }): void {
+        // Apply simple overrides
+        if (overrides.timestamp?.show !== undefined) {
+            this.displaySettings.showTimestamp = overrides.timestamp.show;
+        }
+        if (overrides.location?.show !== undefined) {
+            this.displaySettings.showLocation = overrides.location.show;
+        }
+        if (overrides.prefix?.show !== undefined) {
+            // Will be handled when we integrate with preset system
+        }
+
+        // Store customization for use in createStyledOutput
+        (this as any)._customization = overrides;
+        this.success('Customization applied');
+    }
+
+    /**
+     * Access advanced styling API (for power users)
+     */
+    styles(): any {
+        return createLogStyleBuilder(this);
     }
 
     // ===== HANDLER MANAGEMENT =====
@@ -202,7 +407,7 @@ export class Logger {
     /**
      * Core logging method that handles styling and formatting
      */
-    private log(level: LogLevel, ...args: any[]): void {
+    protected log(level: LogLevel, ...args: any[]): void {
         if (!this.shouldLog(level)) return;
 
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
@@ -210,8 +415,15 @@ export class Logger {
         const message = args.length > 0 ? String(args[0]) : '';
         const additionalArgs = args.slice(1);
 
-        // Create styled output
-        const [format, ...styles] = createStyledOutput(level, LEVEL_STYLES, prefix, message, stackInfo);
+        // Create styled output with theme detection and display settings
+        const [format, ...styles] = createStyledOutput(
+            level, 
+            LEVEL_STYLES, 
+            prefix, 
+            message, 
+            this.displaySettings.showLocation ? stackInfo : null,
+            this.config.autoDetectTheme
+        );
 
         // Add group indentation
         const groupIndent = '  '.repeat(this.groupDepth);
@@ -286,7 +498,14 @@ export class Logger {
         const additionalArgs = args.slice(1);
 
         // Handle success as special case - use info level with success styling
-        const [format, ...styles] = createStyledOutput('info', LEVEL_STYLES, prefix, message, stackInfo);
+        const [format, ...styles] = createStyledOutput(
+            'info', 
+            LEVEL_STYLES, 
+            prefix, 
+            message, 
+            this.displaySettings.showLocation ? stackInfo : null,
+            this.config.autoDetectTheme
+        );
         
         // Override with success styling
         const successStyle = LEVEL_STYLES.success;
@@ -580,7 +799,6 @@ export const groupEnd = () => defaultLogger.groupEnd();
 export const time = (label: string) => defaultLogger.time(label);
 export const timeEnd = (label: string) => defaultLogger.timeEnd(label);
 export const setGlobalPrefix = (prefix: string) => defaultLogger.setGlobalPrefix(prefix);
-export const createScopedLogger = (prefix: string) => defaultLogger.createScopedLogger(prefix);
 export const setVerbosity = (level: Verbosity) => defaultLogger.setVerbosity(level);
 export const addHandler = (handler: ILogHandler) => defaultLogger.addHandler(handler);
 export const setTheme = (theme: ThemeVariant) => defaultLogger.setTheme(theme);
@@ -591,8 +809,24 @@ export const logWithSVG = (message: string, svgContent?: string, options?: Style
 export const logAnimated = (message: string, duration?: number) => 
     defaultLogger.logAnimated(message, duration);
 export const cli = (command: string) => defaultLogger.cli(command);
+export const cleanup = () => defaultLogger.cleanup();
+
+// Simplified API exports
+export const preset = (name: string) => defaultLogger.preset(name);
+export const presets = () => defaultLogger.presets();
+export const hideTimestamp = () => defaultLogger.hideTimestamp();
+export const showTimestamp = () => defaultLogger.showTimestamp();
+export const hideLocation = () => defaultLogger.hideLocation();
+export const showLocation = () => defaultLogger.showLocation();
+export const hideBadges = () => defaultLogger.hideBadges();
+export const showBadges = () => defaultLogger.showBadges();
+export const component = (name: string) => defaultLogger.component(name);
+export const api = (name: string) => defaultLogger.api(name);
+export const scope = (name: string) => defaultLogger.scope(name);
+export const customize = (overrides: any) => defaultLogger.customize(overrides);
+export const styles = () => defaultLogger.styles();
 
 // Re-export handlers and utilities for backward compatibility
 export { FileLogHandler, RemoteLogHandler, AnalyticsLogHandler, ExportLogHandler } from './handlers/index.js';
-export { StyleBuilder, StylePresets as Styles } from './styling/index.js';// Test change to trigger workflow
-// Test permissions fix
+export { StyleBuilder, StylePresets as Styles } from './styling/index.js';
+export { ScopedLogger, APILogger, ComponentLogger } from './ScopedLogger.js';

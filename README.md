@@ -11,15 +11,15 @@ Transform your console logging experience with beautiful styling, professional t
 
 ## ✨ Features
 
-- 🎨 **Advanced CSS Styling** - Beautiful gradients, shadows, and animations
-- 🌈 **5 Professional Themes** - Default, Dark, Neon, Cyberpunk, Retro  
-- 🖼️ **SVG Background Support** - Custom graphics in console output
-- ⚡ **Performance Monitoring** - Built-in timing and benchmarking
+- 🚀 **Simplified API** - 80% less code for basic use cases
+- 🎨 **Smart Presets** - Apply beautiful themes in one line: `logger.preset('cyberpunk')`
+- 🏷️ **Auto-Badges** - Component and API loggers with automatic tagging
+- 🌗 **Adaptive Themes** - Automatic light/dark mode detection
+- ⚡ **Context Logging** - Temporary scopes that auto-cleanup
+- 🎛️ **Toggle Controls** - Show/hide elements with simple methods
 - 📊 **Data Export** - CSV, JSON, XML export with filtering
-- 📡 **Remote Logging** - Send logs to external services
 - 💻 **Interactive CLI** - Built-in command interface
 - 🔧 **Modular Architecture** - Import only what you need
-- 📱 **Universal Compatibility** - Browser & Node.js with graceful fallbacks
 - 🎯 **TypeScript First** - Complete type safety and IntelliSense
 
 ## 📦 Installation
@@ -47,6 +47,70 @@ npm install @mks2508/better-logger-exports
 
 ## 🚀 Quick Start
 
+### Basic Usage (Zero Configuration)
+```javascript
+import logger from '@mks2508/better-logger';
+
+// Works perfectly out-of-the-box with adaptive themes
+logger.info('Application started');
+logger.success('Database connected');
+logger.warn('High memory usage');
+logger.error('Connection failed');
+```
+
+### One-Line Styling
+```javascript
+// Apply beautiful presets instantly
+logger.preset('cyberpunk');     // Neon colors, glowing effects
+logger.preset('glassmorphism'); // Modern blur effects
+logger.preset('minimal');       // Clean and simple
+logger.preset('debug');         // Detailed development mode
+```
+
+### Toggle Features
+```javascript
+// Control visibility with simple methods
+logger.hideTimestamp();
+logger.showLocation();
+logger.hideBadges();
+```
+
+### Component & API Logging
+```javascript
+// Scoped loggers with auto-badges
+const auth = logger.component('UserAuth');
+auth.info('Login attempt');     // [COMPONENT] [UserAuth] Login attempt
+auth.success('User verified');  // [COMPONENT] [UserAuth] User verified
+
+// API loggers with multiple badges
+const api = logger.api('GraphQL').badges(['SLOW', 'CACHE']);
+api.warn('Query timeout');      // [API] [SLOW] [CACHE] [GraphQL] Query timeout
+api.auth('Invalid token');      // [API] [AUTH] [GraphQL] Invalid token
+```
+
+### Smart Context System
+```javascript
+const dbLogger = logger.component('Database');
+
+// Context auto-removes after execution
+dbLogger.context('Migration').run(() => {
+  dbLogger.info('Starting migration');    // [Database:Migration] Starting migration
+  dbLogger.success('Tables created');     // [Database:Migration] Tables created
+});
+// Context automatically cleaned up
+```
+
+### Simple Customization
+```javascript
+// Minimal configuration for specific needs
+logger.customize({
+  message: { color: '#007bff', size: '15px' },
+  timestamp: { show: false },
+  spacing: 'compact'
+});
+```
+
+### Advanced Styling (Power Users)
 ```typescript
 import { Logger } from '@mks2508/better-logger';
 

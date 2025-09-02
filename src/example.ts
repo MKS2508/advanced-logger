@@ -10,7 +10,7 @@ import logger, {
     error,
     success,
     critical,
-    createScopedLogger,
+    scope,
     setGlobalPrefix,
     setVerbosity,
     setTheme,
@@ -151,9 +151,9 @@ export function demonstrateTiming() {
 }
 
 export function demonstrateScopedLogger() {
-    const apiLogger = createScopedLogger('API');
-    const dbLogger = createScopedLogger('DB');
-    const authLogger = createScopedLogger('AUTH');
+    const apiLogger = scope('API');
+    const dbLogger = scope('DB');
+    const authLogger = scope('AUTH');
     
     apiLogger.info('🌐 Fetching user data', { endpoint: '/api/users' });
     dbLogger.debug('💾 Database query executed', { query: 'SELECT * FROM users LIMIT 10' });

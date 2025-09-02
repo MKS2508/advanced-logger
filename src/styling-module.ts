@@ -214,7 +214,7 @@ export const groupEnd = () => styledLogger.groupEnd();
 export const time = (label: string) => styledLogger.time(label);
 export const timeEnd = (label: string) => styledLogger.timeEnd(label);
 export const setGlobalPrefix = (prefix: string) => styledLogger.setGlobalPrefix(prefix);
-export const createScopedLogger = (prefix: string) => styledLogger.createScopedLogger(prefix);
+export const scope = (prefix: string) => styledLogger.scope(prefix);
 export const setVerbosity = (level: any) => styledLogger.setVerbosity(level);
 export const setTheme = (theme: ThemeVariant) => styledLogger.setTheme(theme);
 export const setBannerType = (bannerType: BannerType) => styledLogger.setBannerType(bannerType);

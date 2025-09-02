@@ -11,7 +11,7 @@ import {
   time,
   timeEnd,
   trace,
-  createScopedLogger,
+  scope,
   cli,
   setTheme,
   setBannerType,
@@ -87,9 +87,9 @@ function testTiming() {
 
 function testScopedLogger() {
   info("Demonstrating scoped loggers...");
-  const apiLogger = createScopedLogger("API");
+  const apiLogger = scope("API");
   apiLogger.info("Fetching user data...");
-  const uiLogger = createScopedLogger("UI");
+  const uiLogger = scope("UI");
   uiLogger.debug("Rendering user profile component.");
   apiLogger.success("User data fetched successfully.");
   apiLogger.error("Failed to update settings.");

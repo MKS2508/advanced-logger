@@ -85,6 +85,20 @@ export class StyleBuilder {
     }
 
     /**
+     * Set monospace font family (alias for common monospace fonts)
+     */
+    mono(): StyleBuilder {
+        return this.font('Monaco, Consolas, "Courier New", monospace');
+    }
+
+    /**
+     * Set system font family (alias for system fonts)
+     */
+    system(): StyleBuilder {
+        return this.font('system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif');
+    }
+
+    /**
      * Add font size
      */
     size(size: string): StyleBuilder {

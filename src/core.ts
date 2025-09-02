@@ -85,7 +85,7 @@ export class CoreLogger {
     /**
      * Creates a scoped logger with a specific prefix
      */
-    createScopedLogger(prefix: string): CoreLogger {
+    scope(prefix: string): CoreLogger {
         const scopedLogger = new CoreLogger(this.config);
         scopedLogger.scopedPrefix = prefix;
         scopedLogger.handlers = [...this.handlers];
@@ -303,7 +303,7 @@ export const groupEnd = () => coreLogger.groupEnd();
 export const time = (label: string) => coreLogger.time(label);
 export const timeEnd = (label: string) => coreLogger.timeEnd(label);
 export const setGlobalPrefix = (prefix: string) => coreLogger.setGlobalPrefix(prefix);
-export const createScopedLogger = (prefix: string) => coreLogger.createScopedLogger(prefix);
+export const scope = (prefix: string) => coreLogger.scope(prefix);
 export const setVerbosity = (level: Verbosity) => coreLogger.setVerbosity(level);
 export const addHandler = (handler: ILogHandler) => coreLogger.addHandler(handler);
 
