@@ -1,6 +1,23 @@
 {
-  "current_version": "0.12.0-alpha.1",
+  "current_version": "0.13.0-alpha.1",
   "versions": [
+    {
+      "version": "0.13.0-alpha.1",
+      "date": "2025-09-02",
+      "type": "minor",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.12.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.12.0-alpha.1 [skip ci]"
+        }
+      ],
+      "technical_notes": "- Implementado SmartPresets system con 6 presets predefinidos\n- Creado ScopedLogger con soporte para badges múltiples\n- Añadido ContextLogger con auto-cleanup temporal\n- Migrado createStyledOutput para usar colores adaptativos\n- Eliminado código duplicado y referencias obsoletas\n- Consolidado sistemas de temas (THEME_PRESETS + SMART_PRESETS)\n- Refactorizado API exports para mejor tree-shaking",
+      "breaking_changes": [],
+      "commit_hash": "0d9da59c46f0565703c118ba96a4a59128b33982",
+      "prefix": "alpha"
+    },
     {
       "version": "0.12.0-alpha.1",
       "date": "2025-08-30",
