@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Logger Browser Test</title>
+    <style>
+        body { 
+            font-family: system-ui, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        .console-note {
+            background: #e9ecef;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Core Logger Browser Test</h1>
+    
+    <div class="console-note">
+        <strong>📋 Instructions:</strong> Open your browser's Developer Console (F12) to see the log output.
+        All tests will show styled output in browser console with CSS formatting.
+    </div>
+
+    <div class="test-section">
+        <h2>Environment Detection</h2>
+        <button onclick="testEnvironment()">Test Environment Detection</button>
+        <div id="env-info"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Basic Logging</h2>
+        <button onclick="testBasicLogging()">Test Basic Levels</button>
+        <p>Check console for styled output with gradients and colors.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Scoped Logger</h2>
+        <button onclick="testScopedLogger()">Test Scoped Logging</button>
+        <p>Should show prefixed messages in console.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Advanced Features</h2>
+        <button onclick="testAdvancedFeatures()">Test Tables & Groups</button>
+        <p>Should use native browser console.table() and grouping.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Performance Timers</h2>
+        <button onclick="testTimers()">Test Timers</button>
+        <p>Should measure and log execution time.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Custom Handlers</h2>
+        <button onclick="testHandlers()">Test Custom Handler</button>
+        <p>Should trigger custom handler alongside console output.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Import the core logger
+        import logger from './packages/core/dist/index.js';
+        
+        // Make logger available globally for tests
+        window.logger = logger;
+        window.testResults = [];
+
+        // Test functions
+        window.testEnvironment = function() {
+            console.log('=== Environment Detection Test ===');
+            
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookiesEnabled: navigator.cookieEnabled,
+                onLine: navigator.onLine,
+                colorScheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+            };
+            
+            logger.info('Browser environment detected');
+            logger.info('User Agent: ' + info.userAgent);
+            logger.info('Platform: ' + info.platform);
+            logger.info('Color Scheme: ' + info.colorScheme);
+            
+            document.getElementById('env-info').innerHTML = `
+                <p><strong>Platform:</strong> ${info.platform}</p>
+                <p><strong>Color Scheme:</strong> ${info.colorScheme}</p>
+                <p class="success">✅ Environment detection working</p>
+            `;
+            
+            window.testResults.push('Environment: ✅ Passed');
+            updateResults();
+        };
+
+        window.testBasicLogging = function() {
+            console.log('=== Basic Logging Test ===');
+            
+            logger.debug('Debug message - should be styled with gray gradient');
+            logger.info('Info message - should be styled with blue gradient');
+            logger.warn('Warning message - should be styled with yellow gradient');
+            logger.error('Error message - should be styled with red gradient');
+            logger.critical('Critical message - should be styled with dark red gradient');
+            
+            console.log('Check above for styled console output with gradients and colors');
+            window.testResults.push('Basic Logging: ✅ Passed');
+            updateResults();
+        };
+
+        window.testScopedLogger = function() {
+            console.log('=== Scoped Logger Test ===');
+            
+            const apiLogger = logger.scope('API');
+            const dbLogger = logger.scope('DATABASE');
+            
+            apiLogger.info('API request started');
+            apiLogger.warn('API rate limit warning');
+            apiLogger.error('API request failed');
+            
+            dbLogger.info('Database connection established');
+            dbLogger.warn('Slow query detected');
+            
+            window.testResults.push('Scoped Logging: ✅ Passed');
+            updateResults();
+        };
+
+        window.testAdvancedFeatures = function() {
+            console.log('=== Advanced Features Test ===');
+            
+            // Test table
+            const sampleData = [
+                { name: 'Alice', age: 25, role: 'Developer' },
+                { name: 'Bob', age: 30, role: 'Designer' },
+                { name: 'Carol', age: 28, role: 'Manager' }
+            ];
+            
+            logger.table(sampleData);
+            
+            // Test groups
+            logger.group('Database Operations');
+            logger.info('Connecting to database');
+            logger.info('Executing complex query');
+            logger.group('Transaction Details', true); // collapsed
+            logger.info('Transaction started');
+            logger.info('Updating records');
+            logger.groupEnd();
+            logger.info('Transaction completed');
+            logger.groupEnd();
+            
+            window.testResults.push('Advanced Features: ✅ Passed');
+            updateResults();
+        };
+
+        window.testTimers = function() {
+            console.log('=== Performance Timers Test ===');
+            
+            logger.time('operation-1');
+            logger.time('operation-2');
+            
+            setTimeout(() => {
+                logger.timeEnd('operation-1');
+                
+                setTimeout(() => {
+                    logger.timeEnd('operation-2');
+                    window.testResults.push('Timers: ✅ Passed');
+                    updateResults();
+                }, 150);
+            }, 100);
+        };
+
+        window.testHandlers = function() {
+            console.log('=== Custom Handlers Test ===');
+            
+            let handlerCalled = false;
+            const testHandler = {
+                handle: (level, message, args, metadata) => {
+                    console.log('🔧 Custom handler received:', { level, message, timestamp: metadata.timestamp });
+                    handlerCalled = true;
+                }
+            };
+            
+            logger.addHandler(testHandler);
+            logger.info('This message should trigger the custom handler');
+            
+            setTimeout(() => {
+                if (handlerCalled) {
+                    window.testResults.push('Custom Handlers: ✅ Passed');
+                } else {
+                    window.testResults.push('Custom Handlers: ❌ Failed');
+                }
+                updateResults();
+            }, 50);
+        };
+
+        function updateResults() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>Test Results:</h3>' + 
+                window.testResults.map(result => `<p>${result}</p>`).join('');
+        }
+
+        // Auto-run environment test
+        console.log('🚀 Core Logger Browser Test Started');
+        console.log('📍 Check console output for styled logs with CSS gradients');
+    </script>
+</body>
+</html>

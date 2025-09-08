@@ -1,9 +1,24 @@
 /**
- * @fileoverview Core type definitions for Advanced Logger
+ * @fileoverview Definiciones de tipos principales para Better Logger
+ * @version 0.3.0
+ * @since 2024
  */
 
 /**
- * Supported log levels in hierarchical order (debug < info < warn < error < critical)
+ * Niveles de log soportados en orden jerárquico (debug < info < warn < error < critical)
+ * 
+ * @constant {Object} LOG_LEVELS
+ * @property {number} debug - Nivel 0: Información de depuración detallada
+ * @property {number} info - Nivel 1: Mensajes informativos generales
+ * @property {number} warn - Nivel 2: Advertencias que no detienen la ejecución
+ * @property {number} error - Nivel 3: Errores que pueden afectar funcionalidad
+ * @property {number} critical - Nivel 4: Errores críticos que requieren atención inmediata
+ * 
+ * @example
+ * // Verificar si un nivel debe mostrarse
+ * if (LOG_LEVELS[currentLevel] >= LOG_LEVELS.warn) {
+ *   // Mostrar solo warn, error y critical
+ * }
  */
 export const LOG_LEVELS = {
     debug: 0,
@@ -14,37 +29,82 @@ export const LOG_LEVELS = {
 } as const;
 
 /**
- * Log level type derived from LOG_LEVELS keys
+ * Tipo de nivel de log derivado de las claves de LOG_LEVELS
+ * @typedef {'debug' | 'info' | 'warn' | 'error' | 'critical'} LogLevel
  */
 export type LogLevel = keyof typeof LOG_LEVELS;
 
 /**
- * Verbosity level type for filtering logs
+ * Tipo de nivel de verbosidad para filtrar logs
+ * @typedef {LogLevel | 'silent'} Verbosity
+ * @description 'silent' desactiva completamente todos los logs
  */
 export type Verbosity = LogLevel | 'silent';
 
 /**
- * Theme variants for different visual styles
+ * Variantes de tema para diferentes estilos visuales
+ * @typedef {'default' | 'dark' | 'light' | 'neon' | 'minimal' | 'cyberpunk'} ThemeVariant
+ * 
+ * @description
+ * - default: Tema adaptativo automático (claro/oscuro)
+ * - dark: Tema oscuro con colores vibrantes
+ * - light: Tema claro con colores suaves
+ * - neon: Colores neón brillantes con efectos de resplandor
+ * - minimal: Diseño minimalista y limpio
+ * - cyberpunk: Estilo futurista con neón y efectos
  */
 export type ThemeVariant = 'default' | 'dark' | 'light' | 'neon' | 'minimal' | 'cyberpunk';
 
 /**
- * DevTools theme detection
+ * Detección de tema de DevTools del navegador
+ * @typedef {'light' | 'dark'} DevToolsTheme
  */
 export type DevToolsTheme = 'light' | 'dark';
 
 /**
- * Banner types for different visual approaches
+ * Tipos de banner para diferentes enfoques visuales
+ * @typedef {'simple' | 'ascii' | 'unicode' | 'svg' | 'animated'} BannerType
+ * 
+ * @description
+ * - simple: Texto simple sin decoración
+ * - ascii: Arte ASCII tradicional
+ * - unicode: Caracteres Unicode decorativos
+ * - svg: Gráfico SVG embebido
+ * - animated: Banner con animación CSS
  */
 export type BannerType = 'simple' | 'ascii' | 'unicode' | 'svg' | 'animated';
 
 /**
- * Export formats for log data
+ * Formatos de exportación para datos de log
+ * @typedef {'json' | 'csv' | 'markdown' | 'plain' | 'html'} ExportFormat
+ * 
+ * @description
+ * - json: Formato JSON estructurado
+ * - csv: Valores separados por comas para Excel/Sheets
+ * - markdown: Formato Markdown para documentación
+ * - plain: Texto plano sin formato
+ * - html: HTML con estilos para visualización web
  */
 export type ExportFormat = 'json' | 'csv' | 'markdown' | 'plain' | 'html';
 
 /**
- * Configuration interface for logger instances
+ * Interfaz de configuración para instancias del logger
+ * 
+ * @interface LoggerConfig
+ * @since 0.3.0
+ * 
+ * @example
+ * const config: LoggerConfig = {
+ *   globalPrefix: 'MiApp',
+ *   verbosity: 'info',
+ *   enableColors: true,
+ *   enableTimestamps: true,
+ *   enableStackTrace: false,
+ *   theme: 'cyberpunk',
+ *   bannerType: 'animated',
+ *   bufferSize: 500,
+ *   autoDetectTheme: true
+ * };
  */
 export interface LoggerConfig {
     globalPrefix?: string;
@@ -59,7 +119,10 @@ export interface LoggerConfig {
 }
 
 /**
- * Parsed stack trace information
+ * Información parseada del stack trace
+ * 
+ * @interface StackInfo
+ * @description Contiene la ubicación exacta donde se originó el log
  */
 export interface StackInfo {
     file: string;
@@ -69,7 +132,10 @@ export interface StackInfo {
 }
 
 /**
- * Timer entry for performance measurement
+ * Entrada de temporizador para medición de rendimiento
+ * 
+ * @interface TimerEntry
+ * @description Usado internamente para rastrear temporizadores activos
  */
 export interface TimerEntry {
     label: string;
@@ -77,7 +143,10 @@ export interface TimerEntry {
 }
 
 /**
- * Options for styling components
+ * Opciones para estilizar componentes
+ * 
+ * @interface StyleOptions
+ * @description Configuración de dimensiones y espaciado para elementos visuales
  */
 export interface StyleOptions {
     width?: number;
@@ -86,7 +155,10 @@ export interface StyleOptions {
 }
 
 /**
- * Adaptive color configuration for light/dark themes
+ * Configuración de colores adaptativos para temas claro/oscuro
+ * 
+ * @interface AdaptiveColors
+ * @description Define colores que se ajustan automáticamente al tema del navegador
  */
 export interface AdaptiveColors {
     light: string;
@@ -94,12 +166,21 @@ export interface AdaptiveColors {
 }
 
 /**
- * Spacing configuration for log elements
+ * Configuración de espaciado para elementos del log
+ * @typedef {'compact' | 'normal' | 'spacious'} SpacingType
+ * 
+ * @description
+ * - compact: Espaciado mínimo para más densidad
+ * - normal: Espaciado estándar balanceado
+ * - spacious: Espaciado amplio para mejor legibilidad
  */
 export type SpacingType = 'compact' | 'normal' | 'spacious';
 
 /**
- * Layout configuration for log structure
+ * Configuración de layout para la estructura del log
+ * 
+ * @interface LogLayout
+ * @description Define cómo se organizan visualmente los elementos del log
  */
 export interface LogLayout {
     spacing: SpacingType;
@@ -109,7 +190,18 @@ export interface LogLayout {
 }
 
 /**
- * Configuration for individual log parts
+ * Configuración para partes individuales del log
+ * 
+ * @interface LogPartConfig
+ * @description Permite personalizar cada elemento del log por separado
+ * 
+ * @example
+ * const timestampConfig: LogPartConfig = {
+ *   show: true,
+ *   color: '#888',
+ *   font: 'Monaco',
+ *   size: '11px'
+ * };
  */
 export interface LogPartConfig {
     show?: boolean;
@@ -126,7 +218,11 @@ export interface LogPartConfig {
 }
 
 /**
- * Complete log styles configuration
+ * Configuración completa de estilos del log
+ * 
+ * @interface LogStyles
+ * @description Agrupa todas las opciones de estilo en una sola configuración
+ * @since 0.3.0
  */
 export interface LogStyles {
     layout?: LogLayout;

@@ -3,6 +3,7 @@
  */
 
 import type { LogLevel, AdaptiveColors } from './types/index.js';
+import type { LevelStyleConfig } from './utils/index.js';
 
 /**
  * Default configuration values
@@ -16,6 +17,60 @@ export const DEFAULT_CONFIG = {
     bannerType: 'simple' as const,
     bufferSize: 1000,
     autoDetectTheme: true,
+} as const;
+
+/**
+ * Basic level styles for core module (minimal CSS styling)
+ */
+export const LEVEL_STYLES: Record<LogLevel | 'success', LevelStyleConfig> = {
+    debug: {
+        emoji: '🔍',
+        label: 'DEBUG',
+        background: 'linear-gradient(90deg, #6c757d, #495057)',
+        color: '#ffffff',
+        border: '1px solid #6c757d',
+        shadow: '0 2px 4px rgba(108, 117, 125, 0.3)'
+    },
+    info: {
+        emoji: 'ℹ️',
+        label: 'INFO',
+        background: 'linear-gradient(90deg, #007bff, #0056b3)',
+        color: '#ffffff',
+        border: '1px solid #007bff',
+        shadow: '0 2px 4px rgba(0, 123, 255, 0.3)'
+    },
+    warn: {
+        emoji: '⚠️',
+        label: 'WARN',
+        background: 'linear-gradient(90deg, #ffc107, #e0a800)',
+        color: '#000000',
+        border: '1px solid #ffc107',
+        shadow: '0 2px 4px rgba(255, 193, 7, 0.3)'
+    },
+    error: {
+        emoji: '❌',
+        label: 'ERROR',
+        background: 'linear-gradient(90deg, #dc3545, #c82333)',
+        color: '#ffffff',
+        border: '1px solid #dc3545',
+        shadow: '0 2px 4px rgba(220, 53, 69, 0.3)'
+    },
+    critical: {
+        emoji: '🚨',
+        label: 'CRITICAL',
+        background: 'linear-gradient(90deg, #8B0000, #FF0000)',
+        color: '#ffffff',
+        border: '2px solid #FF0000',
+        shadow: '0 4px 8px rgba(255, 0, 0, 0.4)'
+    },
+    success: {
+        emoji: '✅',
+        label: 'SUCCESS',
+        background: 'linear-gradient(90deg, #28a745, #1e7e34)',
+        color: '#ffffff',
+        border: '1px solid #28a745',
+        shadow: '0 2px 4px rgba(40, 167, 69, 0.3)'
+    }
 } as const;
 
 /**

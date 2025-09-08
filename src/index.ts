@@ -1,10 +1,13 @@
 /**
- * @fileoverview Better Logger - Complete library with all features
- * @version 0.0.1
+ * @fileoverview Better Logger - Librería completa con todas las características
+ * @version 0.3.0
+ * @since 2024
  * 
- * This is the main entry point that provides the complete Better Logger experience
- * with all advanced features including styling, SVG support, animations, export 
- * capabilities, and remote logging.
+ * Punto de entrada principal que proporciona la experiencia completa de Better Logger
+ * con características avanzadas incluyendo estilos CSS, soporte SVG, animaciones,
+ * capacidades de exportación y logging remoto.
+ * 
+ * @module @mks2508/better-logger
  */
 
 // Main Logger class with all features
@@ -22,24 +25,59 @@ import type {
 const logger = new Logger();
 
 /**
- * Main Logger class with complete feature set
+ * Clase principal Logger con conjunto completo de características
  * 
  * @example
- * ```typescript
+ * // Importación y uso básico
  * import { Logger } from '@mks2508/better-logger';
  * 
  * const logger = new Logger();
- * logger.setTheme('neon');
- * logger.info('Hello world!');
- * logger.logWithSVG('Custom SVG', svgContent);
- * ```
+ * logger.preset('cyberpunk');  // Aplicar preset completo
+ * logger.info('¡Hola mundo!');
+ * 
+ * @example
+ * // Logger con scope para componentes
+ * const auth = logger.component('Auth');
+ * auth.info('Usuario autenticando...');
+ * auth.success('Login exitoso');
+ * 
+ * @example
+ * // Logger para APIs con badges
+ * const api = logger.api('GraphQL');
+ * api.badges(['v2', 'cached']).info('Query ejecutada');
+ * 
+ * @since 0.3.0
  */
 export { Logger };
 
-// Export the singleton as default
+/**
+ * Instancia singleton del logger lista para usar
+ * @default
+ * 
+ * @example
+ * // Uso directo sin crear instancia
+ * import logger from '@mks2508/better-logger';
+ * 
+ * logger.info('Aplicación iniciada');
+ * logger.success('Conexión establecida');
+ * logger.warn('Memoria al 80%');
+ * logger.error('Fallo en conexión');
+ */
 export default logger;
 
-// Individual logging methods (bound to singleton)
+/**
+ * Métodos de logging individuales (enlazados al singleton)
+ * 
+ * @example
+ * // Importar solo los métodos necesarios
+ * import { info, error, success } from '@mks2508/better-logger';
+ * 
+ * info('Proceso iniciado');
+ * success('✓ Completado exitosamente');
+ * error('Error:', errorDetails);
+ * 
+ * @since 0.3.0
+ */
 export const debug = (...args: any[]) => logger.debug(...args);
 export const info = (...args: any[]) => logger.info(...args);
 export const warn = (...args: any[]) => logger.warn(...args);
@@ -105,31 +143,62 @@ export {
 } from './utils/index.js';
 
 /**
- * Styling utilities for creating custom console styles
+ * Utilidades de estilo para crear estilos personalizados de consola
  * 
  * @example
- * ```typescript
+ * // Crear estilo personalizado
  * import { createStyle, stylePresets } from '@mks2508/better-logger';
  * 
- * const customStyle = createStyle()
+ * const miEstilo = createStyle()
  *   .bg('linear-gradient(45deg, #ff6b6b, #feca57)')
  *   .color('white')
  *   .padding('10px')
+ *   .rounded('8px')
+ *   .bold()
  *   .build();
  * 
- * console.log('%cStyled message', customStyle);
- * console.log('%cSuccess!', stylePresets.success);
- * ```
+ * console.log('%cMensaje estilizado', miEstilo);
+ * 
+ * @example
+ * // Usar presets predefinidos
+ * console.log('%cÉxito!', stylePresets.success);
+ * console.log('%cError!', stylePresets.error);
+ * 
+ * @since 0.3.0
  */
 import { StyleBuilder, StylePresets } from './styling/index.js';
 
 /**
- * Creates a new StyleBuilder instance for custom console styling
+ * Crea una nueva instancia de StyleBuilder para estilos personalizados de consola
+ * 
+ * @returns {StyleBuilder} Constructor de estilos encadenable
+ * 
+ * @example
+ * const estilo = createStyle()
+ *   .gradient('#667eea', '#764ba2')
+ *   .color('white')
+ *   .padding('8px 16px')
+ *   .rounded('4px')
+ *   .shadow('0 2px 4px rgba(0,0,0,0.2)')
+ *   .build();
+ * 
+ * @since 0.3.0
  */
 export const createStyle = () => new StyleBuilder();
 
 /**
- * Pre-built style presets for common use cases
+ * Presets de estilo predefinidos para casos de uso comunes
+ * 
+ * @constant {Object} stylePresets
+ * 
+ * @example
+ * console.log('%cOperación exitosa', stylePresets.success);
+ * console.log('%cAdvertencia', stylePresets.warning);
+ * console.log('%cError crítico', stylePresets.error);
+ * console.log('%cInformación', stylePresets.info);
+ * console.log('%cDestacado', stylePresets.accent);
+ * 
+ * @since 0.3.0
  */
 export const stylePresets = {
     success: StylePresets.success().build(),

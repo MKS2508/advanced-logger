@@ -1,8 +1,8 @@
 {
   "name": "@mks2508/better-logger",
-  "version": "0.13.0-alpha.1",
+  "version": "0.3.0",
   "type": "module",
-  "description": "State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface",
+  "description": "Logger avanzado para consola con estilos CSS, temas adaptativos, badges automáticos, SVG, animaciones y CLI integrado",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "keywords": [
@@ -15,7 +15,14 @@
     "typescript",
     "browser",
     "cli",
-    "debug"
+    "debug",
+    "consola",
+    "registro",
+    "depuración",
+    "temas",
+    "badges",
+    "contexto",
+    "componentes"
   ],
   "author": "MKS2508",
   "license": "MIT",

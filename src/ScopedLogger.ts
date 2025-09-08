@@ -1,12 +1,31 @@
 /**
- * @fileoverview ScopedLogger with badges and contextual logging
+ * @fileoverview ScopedLogger con badges y logging contextual
+ * @version 0.3.0
+ * @since 2024
+ * 
+ * Proporciona loggers especializados con contexto, badges automáticos
+ * y características avanzadas para componentes y APIs.
  */
 
 import { Logger } from './Logger.js';
 import type { LoggerConfig, LogLevel, Verbosity, BannerType, StyleOptions, ILogHandler } from './types/index.js';
 
 /**
- * Enhanced scoped logger with badges and simplified API
+ * Logger con scope mejorado con badges y API simplificada
+ * 
+ * @class ScopedLogger
+ * @extends Logger
+ * @description Logger contextual que añade prefijos y badges automáticamente
+ * 
+ * @example
+ * const dbLogger = logger.scope('Database');
+ * dbLogger.info('Conectando...'); // [Database] Conectando...
+ * 
+ * // Con badges personalizados
+ * dbLogger.badge('SLOW').warn('Query lenta detectada');
+ * // [SLOW] [Database] Query lenta detectada
+ * 
+ * @since 0.3.0
  */
 export class ScopedLogger extends Logger {
     private parentLogger: Logger;
@@ -26,7 +45,18 @@ export class ScopedLogger extends Logger {
     }
 
     /**
-     * Add badges to this scoped logger
+     * Añade múltiples badges a este logger con scope
+     * 
+     * @param {string[]} badges - Array de badges a añadir
+     * @returns {ScopedLogger} Esta instancia para encadenamiento
+     * 
+     * @example
+     * const api = logger.scope('API');
+     * api.badges(['v2', 'beta', 'cached'])
+     *    .info('Respuesta desde caché');
+     * // [v2] [beta] [cached] [API] Respuesta desde caché
+     * 
+     * @since 0.3.0
      */
     badges(badges: string[]): ScopedLogger {
         this.badgeList = [...badges];
@@ -34,7 +64,16 @@ export class ScopedLogger extends Logger {
     }
 
     /**
-     * Add a single badge
+     * Añade un badge individual
+     * 
+     * @param {string} badge - Badge a añadir
+     * @returns {ScopedLogger} Esta instancia para encadenamiento
+     * 
+     * @example
+     * dbLogger.badge('SLOW').warn('Query tardó 3s');
+     * // [SLOW] [Database] Query tardó 3s
+     * 
+     * @since 0.3.0
      */
     badge(badge: string): ScopedLogger {
         if (!this.badgeList.includes(badge)) {
@@ -44,7 +83,15 @@ export class ScopedLogger extends Logger {
     }
 
     /**
-     * Remove badges
+     * Elimina todos los badges
+     * 
+     * @returns {ScopedLogger} Esta instancia para encadenamiento
+     * 
+     * @example
+     * api.clearBadges().info('Sin badges');
+     * // [API] Sin badges
+     * 
+     * @since 0.3.0
      */
     clearBadges(): ScopedLogger {
         this.badgeList = [];
@@ -52,7 +99,16 @@ export class ScopedLogger extends Logger {
     }
 
     /**
-     * Set style preset for this scoped logger
+     * Establece un preset de estilo para este logger con scope
+     * 
+     * @param {string} presetName - Nombre del preset a aplicar
+     * @returns {ScopedLogger} Esta instancia para encadenamiento
+     * 
+     * @example
+     * const errorLogger = logger.scope('ErrorHandler')
+     *   .style('cyberpunk');
+     * 
+     * @since 0.3.0
      */
     style(presetName: string): ScopedLogger {
         this.setTheme(presetName as any); // Will be updated when we implement presets
@@ -60,14 +116,32 @@ export class ScopedLogger extends Logger {
     }
 
     /**
-     * Create a temporary context that gets automatically cleaned up
+     * Crea un contexto temporal que se limpia automáticamente
+     * 
+     * @param {string} contextName - Nombre del contexto
+     * @returns {ContextLogger} Logger con contexto temporal
+     * 
+     * @example
+     * const db = logger.scope('Database');
+     * 
+     * // Contexto temporal para una operación
+     * db.context('Migration').run(() => {
+     *   db.info('Iniciando migración');
+     *   db.success('Tablas creadas');
+     * });
+     * // Contexto automáticamente limpiado
+     * 
+     * @since 0.3.0
      */
     context(contextName: string): ContextLogger {
         return new ContextLogger(this, contextName);
     }
 
     /**
-     * Override core logging to include badges
+     * Sobrescribe el logging principal para incluir badges
+     * @protected
+     * @param {LogLevel} level - Nivel del log
+     * @param {...any} args - Argumentos del log
      */
     protected log(level: LogLevel, ...args: any[]): void {
         // Build the enhanced message with badges
@@ -89,7 +163,9 @@ export class ScopedLogger extends Logger {
     }
 
     /**
-     * Get formatted badge string
+     * Obtiene la cadena de badges formateada
+     * @private
+     * @returns {string} Badges formateados como [BADGE1][BADGE2]
      */
     private getBadgeString(): string {
         if (this.badgeList.length === 0) return '';
@@ -97,7 +173,9 @@ export class ScopedLogger extends Logger {
     }
 
     /**
-     * Get scope prefix (includes context stack)
+     * Obtiene el prefijo del scope (incluye stack de contexto)
+     * @private
+     * @returns {string} Prefijo completo con contextos
      */
     private getScopePrefix(): string {
         const parts = [this.scopeName, ...this.contextStack].filter(Boolean);
@@ -105,14 +183,16 @@ export class ScopedLogger extends Logger {
     }
 
     /**
-     * Internal method to push context
+     * Método interno para añadir contexto
+     * @internal
      */
     _pushContext(context: string): void {
         this.contextStack.push(context);
     }
 
     /**
-     * Internal method to pop context
+     * Método interno para eliminar contexto
+     * @internal
      */
     _popContext(): void {
         this.contextStack.pop();
@@ -120,7 +200,21 @@ export class ScopedLogger extends Logger {
 }
 
 /**
- * API-specific scoped logger with common API badges
+ * Logger específico para APIs con badges comunes de API
+ * 
+ * @class APILogger
+ * @extends ScopedLogger
+ * @description Logger especializado para endpoints y servicios API
+ * 
+ * @example
+ * const api = logger.api('REST');
+ * api.info('GET /users');
+ * // [API] [REST] GET /users
+ * 
+ * api.slow('Query lenta', 3500);
+ * // [API] [SLOW] [REST] Query lenta (3500ms)
+ * 
+ * @since 0.3.0
  */
 export class APILogger extends ScopedLogger {
     constructor(parentLogger: Logger, apiName: string, config?: Partial<LoggerConfig>) {
@@ -129,7 +223,16 @@ export class APILogger extends ScopedLogger {
     }
 
     /**
-     * Log slow operations
+     * Registra operaciones lentas
+     * 
+     * @param {string} message - Mensaje sobre la operación lenta
+     * @param {number} duration - Duración en milisegundos (opcional)
+     * 
+     * @example
+     * api.slow('Query compleja', 5000);
+     * api.slow('Procesamiento pesado');
+     * 
+     * @since 0.3.0
      */
     slow(message: string, duration?: number): void {
         this.badge('SLOW');
@@ -138,7 +241,14 @@ export class APILogger extends ScopedLogger {
     }
 
     /**
-     * Log rate limiting
+     * Registra límites de tasa alcanzados
+     * 
+     * @param {string} message - Mensaje sobre el límite
+     * 
+     * @example
+     * api.rateLimit('Límite excedido: 100 req/min');
+     * 
+     * @since 0.3.0
      */
     rateLimit(message: string): void {
         this.badge('RATE_LIMIT');
@@ -146,7 +256,15 @@ export class APILogger extends ScopedLogger {
     }
 
     /**
-     * Log authentication issues
+     * Registra problemas de autenticación
+     * 
+     * @param {string} message - Mensaje de autenticación
+     * 
+     * @example
+     * api.auth('Token inválido o expirado');
+     * api.auth('Credenciales incorrectas');
+     * 
+     * @since 0.3.0
      */
     auth(message: string): void {
         this.badge('AUTH');
@@ -154,7 +272,15 @@ export class APILogger extends ScopedLogger {
     }
 
     /**
-     * Log deprecation warnings
+     * Registra advertencias de deprecación
+     * 
+     * @param {string} message - Mensaje de deprecación
+     * 
+     * @example
+     * api.deprecated('Este endpoint será eliminado en v2.0');
+     * api.deprecated('Usar /v2/users en lugar de /users');
+     * 
+     * @since 0.3.0
      */
     deprecated(message: string): void {
         this.badge('DEPRECATED');
@@ -163,7 +289,18 @@ export class APILogger extends ScopedLogger {
 }
 
 /**
- * Component-specific scoped logger
+ * Logger específico para componentes de UI
+ * 
+ * @class ComponentLogger
+ * @extends ScopedLogger
+ * @description Logger especializado para componentes con eventos de ciclo de vida
+ * 
+ * @example
+ * const authForm = logger.component('AuthForm');
+ * authForm.lifecycle('mounted');
+ * authForm.stateChange('idle', 'loading');
+ * 
+ * @since 0.3.0
  */
 export class ComponentLogger extends ScopedLogger {
     constructor(parentLogger: Logger, componentName: string, config?: Partial<LoggerConfig>) {
@@ -172,7 +309,16 @@ export class ComponentLogger extends ScopedLogger {
     }
 
     /**
-     * Log lifecycle events
+     * Registra eventos del ciclo de vida del componente
+     * 
+     * @param {string} event - Nombre del evento (mounted, unmounted, updated, etc)
+     * @param {string} message - Mensaje adicional (opcional)
+     * 
+     * @example
+     * component.lifecycle('mounted', 'Componente listo');
+     * component.lifecycle('beforeDestroy');
+     * 
+     * @since 0.3.0
      */
     lifecycle(event: string, message?: string): void {
         this.badge('LIFECYCLE');
@@ -181,7 +327,17 @@ export class ComponentLogger extends ScopedLogger {
     }
 
     /**
-     * Log state changes
+     * Registra cambios de estado
+     * 
+     * @param {string} from - Estado anterior
+     * @param {string} to - Estado nuevo
+     * @param {any} data - Datos adicionales (opcional)
+     * 
+     * @example
+     * component.stateChange('idle', 'loading');
+     * component.stateChange('loading', 'error', { code: 404 });
+     * 
+     * @since 0.3.0
      */
     stateChange(from: string, to: string, data?: any): void {
         this.badge('STATE');
@@ -194,7 +350,17 @@ export class ComponentLogger extends ScopedLogger {
     }
 
     /**
-     * Log prop changes
+     * Registra cambios en las propiedades
+     * 
+     * @param {Record<string, any>} changes - Objeto con los cambios
+     * 
+     * @example
+     * component.propsChange({
+     *   user: newUser,
+     *   isActive: true
+     * });
+     * 
+     * @since 0.3.0
      */
     propsChange(changes: Record<string, any>): void {
         this.badge('PROPS');
@@ -203,7 +369,21 @@ export class ComponentLogger extends ScopedLogger {
 }
 
 /**
- * Temporary context logger that auto-cleans up
+ * Logger de contexto temporal que se limpia automáticamente
+ * 
+ * @class ContextLogger
+ * @description Proporciona un contexto temporal para operaciones agrupadas
+ * 
+ * @example
+ * const db = logger.scope('Database');
+ * 
+ * // El contexto se limpia automáticamente al finalizar
+ * db.context('Transaction').run(() => {
+ *   db.info('Iniciando transacción');
+ *   db.success('Transacción completada');
+ * });
+ * 
+ * @since 0.3.0
  */
 export class ContextLogger {
     private parentLogger: ScopedLogger;
@@ -215,7 +395,19 @@ export class ContextLogger {
     }
 
     /**
-     * Run a function with this context active
+     * Ejecuta una función con este contexto activo
+     * 
+     * @template T - Tipo de retorno de la función
+     * @param {Function} fn - Función a ejecutar
+     * @returns {T} Resultado de la función
+     * 
+     * @example
+     * const result = logger.context('Process').run(() => {
+     *   logger.info('Procesando...');
+     *   return processData();
+     * });
+     * 
+     * @since 0.3.0
      */
     run<T>(fn: () => T): T {
         this.parentLogger._pushContext(this.contextName);

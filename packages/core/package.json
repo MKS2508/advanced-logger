@@ -2,16 +2,35 @@
   "name": "@mks2508/better-logger-core",
   "version": "0.13.0-alpha.1",
   "type": "module",
-  "description": "Core logging functionality for Better Logger - Advanced console logger with hierarchical levels",
-  "main": "dist/index.js",
+  "description": "Universal core logging functionality for Better Logger - Works in both Node.js and browser environments",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "browser": "dist/index.umd.js",
   "types": "dist/types/core.d.ts",
+  "exports": {
+    ".": {
+      "node": {
+        "import": "./dist/index.js",
+        "require": "./dist/index.cjs"
+      },
+      "browser": {
+        "import": "./dist/index.js",
+        "require": "./dist/index.umd.js"
+      },
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "keywords": [
     "logger",
     "console",
     "core",
     "typescript",
     "browser",
-    "debug"
+    "nodejs",
+    "universal",
+    "debug",
+    "isomorphic"
   ],
   "author": "MKS2508",
   "license": "MIT",
@@ -31,5 +50,8 @@
   "files": [
     "dist",
     "README.md"
-  ]
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  }
 }

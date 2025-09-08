@@ -1,6 +1,10 @@
 /**
- * @fileoverview Refactored Advanced Logger with modular architecture
- * @version 2.0.0
+ * @fileoverview Logger avanzado con arquitectura modular y API simplificada
+ * @version 0.3.0
+ * @since 2024
+ * 
+ * Sistema de logging profesional con estilos CSS avanzados, temas adaptativos,
+ * badges automáticos, contextos temporales y exportación de datos.
  */
 
 // Type imports
@@ -48,12 +52,36 @@ import { createDefaultCLI, type CommandProcessor } from './cli/index.js';
 import { DEFAULT_CONFIG } from './constants.js';
 
 /**
- * Current active theme styles
+ * Estilos del tema activo actual
+ * @private
  */
 let LEVEL_STYLES = THEME_PRESETS.default;
 
 /**
- * Main Logger class implementing state-of-the-art logging capabilities
+ * Clase principal Logger con capacidades avanzadas de logging
+ * 
+ * @class Logger
+ * @description Sistema completo de logging con temas, badges, contextos y exportación.
+ *              Detecta automáticamente el tema claro/oscuro del navegador.
+ * 
+ * @example
+ * // Uso básico sin configuración
+ * import logger from '@mks2508/better-logger';
+ * logger.info('Aplicación iniciada');
+ * logger.success('Conexión establecida');
+ * 
+ * @example
+ * // Aplicar un preset temático
+ * logger.preset('cyberpunk');
+ * logger.warn('Advertencia con estilo neón');
+ * 
+ * @example
+ * // Logger con scope para componentes
+ * const auth = logger.component('Autenticación');
+ * auth.info('Usuario intentando login');
+ * auth.success('Login exitoso');
+ * 
+ * @since 0.3.0
  */
 export class Logger {
     private config: LoggerConfig;
@@ -71,7 +99,18 @@ export class Logger {
     };
 
     /**
-     * Creates a new Logger instance
+     * Crea una nueva instancia del Logger
+     * 
+     * @param {Partial<LoggerConfig>} config - Configuración opcional del logger
+     * 
+     * @example
+     * // Logger con configuración personalizada
+     * const logger = new Logger({
+     *   theme: 'neon',
+     *   globalPrefix: 'MiApp',
+     *   verbosity: 'debug',
+     *   bufferSize: 1000
+     * });
      */
     constructor(config: Partial<LoggerConfig> = {}) {
         this.config = {
@@ -97,7 +136,9 @@ export class Logger {
     // ===== PRIVATE HELPER METHODS =====
     
     /**
-     * Sets up automatic theme detection with change listener
+     * Configura la detección automática de tema con listener de cambios
+     * @private
+     * @description Detecta automáticamente si el navegador está en modo claro u oscuro
      */
     private setupAutoThemeDetection(): void {
         // Clean up existing listener if any
@@ -117,14 +158,34 @@ export class Logger {
     // ===== CONFIGURATION METHODS =====
 
     /**
-     * Get current configuration
+     * Obtiene la configuración actual del logger
+     * 
+     * @returns {LoggerConfig} Configuración completa actual
+     * 
+     * @example
+     * const config = logger.getConfig();
+     * console.log('Verbosidad actual:', config.verbosity);
+     * console.log('Tema actual:', config.theme);
+     * 
+     * @since 0.3.0
      */
     getConfig(): LoggerConfig {
         return { ...this.config };
     }
 
     /**
-     * Update configuration
+     * Actualiza la configuración del logger
+     * 
+     * @param {Partial<LoggerConfig>} updates - Propiedades a actualizar
+     * 
+     * @example
+     * logger.updateConfig({
+     *   verbosity: 'debug',
+     *   enableTimestamps: false,
+     *   theme: 'cyberpunk'
+     * });
+     * 
+     * @since 0.3.0
      */
     updateConfig(updates: Partial<LoggerConfig>): void {
         const previousAutoDetect = this.config.autoDetectTheme;
@@ -142,21 +203,47 @@ export class Logger {
     }
 
     /**
-     * Sets the global prefix for all log messages
+     * Establece el prefijo global para todos los mensajes de log
+     * 
+     * @param {string} prefix - Prefijo a usar
+     * 
+     * @example
+     * logger.setGlobalPrefix('MiApp');
+     * logger.info('Iniciado'); // [MiApp] Iniciado
+     * 
+     * @since 0.3.0
      */
     setGlobalPrefix(prefix: string): void {
         this.config.globalPrefix = prefix;
     }
 
     /**
-     * Sets the verbosity level for filtering log output
+     * Establece el nivel de verbosidad para filtrar la salida de logs
+     * 
+     * @param {Verbosity} level - Nivel mínimo a mostrar ('debug' | 'info' | 'warn' | 'error' | 'critical' | 'silent')
+     * 
+     * @example
+     * logger.setVerbosity('warn');  // Solo muestra warn, error y critical
+     * logger.setVerbosity('debug'); // Muestra todos los niveles
+     * logger.setVerbosity('silent'); // No muestra nada
+     * 
+     * @since 0.3.0
      */
     setVerbosity(level: Verbosity): void {
         this.config.verbosity = level;
     }
 
     /**
-     * Sets the logger theme
+     * Establece el tema del logger
+     * 
+     * @param {ThemeVariant} theme - Tema a aplicar ('default' | 'dark' | 'light' | 'neon' | 'minimal' | 'cyberpunk')
+     * 
+     * @example
+     * logger.setTheme('neon');      // Tema con colores neón
+     * logger.setTheme('minimal');   // Tema minimalista
+     * logger.setTheme('cyberpunk'); // Tema cyberpunk con efectos
+     * 
+     * @since 0.3.0
      */
     setTheme(theme: ThemeVariant): void {
         // First check if it's a smart preset
@@ -183,7 +270,16 @@ export class Logger {
     }
 
     /**
-     * Set banner type for initialization display
+     * Establece el tipo de banner para mostrar en la inicialización
+     * 
+     * @param {BannerType} bannerType - Tipo de banner ('simple' | 'ascii' | 'unicode' | 'svg' | 'animated')
+     * 
+     * @example
+     * logger.setBannerType('ascii');    // Banner con arte ASCII
+     * logger.setBannerType('unicode');  // Banner con caracteres Unicode
+     * logger.setBannerType('animated'); // Banner con animación
+     * 
+     * @since 0.3.0
      */
     setBannerType(bannerType: BannerType): void {
         this.config.bannerType = bannerType;
@@ -191,7 +287,13 @@ export class Logger {
     }
 
     /**
-     * Reset logger to default configuration
+     * Reinicia el logger a la configuración por defecto
+     * 
+     * @example
+     * logger.resetConfig();
+     * // Todo vuelve a la configuración inicial
+     * 
+     * @since 0.3.0
      */
     resetConfig(): void {
         // Clean up theme listener
@@ -212,7 +314,13 @@ export class Logger {
     }
 
     /**
-     * Cleanup method to remove event listeners and free resources
+     * Método de limpieza para eliminar listeners y liberar recursos
+     * 
+     * @example
+     * // Antes de cerrar la aplicación
+     * logger.cleanup();
+     * 
+     * @since 0.3.0
      */
     cleanup(): void {
         if (this.themeChangeListener) {
@@ -224,7 +332,20 @@ export class Logger {
     // ===== SIMPLIFIED API =====
 
     /**
-     * Apply a smart preset - works perfectly out-of-the-box
+     * Aplica un preset inteligente - funciona perfectamente sin configuración
+     * 
+     * @param {string} name - Nombre del preset a aplicar
+     * 
+     * @example
+     * // Presets disponibles
+     * logger.preset('default');       // Limpio y adaptativo
+     * logger.preset('cyberpunk');     // Colores neón, efectos brillantes
+     * logger.preset('glassmorphism'); // Efectos de blur modernos
+     * logger.preset('minimal');       // Minimalista y elegante
+     * logger.preset('debug');         // Modo desarrollo detallado
+     * logger.preset('production');    // Optimizado para producción
+     * 
+     * @since 0.3.0
      */
     preset(name: string): void {
         if (!hasPreset(name)) {
@@ -247,7 +368,15 @@ export class Logger {
     }
 
     /**
-     * List available presets
+     * Lista todos los presets disponibles
+     * 
+     * @returns {string[]} Array con nombres de presets disponibles
+     * 
+     * @example
+     * const disponibles = logger.presets();
+     * console.log(disponibles); // ['default', 'cyberpunk', 'glassmorphism', ...]
+     * 
+     * @since 0.3.0
      */
     presets(): string[] {
         return getAvailablePresets();
@@ -256,7 +385,13 @@ export class Logger {
     // ===== TOGGLE METHODS =====
 
     /**
-     * Hide timestamp in logs
+     * Oculta el timestamp en los logs
+     * 
+     * @example
+     * logger.hideTimestamp();
+     * logger.info('Sin marca de tiempo'); // Sin timestamp visible
+     * 
+     * @since 0.3.0
      */
     hideTimestamp(): void {
         this.displaySettings.showTimestamp = false;
@@ -264,7 +399,13 @@ export class Logger {
     }
 
     /**
-     * Show timestamp in logs
+     * Muestra el timestamp en los logs
+     * 
+     * @example
+     * logger.showTimestamp();
+     * logger.info('Con marca de tiempo'); // [2024-01-15 10:30:45] Con marca de tiempo
+     * 
+     * @since 0.3.0
      */
     showTimestamp(): void {
         this.displaySettings.showTimestamp = true;
@@ -272,7 +413,13 @@ export class Logger {
     }
 
     /**
-     * Hide location info in logs
+     * Oculta la información de ubicación (archivo:línea) en los logs
+     * 
+     * @example
+     * logger.hideLocation();
+     * logger.debug('Sin ubicación'); // Sin mostrar archivo:línea
+     * 
+     * @since 0.3.0
      */
     hideLocation(): void {
         this.displaySettings.showLocation = false;
@@ -280,7 +427,13 @@ export class Logger {
     }
 
     /**
-     * Show location info in logs
+     * Muestra la información de ubicación (archivo:línea) en los logs
+     * 
+     * @example
+     * logger.showLocation();
+     * logger.debug('Con ubicación'); // app.js:42 Con ubicación
+     * 
+     * @since 0.3.0
      */
     showLocation(): void {
         this.displaySettings.showLocation = true;
@@ -288,7 +441,14 @@ export class Logger {
     }
 
     /**
-     * Hide badges in logs
+     * Oculta los badges en los logs
+     * 
+     * @example
+     * logger.hideBadges();
+     * const api = logger.api('REST');
+     * api.info('Sin badges'); // Sin mostrar [API] [REST]
+     * 
+     * @since 0.3.0
      */
     hideBadges(): void {
         this.displaySettings.showBadges = false;
@@ -296,7 +456,14 @@ export class Logger {
     }
 
     /**
-     * Show badges in logs
+     * Muestra los badges en los logs
+     * 
+     * @example
+     * logger.showBadges();
+     * const api = logger.api('GraphQL');
+     * api.info('Con badges'); // [API] [GraphQL] Con badges
+     * 
+     * @since 0.3.0
      */
     showBadges(): void {
         this.displaySettings.showBadges = true;
@@ -306,21 +473,62 @@ export class Logger {
     // ===== SCOPED LOGGERS =====
 
     /**
-     * Create a component logger with automatic styling
+     * Crea un logger para componentes con estilo automático
+     * 
+     * @param {string} name - Nombre del componente
+     * @returns {ComponentLogger} Logger con scope de componente
+     * 
+     * @example
+     * const authLogger = logger.component('Autenticación');
+     * authLogger.info('Validando credenciales');
+     * // [COMPONENT] [Autenticación] Validando credenciales
+     * 
+     * authLogger.success('Usuario autenticado');
+     * // [COMPONENT] [Autenticación] ✓ Usuario autenticado
+     * 
+     * @since 0.3.0
      */
     component(name: string): ComponentLogger {
         return new ComponentLogger(this, name);
     }
 
     /**
-     * Create an API logger with automatic badges
+     * Crea un logger para APIs con badges automáticos
+     * 
+     * @param {string} name - Nombre de la API o endpoint
+     * @returns {APILogger} Logger con scope de API
+     * 
+     * @example
+     * const api = logger.api('REST');
+     * api.info('GET /users');
+     * // [API] [REST] GET /users
+     * 
+     * // Con badges adicionales
+     * api.badges(['v2', 'cached']).info('Respuesta desde caché');
+     * // [API] [v2] [cached] [REST] Respuesta desde caché
+     * 
+     * @since 0.3.0
      */
     api(name: string): APILogger {
         return new APILogger(this, name);
     }
 
     /**
-     * Create a general scoped logger with badges support
+     * Crea un logger con scope general y soporte de badges
+     * 
+     * @param {string} name - Nombre del scope
+     * @returns {ScopedLogger} Logger con scope personalizado
+     * 
+     * @example
+     * const dbLogger = logger.scope('Database');
+     * dbLogger.info('Conectando a MongoDB');
+     * // [Database] Conectando a MongoDB
+     * 
+     * // Con badges personalizados
+     * dbLogger.badge('SLOW').warn('Query tardó 5s');
+     * // [SLOW] [Database] Query tardó 5s
+     * 
+     * @since 0.3.0
      */
     scope(name: string): ScopedLogger {
         return new ScopedLogger(this, name);
@@ -329,7 +537,24 @@ export class Logger {
     // ===== SIMPLE CUSTOMIZATION =====
 
     /**
-     * Simple customization with minimal configuration
+     * Personalización simple con configuración mínima
+     * 
+     * @param {Object} overrides - Opciones de personalización
+     * @param {Object} overrides.message - Configuración del mensaje
+     * @param {Object} overrides.timestamp - Configuración del timestamp
+     * @param {Object} overrides.location - Configuración de ubicación
+     * @param {Object} overrides.level - Configuración del nivel
+     * @param {Object} overrides.prefix - Configuración del prefijo
+     * @param {string} overrides.spacing - Espaciado: 'compact' | 'normal' | 'spacious'
+     * 
+     * @example
+     * logger.customize({
+     *   message: { color: '#00ff00', size: '16px' },
+     *   timestamp: { show: false },
+     *   spacing: 'compact'
+     * });
+     * 
+     * @since 0.3.0
      */
     customize(overrides: {
         message?: { color?: string; font?: string; size?: string };
@@ -365,21 +590,41 @@ export class Logger {
     // ===== HANDLER MANAGEMENT =====
 
     /**
-     * Adds a custom log handler for extensibility
+     * Añade un handler personalizado para extender funcionalidad
+     * 
+     * @param {ILogHandler} handler - Handler que implementa ILogHandler
+     * 
+     * @example
+     * // Handler personalizado para enviar logs a servidor
+     * const remoteHandler = new RemoteLogHandler('https://api.ejemplo.com/logs');
+     * logger.addHandler(remoteHandler);
+     * 
+     * @example
+     * // Handler para guardar en archivo
+     * const fileHandler = new FileLogHandler('./app.log');
+     * logger.addHandler(fileHandler);
+     * 
+     * @since 0.3.0
      */
     addHandler(handler: ILogHandler): void {
         this.handlers.push(handler);
     }
 
     /**
-     * Get all registered handlers
+     * Obtiene todos los handlers registrados
+     * 
+     * @returns {ILogHandler[]} Array de handlers activos
+     * @since 0.3.0
      */
     getHandlers(): ILogHandler[] {
         return [...this.handlers];
     }
 
     /**
-     * Get export handler if available
+     * Obtiene el handler de exportación si está disponible
+     * 
+     * @returns {ExportLogHandler | undefined} Handler de exportación o undefined
+     * @since 0.3.0
      */
     getExportHandler(): ExportLogHandler | undefined {
         return this.exportHandler;
@@ -388,7 +633,10 @@ export class Logger {
     // ===== CORE LOGGING METHODS =====
 
     /**
-     * Checks if a log level should be output based on current verbosity
+     * Verifica si un nivel de log debe mostrarse según la verbosidad actual
+     * @private
+     * @param {LogLevel} level - Nivel de log a verificar
+     * @returns {boolean} True si debe mostrarse, false si no
      */
     private shouldLog(level: LogLevel): boolean {
         if (this.config.verbosity === 'silent') return false;
@@ -397,7 +645,9 @@ export class Logger {
     }
 
     /**
-     * Gets the effective prefix (global + scoped)
+     * Obtiene el prefijo efectivo (global + scope)
+     * @private
+     * @returns {string | undefined} Prefijo combinado o undefined
      */
     private getEffectivePrefix(): string | undefined {
         const parts = [this.config.globalPrefix, this.scopedPrefix].filter(Boolean);
@@ -405,7 +655,10 @@ export class Logger {
     }
 
     /**
-     * Core logging method that handles styling and formatting
+     * Método central de logging que maneja estilos y formato
+     * @protected
+     * @param {LogLevel} level - Nivel del log
+     * @param {...any} args - Argumentos a loggear
      */
     protected log(level: LogLevel, ...args: any[]): void {
         if (!this.shouldLog(level)) return;
@@ -459,35 +712,79 @@ export class Logger {
     }
 
     /**
-     * Logs debug information (lowest priority)
+     * Registra información de debug (prioridad más baja)
+     * 
+     * @param {...any} args - Mensajes y datos a loggear
+     * 
+     * @example
+     * logger.debug('Variable estado:', { usuario: 'Juan', activo: true });
+     * logger.debug('Iniciando proceso de validación');
+     * 
+     * @since 0.3.0
      */
     debug(...args: any[]): void {
         this.log('debug', ...args);
     }
 
     /**
-     * Logs informational messages
+     * Registra mensajes informativos
+     * 
+     * @param {...any} args - Mensajes y datos informativos
+     * 
+     * @example
+     * logger.info('Servidor iniciado en puerto 3000');
+     * logger.info('Usuario conectado:', userId);
+     * logger.info('Procesando', totalItems, 'elementos');
+     * 
+     * @since 0.3.0
      */
     info(...args: any[]): void {
         this.log('info', ...args);
     }
 
     /**
-     * Logs warning messages
+     * Registra mensajes de advertencia
+     * 
+     * @param {...any} args - Mensajes de advertencia
+     * 
+     * @example
+     * logger.warn('Memoria al 85% de capacidad');
+     * logger.warn('API deprecada, usar v2');
+     * logger.warn('Reintentos agotados:', maxRetries);
+     * 
+     * @since 0.3.0
      */
     warn(...args: any[]): void {
         this.log('warn', ...args);
     }
 
     /**
-     * Logs error messages
+     * Registra mensajes de error
+     * 
+     * @param {...any} args - Mensajes de error y stack traces
+     * 
+     * @example
+     * logger.error('Fallo en conexión a base de datos');
+     * logger.error('Error al procesar:', error.message, error.stack);
+     * logger.error('Código de error:', errorCode);
+     * 
+     * @since 0.3.0
      */
     error(...args: any[]): void {
         this.log('error', ...args);
     }
 
     /**
-     * Logs success messages (special info level)
+     * Registra mensajes de éxito (nivel info especial)
+     * 
+     * @param {...any} args - Mensajes de operaciones exitosas
+     * 
+     * @example
+     * logger.success('Base de datos conectada');
+     * logger.success('Usuario creado con ID:', userId);
+     * logger.success('✓ Tests pasados: 42/42');
+     * 
+     * @since 0.3.0
      */
     success(...args: any[]): void {
         if (!this.shouldLog('info')) return;
@@ -550,7 +847,15 @@ export class Logger {
     }
 
     /**
-     * Logs trace information (detailed debugging)
+     * Registra información de trace (debugging detallado)
+     * 
+     * @param {...any} args - Datos detallados para debugging
+     * 
+     * @example
+     * logger.trace('Entrando en función processData');
+     * logger.trace('Stack completo:', new Error().stack);
+     * 
+     * @since 0.3.0
      */
     trace(...args: any[]): void {
         this.log('debug', ...args);
@@ -560,7 +865,16 @@ export class Logger {
     }
 
     /**
-     * Logs critical errors (highest priority)
+     * Registra errores críticos (prioridad más alta)
+     * 
+     * @param {...any} args - Errores críticos del sistema
+     * 
+     * @example
+     * logger.critical('Sistema caído - reinicio inmediato requerido');
+     * logger.critical('Pérdida de datos detectada');
+     * logger.critical('Brecha de seguridad:', securityError);
+     * 
+     * @since 0.3.0
      */
     critical(...args: any[]): void {
         this.log('critical', ...args);
@@ -569,7 +883,20 @@ export class Logger {
     // ===== ADVANCED LOGGING FEATURES =====
 
     /**
-     * Displays data in a table format
+     * Muestra datos en formato de tabla
+     * 
+     * @param {any} data - Datos a mostrar (array de objetos o matriz)
+     * @param {string[]} columns - Columnas específicas a mostrar (opcional)
+     * 
+     * @example
+     * const usuarios = [
+     *   { id: 1, nombre: 'Juan', edad: 30 },
+     *   { id: 2, nombre: 'María', edad: 25 }
+     * ];
+     * logger.table(usuarios);
+     * logger.table(usuarios, ['nombre', 'edad']); // Solo estas columnas
+     * 
+     * @since 0.3.0
      */
     table(data: any, columns?: string[]): void {
         if (!this.shouldLog('info')) return;
@@ -588,7 +915,24 @@ export class Logger {
     }
 
     /**
-     * Starts a collapsible group in the console
+     * Inicia un grupo colapsable en la consola
+     * 
+     * @param {string} label - Etiqueta del grupo
+     * @param {boolean} collapsed - Si el grupo inicia colapsado (default: false)
+     * 
+     * @example
+     * logger.group('Procesando usuarios');
+     * logger.info('Usuario 1 procesado');
+     * logger.info('Usuario 2 procesado');
+     * logger.groupEnd();
+     * 
+     * @example
+     * // Grupo colapsado por defecto
+     * logger.group('Detalles adicionales', true);
+     * logger.debug('Información detallada aquí');
+     * logger.groupEnd();
+     * 
+     * @since 0.3.0
      */
     group(label: string, collapsed: boolean = false): void {
         const groupStyle = new StyleBuilder()
@@ -612,7 +956,15 @@ export class Logger {
     }
 
     /**
-     * Ends the current console group
+     * Finaliza el grupo actual de la consola
+     * 
+     * @example
+     * logger.group('Operaciones');
+     * logger.info('Operación 1');
+     * logger.info('Operación 2');
+     * logger.groupEnd(); // Cierra el grupo
+     * 
+     * @since 0.3.0
      */
     groupEnd(): void {
         if (this.groupDepth > 0) {
@@ -624,7 +976,16 @@ export class Logger {
     // ===== PERFORMANCE TIMING =====
 
     /**
-     * Starts a timer with the given label
+     * Inicia un temporizador con la etiqueta dada
+     * 
+     * @param {string} label - Etiqueta identificadora del temporizador
+     * 
+     * @example
+     * logger.time('proceso-datos');
+     * // ... operación costosa ...
+     * logger.timeEnd('proceso-datos'); // ⏱️ Timer ended: proceso-datos - 1523.45ms
+     * 
+     * @since 0.3.0
      */
     time(label: string): void {
         const timer: TimerEntry = {
@@ -638,7 +999,16 @@ export class Logger {
     }
 
     /**
-     * Ends a timer and logs the elapsed time
+     * Finaliza un temporizador y muestra el tiempo transcurrido
+     * 
+     * @param {string} label - Etiqueta del temporizador a finalizar
+     * 
+     * @example
+     * logger.time('consulta-db');
+     * await consultarBaseDatos();
+     * logger.timeEnd('consulta-db'); // ⏱️ Timer ended: consulta-db - 234.56ms
+     * 
+     * @since 0.3.0
      */
     timeEnd(label: string): void {
         const timer = this.timers.get(label);
@@ -657,7 +1027,17 @@ export class Logger {
     // ===== ADVANCED VISUAL FEATURES =====
 
     /**
-     * Display banner with specified or configured type
+     * Muestra un banner con el tipo especificado o configurado
+     * 
+     * @param {BannerType} bannerType - Tipo de banner (opcional)
+     * 
+     * @example
+     * logger.showBanner('ascii');    // Banner ASCII art
+     * logger.showBanner('unicode');  // Banner con caracteres Unicode
+     * logger.showBanner('svg');      // Banner con gráfico SVG
+     * logger.showBanner();           // Usa el tipo configurado
+     * 
+     * @since 0.3.0
      */
     showBanner(bannerType?: BannerType): void {
         const effectiveBannerType = bannerType ? bannerType : this.config.bannerType;
@@ -665,7 +1045,22 @@ export class Logger {
     }
 
     /**
-     * Log with SVG background image
+     * Registra mensaje con imagen SVG de fondo
+     * 
+     * @param {string} message - Mensaje a mostrar
+     * @param {string} svgContent - Contenido SVG personalizado (opcional)
+     * @param {StyleOptions} options - Opciones de estilo (ancho, alto, padding)
+     * 
+     * @example
+     * // SVG automático con gradiente
+     * logger.logWithSVG('🎆 Bienvenido a Better Logger');
+     * 
+     * @example
+     * // SVG personalizado
+     * const customSVG = '<svg>...</svg>';
+     * logger.logWithSVG('Logo', customSVG, { width: 400, height: 100 });
+     * 
+     * @since 0.3.0
      */
     logWithSVG(message: string, svgContent?: string, options: StyleOptions = {}): void {
         const { width = 300, height = 60, padding = '30px 150px' } = options;
@@ -690,7 +1085,16 @@ export class Logger {
     }
 
     /**
-     * Log with animated background gradient
+     * Registra mensaje con gradiente animado de fondo
+     * 
+     * @param {string} message - Mensaje a animar
+     * @param {number} duration - Duración de la animación en segundos (default: 3)
+     * 
+     * @example
+     * logger.logAnimated('🌈 Animación en progreso');
+     * logger.logAnimated('Cargando...', 5); // Animación de 5 segundos
+     * 
+     * @since 0.3.0
      */
     logAnimated(message: string, duration: number = 3): void {
         // Inject CSS animation if not already present
@@ -723,7 +1127,20 @@ export class Logger {
     }
 
     /**
-     * Groups logs by a specific property using modern Object.groupBy (when available)
+     * Agrupa logs por una propiedad específica usando Object.groupBy (cuando esté disponible)
+     * 
+     * @param {T[]} items - Array de elementos a agrupar
+     * @param {Function} groupBy - Función que retorna la clave de agrupación
+     * 
+     * @example
+     * const ventas = [
+     *   { producto: 'Laptop', categoria: 'Electrónica', precio: 1200 },
+     *   { producto: 'Mouse', categoria: 'Electrónica', precio: 25 },
+     *   { producto: 'Libro', categoria: 'Literatura', precio: 15 }
+     * ];
+     * logger.logGrouped(ventas, item => item.categoria);
+     * 
+     * @since 0.3.0
      */
     logGrouped<T>(items: T[], groupBy: (item: T) => string): void {
         try {
@@ -756,7 +1173,23 @@ export class Logger {
     // ===== CLI SYSTEM =====
 
     /**
-     * CLI command processor for logger configuration and export
+     * Procesador de comandos CLI para configuración y exportación del logger
+     * 
+     * @param {string} command - Comando CLI a ejecutar
+     * @returns {Promise<void>}
+     * 
+     * @example
+     * // Comandos disponibles
+     * await logger.cli('export json');      // Exporta logs en JSON
+     * await logger.cli('export csv');       // Exporta logs en CSV
+     * await logger.cli('theme list');       // Lista temas disponibles
+     * await logger.cli('theme set neon');   // Cambia al tema neon
+     * await logger.cli('config show');      // Muestra configuración actual
+     * await logger.cli('history clear');    // Limpia historial de logs
+     * await logger.cli('status');           // Muestra estado del logger
+     * await logger.cli('help');             // Muestra ayuda de comandos
+     * 
+     * @since 0.3.0
      */
     async cli(command: string): Promise<void> {
         if (!this.cliProcessor) {
@@ -768,7 +1201,10 @@ export class Logger {
     }
 }
 
-// Create and export the singleton instance
+/**
+ * Instancia singleton del logger con configuración por defecto
+ * @constant {Logger}
+ */
 const defaultLogger = new Logger({
     verbosity: 'info',
     enableColors: true,
@@ -784,7 +1220,9 @@ displayInitBanner();
 export default defaultLogger;
 
 /**
- * Export individual methods for convenience (with proper binding)
+ * Métodos individuales exportados para conveniencia
+ * @description Todos los métodos están correctamente enlazados al singleton
+ * @since 0.3.0
  */
 export const debug = (...args: any[]) => defaultLogger.debug(...args);
 export const info = (...args: any[]) => defaultLogger.info(...args);

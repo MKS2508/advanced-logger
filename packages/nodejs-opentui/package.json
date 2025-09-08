@@ -1,0 +1,72 @@
+{
+  "name": "@mks2508/better-logger-nodejs-opentui",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "OpenTUI-powered rich terminal logging with interactive components and animations",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./components": {
+      "import": "./dist/components.js", 
+      "types": "./dist/types/components.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "keywords": [
+    "logger",
+    "terminal",
+    "tui",
+    "opentui",
+    "interactive",
+    "animated",
+    "console",
+    "nodejs",
+    "rich-logging",
+    "dashboard"
+  ],
+  "author": "MKS2508",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MKS2508/advanced-logger.git",
+    "directory": "packages/nodejs-opentui"
+  },
+  "bugs": {
+    "url": "https://github.com/MKS2508/advanced-logger/issues"
+  },
+  "homepage": "https://mks2508.github.io/advanced-logger/",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.2",
+    "@opentui/react": "^0.1.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "react": "^18.0.0"
+  },
+  "peerDependencies": {
+    "@mks2508/better-logger-core": "^0.12.0"
+  },
+  "scripts": {
+    "build": "tsc && npm run build:rollup",
+    "build:rollup": "echo 'Rollup build placeholder'",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  }
+}

@@ -16,14 +16,33 @@ import type {
     TimerEntry
 } from './types/index.js';
 
-// Core utilities only
+// Core utilities
 import {
     parseStackTrace,
     formatTimestamp
 } from './utils/index.js';
 
-// Minimal constants
-import { DEFAULT_CONFIG } from './constants.js';
+// Universal formatting and environment detection
+import {
+    createPlainOutput,
+    getConsoleMethod,
+    createLogEntry,
+    formatTablePlain,
+    safeSerialize
+} from './utils/formatting.js';
+
+import {
+    isBrowser,
+    isNode,
+    getRuntimeEnvironment,
+    supportsColors,
+    supportsCSSColors
+} from './utils/environment.js';
+
+import { createStyledOutput } from './utils/output.js';
+
+// Constants
+import { DEFAULT_CONFIG, LEVEL_STYLES } from './constants.js';
 
 /**
  * Minimal Logger class with core functionality only
@@ -52,10 +71,11 @@ export class CoreLogger {
         this.config = {
             ...DEFAULT_CONFIG,
             ...config,
-            // Force disable advanced features for core module
-            enableColors: false,
+            // Auto-configure based on environment
+            enableColors: config.enableColors ?? (isBrowser ? true : false),
             enableTimestamps: config.enableTimestamps ?? true,
             enableStackTrace: config.enableStackTrace ?? false,
+            autoDetectTheme: config.autoDetectTheme ?? true
         };
     }
 
@@ -119,49 +139,53 @@ export class CoreLogger {
     }
 
     /**
-     * Core logging method with minimal formatting
+     * Core logging method with universal formatting
      */
     private log(level: LogLevel, ...args: any[]): void {
         if (!this.shouldLog(level)) return;
 
         const prefix = this.getEffectivePrefix();
-        const timestamp = this.config.enableTimestamps ? formatTimestamp() : null;
+        const message = String(args[0] || '');
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
+        const consoleMethod = getConsoleMethod(level);
         
-        // Simple formatting without CSS styling
-        const parts: string[] = [];
-        
-        if (timestamp) {
-            parts.push(`[${timestamp.slice(11, 23)}]`);
-        }
-        
-        parts.push(`[${level.toUpperCase()}]`);
-        
-        if (prefix) {
-            parts.push(`[${prefix}]`);
+        // Choose formatting based on environment and configuration
+        if (isBrowser && this.config.enableColors && supportsCSSColors()) {
+            // Browser with CSS styling
+            try {
+                const [format, ...styles] = createStyledOutput(
+                    level,
+                    LEVEL_STYLES,
+                    prefix,
+                    message,
+                    stackInfo,
+                    this.config.autoDetectTheme
+                );
+                console[consoleMethod](format, ...styles, ...args.slice(1));
+            } catch (error) {
+                // Fallback to plain text if CSS fails
+                const output = createPlainOutput(level, message, prefix, stackInfo);
+                console[consoleMethod](output, ...args.slice(1));
+            }
+        } else {
+            // Node.js or browser without colors - use plain text
+            const groupIndent = '  '.repeat(this.groupDepth);
+            const output = groupIndent + createPlainOutput(level, message, prefix, stackInfo);
+            console[consoleMethod](output, ...args.slice(1));
         }
 
-        const groupIndent = '  '.repeat(this.groupDepth);
-        const logPrefix = groupIndent + parts.join(' ');
-        
-        // Output to console with simple formatting
-        console.log(logPrefix, ...args);
-        
-        if (stackInfo && this.config.enableStackTrace) {
-            console.log(`    at ${stackInfo.file}:${stackInfo.line}:${stackInfo.column}`);
-        }
-
-        // Call custom handlers
+        // Call custom handlers with structured metadata
+        const logEntry = createLogEntry(level, message, args, prefix, stackInfo);
         const metadata: LogMetadata = {
-            timestamp: timestamp || formatTimestamp(),
+            timestamp: logEntry.timestamp,
             level,
             prefix,
-            stackInfo: stackInfo || undefined,
+            stackInfo: logEntry.location,
         };
 
         this.handlers.forEach(handler => {
             try {
-                handler.handle(level, String(args[0] || ''), args, metadata);
+                handler.handle(level, message, args, metadata);
             } catch (error) {
                 console.error('Log handler failed:', error);
             }
@@ -222,12 +246,21 @@ export class CoreLogger {
         if (!this.shouldLog('info')) return;
 
         const prefix = this.getEffectivePrefix();
-        console.log(`[TABLE]${prefix ? ` [${prefix}]` : ''}:`);
+        const tableHeader = `[TABLE]${prefix ? ` [${prefix}]` : ''}:`;
         
-        if (columns) {
-            console.table(data, columns);
+        if (isBrowser && typeof console.table === 'function') {
+            // Browser has native table support
+            console.log(tableHeader);
+            if (columns) {
+                console.table(data, columns);
+            } else {
+                console.table(data);
+            }
         } else {
-            console.table(data);
+            // Node.js or fallback - use plain text formatting
+            console.log(tableHeader);
+            const tableText = formatTablePlain(data, columns);
+            console.log(tableText);
         }
     }
 
@@ -238,10 +271,17 @@ export class CoreLogger {
         const prefix = this.getEffectivePrefix();
         const fullLabel = `${prefix ? `[${prefix}] ` : ''}${label}`;
         
-        if (collapsed) {
-            console.groupCollapsed(fullLabel);
+        if (isBrowser && console.group && console.groupCollapsed) {
+            // Browser supports native grouping
+            if (collapsed) {
+                console.groupCollapsed(fullLabel);
+            } else {
+                console.group(fullLabel);
+            }
         } else {
-            console.group(fullLabel);
+            // Node.js fallback - just log the group label
+            const groupStart = '┌─ ' + fullLabel;
+            console.log(groupStart);
         }
         
         this.groupDepth++;
@@ -252,7 +292,13 @@ export class CoreLogger {
      */
     groupEnd(): void {
         if (this.groupDepth > 0) {
-            console.groupEnd();
+            if (isBrowser && console.groupEnd) {
+                console.groupEnd();
+            } else {
+                // Node.js fallback - log group end
+                const groupEnd = '└─ (end group)';
+                console.log(groupEnd);
+            }
             this.groupDepth--;
         }
     }
@@ -261,12 +307,17 @@ export class CoreLogger {
      * Starts a timer with the given label
      */
     time(label: string): void {
+        const startTime = this.getPerformanceNow();
         const timer: TimerEntry = {
             label,
-            startTime: performance.now(),
+            startTime,
         };
         this.timers.set(label, timer);
-        console.log(`[TIMER] Started: ${label}`);
+        
+        const prefix = this.getEffectivePrefix();
+        const message = `Timer started: ${label}`;
+        const output = createPlainOutput('info', message, prefix);
+        console.log(output);
     }
 
     /**
@@ -279,9 +330,31 @@ export class CoreLogger {
             return;
         }
 
-        const elapsed = performance.now() - timer.startTime;
+        const elapsed = this.getPerformanceNow() - timer.startTime;
         this.timers.delete(label);
-        console.log(`[TIMER] ${label}: ${elapsed.toFixed(2)}ms`);
+        
+        const prefix = this.getEffectivePrefix();
+        const message = `Timer ended: ${label} - ${elapsed.toFixed(2)}ms`;
+        const output = createPlainOutput('info', message, prefix);
+        console.log(output);
+    }
+
+    /**
+     * Gets performance.now() or fallback for older environments
+     */
+    private getPerformanceNow(): number {
+        if (typeof performance !== 'undefined' && performance.now) {
+            return performance.now();
+        }
+        
+        if (isNode && process.hrtime) {
+            // Node.js high-resolution time
+            const [seconds, nanoseconds] = process.hrtime();
+            return seconds * 1000 + nanoseconds / 1000000;
+        }
+        
+        // Fallback to Date.now()
+        return Date.now();
     }
 }
 

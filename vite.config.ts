@@ -79,14 +79,14 @@ const buildConfigs = {
     }
   },
 
-  // Build modular - Solo core (logger básico)
+  // Build modular - Solo core (logger básico universal)
   core: {
     ...baseConfig,
     plugins: [
       dts({
         ...baseConfig.plugins[0].options,
         outDir: 'packages/core/dist/types',
-        include: ['src/core.ts', 'src/constants.ts', 'src/types/**/*'],
+        include: ['src/core.ts', 'src/constants.ts', 'src/types/**/*', 'src/utils/**/*'],
       })
     ],
     build: {
@@ -95,18 +95,55 @@ const buildConfigs = {
       lib: {
         entry: resolve(__dirname, 'src/core.ts'),
         name: 'BetterLoggerCore',
-        formats: ['es', 'cjs'],
+        formats: ['es', 'cjs', 'umd'],
         fileName: (format) => {
-          const ext = format === 'cjs' ? 'cjs' : 'js';
-          return `index.${ext}`;
+          if (format === 'cjs') return 'index.cjs';
+          if (format === 'es') return 'index.js';
+          if (format === 'umd') return 'index.umd.js';
+          return 'index.js';
         }
       },
       rollupOptions: {
-        external: [],
-        output: {
-          globals: {},
-          exports: 'named'
-        }
+        // External dependencies for Node.js
+        external: (id) => {
+          // Mark Node.js built-ins as external
+          return ['fs', 'path', 'process', 'util'].includes(id);
+        },
+        output: [
+          {
+            format: 'es',
+            entryFileNames: 'index.js',
+            globals: {
+              fs: 'fs',
+              path: 'path',
+              process: 'process',
+              util: 'util'
+            },
+            exports: 'named'
+          },
+          {
+            format: 'cjs',
+            entryFileNames: 'index.cjs',
+            globals: {
+              fs: 'fs',
+              path: 'path', 
+              process: 'process',
+              util: 'util'
+            },
+            exports: 'named'
+          },
+          {
+            format: 'umd',
+            name: 'BetterLoggerCore',
+            entryFileNames: 'index.umd.js',
+            globals: {
+              fs: 'fs',
+              path: 'path',
+              process: 'process',
+              util: 'util'
+            }
+          }
+        ]
       }
     }
   },
