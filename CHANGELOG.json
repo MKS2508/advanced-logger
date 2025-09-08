@@ -1,6 +1,88 @@
 {
-  "current_version": "0.13.0-alpha.1",
+  "current_version": "0.14.0-alpha.1",
   "versions": [
+    {
+      "version": "0.14.0-alpha.1",
+      "date": "2025-09-08",
+      "type": "minor",
+      "title": "Versión Alpha - Nuevas funcionalidades incluyendo Documentación JSDoc completa en castellano para todos los métodos principales y 3 más",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.13.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.13.0-alpha.1 [skip ci]"
+        },
+        {
+          "type": "feature",
+          "title": "Documentación JSDoc completa en castellano para todos los métodos principales",
+          "description": "Documentación JSDoc completa en castellano para todos los métodos principales"
+        },
+        {
+          "type": "feature",
+          "title": "Ejemplos actualizados con la nueva API simplificada v0",
+          "description": "Ejemplos actualizados con la nueva API simplificada v0.3.0"
+        },
+        {
+          "type": "feature",
+          "title": "Documentación de tipos e interfaces con descripciones detalladas",
+          "description": "Documentación de tipos e interfaces con descripciones detalladas"
+        },
+        {
+          "type": "feature",
+          "title": "Guías de uso para presets, badges y contextos",
+          "description": "Guías de uso para presets, badges y contextos"
+        },
+        {
+          "type": "improvement",
+          "title": "**Logger",
+          "description": "**Logger.ts**: +500 líneas de JSDoc en castellano con ejemplos prácticos"
+        },
+        {
+          "type": "improvement",
+          "title": "**types/core",
+          "description": "**types/core.ts**: Documentación completa de todos los tipos e interfaces"
+        },
+        {
+          "type": "improvement",
+          "title": "**index",
+          "description": "**index.ts**: Ejemplos actualizados con las nuevas características v0.3.0"
+        },
+        {
+          "type": "improvement",
+          "title": "**ScopedLogger",
+          "description": "**ScopedLogger.ts**: Documentación del sistema de badges y contextos"
+        },
+        {
+          "type": "improvement",
+          "title": "**package",
+          "description": "**package.json**: Descripción y keywords en castellano"
+        },
+        {
+          "type": "improvement",
+          "title": "Todos los métodos públicos ahora tienen ejemplos de uso",
+          "description": "Todos los métodos públicos ahora tienen ejemplos de uso"
+        },
+        {
+          "type": "improvement",
+          "title": "Documentación de parámetros con tipos explícitos",
+          "description": "Documentación de parámetros con tipos explícitos"
+        },
+        {
+          "type": "improvement",
+          "title": "Descripciones claras de comportamiento y casos de uso",
+          "description": "Descripciones claras de comportamiento y casos de uso"
+        },
+        {
+          "type": "improvement",
+          "title": "Ejemplos reales y prácticos para cada funcionalidad",
+          "description": "Ejemplos reales y prácticos para cada funcionalidad"
+        }
+      ],
+      "technical_notes": "- Actualización masiva de JSDoc comments en archivos principales\n- Añadidos @example tags con código funcional\n- Documentados @param, @returns, @since para tracking de versiones\n- Traducción completa de comentarios internos y públicos\n- Mejora en la descripción de tipos TypeScript con @typedef\n- Actualización de metadatos en package.json",
+      "breaking_changes": [],
+      "commit_hash": "c4e775c388f625d81ca982b89b47e36a02b6dbf8",
+      "prefix": "alpha"
+    },
     {
       "version": "0.13.0-alpha.1",
       "date": "2025-09-02",
