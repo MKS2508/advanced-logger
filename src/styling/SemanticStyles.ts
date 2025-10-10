@@ -5,7 +5,7 @@
 import { StyleBuilder } from './StyleBuilder.js';
 import type { AdaptiveColors } from '../types/index.js';
 import { ADAPTIVE_COLORS } from '../constants.js';
-import { getAdaptiveColor } from '../utils/index.js';
+import { getAdaptiveColor } from '../utils/output.js';
 
 /**
  * Base semantic styler with common style methods

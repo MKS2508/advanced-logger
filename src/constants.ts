@@ -17,6 +17,7 @@ export const DEFAULT_CONFIG = {
     bannerType: 'simple' as const,
     bufferSize: 1000,
     autoDetectTheme: true,
+    outputFormat: 'auto' as const,
 } as const;
 
 /**
@@ -169,3 +170,132 @@ export const ADAPTIVE_COLORS = {
         dark: '#a0aec0',
     },
 } as const satisfies Record<string, AdaptiveColors>;
+
+/**
+ * Presets específicos para diferentes entornos de build
+ */
+export const BUILD_PRESETS = {
+    /**
+     * Configuración optimizada para Next.js builds
+     */
+    nextjs: {
+        verbosity: 'info' as const,
+        enableColors: true,
+        enableTimestamps: false,
+        enableStackTrace: false,
+        autoDetectTheme: false,
+        outputFormat: 'build' as const,
+    },
+
+    /**
+     * Configuración para Webpack builds
+     */
+    webpack: {
+        verbosity: 'info' as const,
+        enableColors: true,
+        enableTimestamps: true,
+        enableStackTrace: false,
+        autoDetectTheme: false,
+        outputFormat: 'build' as const,
+    },
+
+    /**
+     * Configuración para CI/CD environments
+     */
+    ci: {
+        verbosity: 'info' as const,
+        enableColors: false,
+        enableTimestamps: true,
+        enableStackTrace: true,
+        autoDetectTheme: false,
+        outputFormat: 'ci' as const,
+    },
+
+    /**
+     * Configuración para desarrollo terminal
+     */
+    terminal: {
+        verbosity: 'debug' as const,
+        enableColors: true,
+        enableTimestamps: true,
+        enableStackTrace: true,
+        autoDetectTheme: false,
+        outputFormat: 'ansi' as const,
+    }
+} as const;
+
+/**
+ * Mapeo de variables de entorno a presets
+ */
+export const ENVIRONMENT_DETECTION = {
+    // Next.js detection
+    isNextJS: typeof process !== 'undefined' && (
+        process.env.NEXT_RUNTIME ||
+        process.env.NEXT_PUBLIC_VERCEL_ENV ||
+        (process.argv && process.argv.some(arg => arg.includes('next')))
+    ),
+
+    // Webpack detection
+    isWebpack: typeof process !== 'undefined' && (
+        process.env.WEBPACK_ENV ||
+        process.env.WEBPACK_BUILD ||
+        (process.argv && process.argv.some(arg => arg.includes('webpack')))
+    ),
+
+    // CI/CD detection
+    isCI: typeof process !== 'undefined' && (
+        process.env.CI ||
+        process.env.GITHUB_ACTIONS ||
+        process.env.JENKINS_URL ||
+        process.env.GITLAB_CI ||
+        process.env.TRAVIS ||
+        process.env.CIRCLECI
+    ),
+
+    // Build detection
+    isBuild: typeof process !== 'undefined' && (
+        process.env.NODE_ENV === 'production' ||
+        process.env.BUILD_MODE === 'production' ||
+        (process.argv && process.argv.some(arg => arg.includes('build')))
+    ),
+
+    // Terminal with ANSI support
+    isTerminal: typeof process !== 'undefined' && (
+        process.stdout?.isTTY === true &&
+        process.env.TERM !== 'dumb'
+    )
+} as const;
+
+/**
+ * Auto-detects the best preset based on current environment
+ */
+export function detectEnvironmentPreset(): keyof typeof BUILD_PRESETS {
+    if (ENVIRONMENT_DETECTION.isCI) {
+        return 'ci';
+    }
+
+    if (ENVIRONMENT_DETECTION.isNextJS) {
+        return 'nextjs';
+    }
+
+    if (ENVIRONMENT_DETECTION.isWebpack) {
+        return 'webpack';
+    }
+
+    if (ENVIRONMENT_DETECTION.isTerminal) {
+        return 'terminal';
+    }
+
+    return 'terminal'; // Default fallback
+}
+
+/**
+ * Gets the optimal configuration for current environment
+ */
+export function getOptimalConfig() {
+    const preset = detectEnvironmentPreset();
+    return {
+        ...DEFAULT_CONFIG,
+        ...BUILD_PRESETS[preset]
+    };
+}

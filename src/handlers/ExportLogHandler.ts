@@ -13,7 +13,8 @@ import type {
     BufferStats,
     ExportFormat
 } from '../types/index.js';
-import { parseTimeInput, formatDisplayTime, safeStringify, escapeHtml, generateLogId } from '../utils/index.js';
+import { parseTimeInput, formatDisplayTime } from '../utils/timestamps.js';
+import { safeStringify, escapeHtml, generateLogId } from '../utils/output.js';
 import { BUFFER_LIMITS } from '../constants.js';
 
 /**

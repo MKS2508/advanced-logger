@@ -47,7 +47,7 @@ const buildConfigs = {
     plugins: [
       dts({
         ...baseConfig.plugins[0].options,
-        outDir: 'dist/types',
+        outDir: 'dist',
       })
     ],
     build: {

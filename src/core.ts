@@ -25,10 +25,13 @@ import {
 // Universal formatting and environment detection
 import {
     createPlainOutput,
+    createOutput,
     getConsoleMethod,
     createLogEntry,
     formatTablePlain,
-    safeSerialize
+    safeSerialize,
+    detectOptimalFormat,
+    type OutputFormat
 } from './utils/formatting.js';
 
 import {
@@ -75,7 +78,8 @@ export class CoreLogger {
             enableColors: config.enableColors ?? (isBrowser ? true : false),
             enableTimestamps: config.enableTimestamps ?? true,
             enableStackTrace: config.enableStackTrace ?? false,
-            autoDetectTheme: config.autoDetectTheme ?? true
+            autoDetectTheme: config.autoDetectTheme ?? true,
+            outputFormat: config.outputFormat ?? 'auto'
         };
     }
 
@@ -148,7 +152,7 @@ export class CoreLogger {
         const message = String(args[0] || '');
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         const consoleMethod = getConsoleMethod(level);
-        
+
         // Choose formatting based on environment and configuration
         if (isBrowser && this.config.enableColors && supportsCSSColors()) {
             // Browser with CSS styling
@@ -163,14 +167,14 @@ export class CoreLogger {
                 );
                 console[consoleMethod](format, ...styles, ...args.slice(1));
             } catch (error) {
-                // Fallback to plain text if CSS fails
-                const output = createPlainOutput(level, message, prefix, stackInfo);
+                // Fallback to universal formatting if CSS fails
+                const output = createOutput(level, message, prefix, stackInfo, this.config.outputFormat);
                 console[consoleMethod](output, ...args.slice(1));
             }
         } else {
-            // Node.js or browser without colors - use plain text
+            // Node.js or browser without colors - use universal formatting
             const groupIndent = '  '.repeat(this.groupDepth);
-            const output = groupIndent + createPlainOutput(level, message, prefix, stackInfo);
+            const output = groupIndent + createOutput(level, message, prefix, stackInfo, this.config.outputFormat);
             console[consoleMethod](output, ...args.slice(1));
         }
 

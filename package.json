@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger",
-  "version": "0.14.0-alpha.1",
+  "version": "1.0.0",
   "type": "module",
   "description": "Logger avanzado para consola con estilos CSS, temas adaptativos, badges automáticos, SVG, animaciones y CLI integrado",
   "main": "dist/index.js",
@@ -83,6 +83,7 @@
     "workflow:release": "npm run version:auto && npm run build:all && npm run release:github"
   },
   "devDependencies": {
+    "@types/node": "^24.5.2",
     "terser": "^5.43.1",
     "typescript": "~5.8.3",
     "vite": "^7.1.2",

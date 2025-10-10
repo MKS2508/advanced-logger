@@ -21,12 +21,9 @@ import type {
 } from './types/index.js';
 
 // Utility imports
-import {
-    parseStackTrace,
-    formatTimestamp,
-    createStyledOutput,
-    setupThemeChangeListener
-} from './utils/index.js';
+import { parseStackTrace } from './utils/stackTrace.js';
+import { formatTimestamp } from './utils/timestamps.js';
+import { createStyledOutput, setupThemeChangeListener } from './utils/output.js';
 
 // Styling imports
 import {
@@ -37,9 +34,8 @@ import {
     StyleBuilder
 } from './styling/index.js';
 
-// Smart presets and scoped loggers
+// Smart presets and dynamic scoped loggers
 import { getSmartPreset, getAvailablePresets, hasPreset } from './styling/SmartPresets.js';
-import { ScopedLogger, APILogger, ComponentLogger } from './ScopedLogger.js';
 import { createLogStyleBuilder } from './styling/LogStyleBuilder.js';
 
 // Handler imports
@@ -329,6 +325,35 @@ export class Logger {
         }
     }
 
+    /**
+     * Factory method para crear loggers con scope evitando dependencias circulares
+     * @private
+     * @param {string} type - Tipo de logger ('scope' | 'api' | 'component')
+     * @param {string} name - Nombre del scope
+     * @returns {Promise<any>} Logger con scope
+     */
+    private async createScopedLogger(type: string, name: string): Promise<any> {
+        try {
+            const { ScopedLogger, APILogger, ComponentLogger } = await import('./ScopedLogger.js');
+            
+            switch (type) {
+                case 'component':
+                    return new ComponentLogger(this, name);
+                case 'api':
+                    return new APILogger(this, name);
+                case 'scope':
+                default:
+                    return new ScopedLogger(this, name);
+            }
+        } catch (error) {
+            // Fallback: crear logger básico con prefijo
+            this.error('Failed to load ScopedLogger, using basic logger with prefix:', error);
+            const basicLogger = new Logger(this.getConfig());
+            basicLogger.setGlobalPrefix(`${this.config.globalPrefix || ''}:${name}`);
+            return basicLogger;
+        }
+    }
+
     // ===== SIMPLIFIED API =====
 
     /**
@@ -488,8 +513,9 @@ export class Logger {
      * 
      * @since 0.3.0
      */
-    component(name: string): ComponentLogger {
-        return new ComponentLogger(this, name);
+    component(name: string): any {
+        // Lazy dynamic import to avoid circular dependency
+        return this.createScopedLogger('component', name);
     }
 
     /**
@@ -509,8 +535,9 @@ export class Logger {
      * 
      * @since 0.3.0
      */
-    api(name: string): APILogger {
-        return new APILogger(this, name);
+    api(name: string): any {
+        // Lazy dynamic import to avoid circular dependency
+        return this.createScopedLogger('api', name);
     }
 
     /**
@@ -530,8 +557,9 @@ export class Logger {
      * 
      * @since 0.3.0
      */
-    scope(name: string): ScopedLogger {
-        return new ScopedLogger(this, name);
+    scope(name: string): any {
+        // Lazy dynamic import to avoid circular dependency
+        return this.createScopedLogger('scope', name);
     }
 
     // ===== SIMPLE CUSTOMIZATION =====
@@ -1202,69 +1230,85 @@ export class Logger {
 }
 
 /**
- * Instancia singleton del logger con configuración por defecto
- * @constant {Logger}
+ * Lazy singleton instance - se inicializa solo cuando se necesita
+ * @private
  */
-const defaultLogger = new Logger({
-    verbosity: 'info',
-    enableColors: true,
-    enableTimestamps: true,
-    enableStackTrace: true,
-    bufferSize: 1000, // Enable export functionality by default
-});
+let _defaultLogger: Logger | null = null;
 
-// Display initialization banner
-displayInitBanner();
+/**
+ * Obtiene o crea la instancia singleton del logger
+ * @returns {Logger} Instancia singleton del logger
+ */
+function getDefaultLogger(): Logger {
+    if (!_defaultLogger) {
+        _defaultLogger = new Logger({
+            verbosity: 'info',
+            enableColors: true,
+            enableTimestamps: true,
+            enableStackTrace: true,
+            bufferSize: 1000, // Enable export functionality by default
+        });
+        
+        // Display initialization banner only once
+        try {
+            displayInitBanner();
+        } catch (error) {
+            // Silent fail if banner cannot be displayed
+        }
+    }
+    return _defaultLogger;
+}
 
-// Export the singleton instance as default
-export default defaultLogger;
+// Export the lazy singleton getter as default
+export default getDefaultLogger();
 
 /**
  * Métodos individuales exportados para conveniencia
- * @description Todos los métodos están correctamente enlazados al singleton
+ * @description Todos los métodos están correctamente enlazados al singleton lazy
  * @since 0.3.0
  */
-export const debug = (...args: any[]) => defaultLogger.debug(...args);
-export const info = (...args: any[]) => defaultLogger.info(...args);
-export const warn = (...args: any[]) => defaultLogger.warn(...args);
-export const error = (...args: any[]) => defaultLogger.error(...args);
-export const success = (...args: any[]) => defaultLogger.success(...args);
-export const trace = (...args: any[]) => defaultLogger.trace(...args);
-export const critical = (...args: any[]) => defaultLogger.critical(...args);
-export const table = (data: any, columns?: string[]) => defaultLogger.table(data, columns);
-export const group = (label: string, collapsed?: boolean) => defaultLogger.group(label, collapsed);
-export const groupEnd = () => defaultLogger.groupEnd();
-export const time = (label: string) => defaultLogger.time(label);
-export const timeEnd = (label: string) => defaultLogger.timeEnd(label);
-export const setGlobalPrefix = (prefix: string) => defaultLogger.setGlobalPrefix(prefix);
-export const setVerbosity = (level: Verbosity) => defaultLogger.setVerbosity(level);
-export const addHandler = (handler: ILogHandler) => defaultLogger.addHandler(handler);
-export const setTheme = (theme: ThemeVariant) => defaultLogger.setTheme(theme);
-export const setBannerType = (bannerType: BannerType) => defaultLogger.setBannerType(bannerType);
-export const showBanner = (bannerType?: BannerType) => defaultLogger.showBanner(bannerType);
+export const debug = (...args: any[]) => getDefaultLogger().debug(...args);
+export const info = (...args: any[]) => getDefaultLogger().info(...args);
+export const warn = (...args: any[]) => getDefaultLogger().warn(...args);
+export const error = (...args: any[]) => getDefaultLogger().error(...args);
+export const success = (...args: any[]) => getDefaultLogger().success(...args);
+export const trace = (...args: any[]) => getDefaultLogger().trace(...args);
+export const critical = (...args: any[]) => getDefaultLogger().critical(...args);
+export const table = (data: any, columns?: string[]) => getDefaultLogger().table(data, columns);
+export const group = (label: string, collapsed?: boolean) => getDefaultLogger().group(label, collapsed);
+export const groupEnd = () => getDefaultLogger().groupEnd();
+export const time = (label: string) => getDefaultLogger().time(label);
+export const timeEnd = (label: string) => getDefaultLogger().timeEnd(label);
+export const setGlobalPrefix = (prefix: string) => getDefaultLogger().setGlobalPrefix(prefix);
+export const setVerbosity = (level: Verbosity) => getDefaultLogger().setVerbosity(level);
+export const addHandler = (handler: ILogHandler) => getDefaultLogger().addHandler(handler);
+export const setTheme = (theme: ThemeVariant) => getDefaultLogger().setTheme(theme);
+export const setBannerType = (bannerType: BannerType) => getDefaultLogger().setBannerType(bannerType);
+export const showBanner = (bannerType?: BannerType) => getDefaultLogger().showBanner(bannerType);
 export const logWithSVG = (message: string, svgContent?: string, options?: StyleOptions) => 
-    defaultLogger.logWithSVG(message, svgContent, options);
+    getDefaultLogger().logWithSVG(message, svgContent, options);
 export const logAnimated = (message: string, duration?: number) => 
-    defaultLogger.logAnimated(message, duration);
-export const cli = (command: string) => defaultLogger.cli(command);
-export const cleanup = () => defaultLogger.cleanup();
+    getDefaultLogger().logAnimated(message, duration);
+export const cli = (command: string) => getDefaultLogger().cli(command);
+export const cleanup = () => getDefaultLogger().cleanup();
 
 // Simplified API exports
-export const preset = (name: string) => defaultLogger.preset(name);
-export const presets = () => defaultLogger.presets();
-export const hideTimestamp = () => defaultLogger.hideTimestamp();
-export const showTimestamp = () => defaultLogger.showTimestamp();
-export const hideLocation = () => defaultLogger.hideLocation();
-export const showLocation = () => defaultLogger.showLocation();
-export const hideBadges = () => defaultLogger.hideBadges();
-export const showBadges = () => defaultLogger.showBadges();
-export const component = (name: string) => defaultLogger.component(name);
-export const api = (name: string) => defaultLogger.api(name);
-export const scope = (name: string) => defaultLogger.scope(name);
-export const customize = (overrides: any) => defaultLogger.customize(overrides);
-export const styles = () => defaultLogger.styles();
+export const preset = (name: string) => getDefaultLogger().preset(name);
+export const presets = () => getDefaultLogger().presets();
+export const hideTimestamp = () => getDefaultLogger().hideTimestamp();
+export const showTimestamp = () => getDefaultLogger().showTimestamp();
+export const hideLocation = () => getDefaultLogger().hideLocation();
+export const showLocation = () => getDefaultLogger().showLocation();
+export const hideBadges = () => getDefaultLogger().hideBadges();
+export const showBadges = () => getDefaultLogger().showBadges();
+export const component = (name: string) => getDefaultLogger().component(name);
+export const api = (name: string) => getDefaultLogger().api(name);
+export const scope = (name: string) => getDefaultLogger().scope(name);
+export const customize = (overrides: any) => getDefaultLogger().customize(overrides);
+export const styles = () => getDefaultLogger().styles();
 
 // Re-export handlers and utilities for backward compatibility
 export { FileLogHandler, RemoteLogHandler, AnalyticsLogHandler, ExportLogHandler } from './handlers/index.js';
 export { StyleBuilder, StylePresets as Styles } from './styling/index.js';
-export { ScopedLogger, APILogger, ComponentLogger } from './ScopedLogger.js';
+// Commented out to avoid circular dependency - import these directly from ScopedLogger.js if needed
+// export { ScopedLogger, APILogger, ComponentLogger } from './ScopedLogger.js';

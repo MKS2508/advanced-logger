@@ -77,7 +77,7 @@ export type BannerType = 'simple' | 'ascii' | 'unicode' | 'svg' | 'animated';
 /**
  * Formatos de exportación para datos de log
  * @typedef {'json' | 'csv' | 'markdown' | 'plain' | 'html'} ExportFormat
- * 
+ *
  * @description
  * - json: Formato JSON estructurado
  * - csv: Valores separados por comas para Excel/Sheets
@@ -86,6 +86,19 @@ export type BannerType = 'simple' | 'ascii' | 'unicode' | 'svg' | 'animated';
  * - html: HTML con estilos para visualización web
  */
 export type ExportFormat = 'json' | 'csv' | 'markdown' | 'plain' | 'html';
+
+/**
+ * Formatos de salida para diferentes entornos
+ * @typedef {'auto' | 'plain' | 'ansi' | 'build' | 'ci'} OutputFormat
+ *
+ * @description
+ * - auto: Detección automática basada en entorno (recomendado)
+ * - plain: Texto plano sin colores (máxima compatibilidad)
+ * - ansi: Colores ANSI para terminales modernos
+ * - build: Formato optimizado para builds (Next.js, webpack, etc.)
+ * - ci: Formato optimizado para CI/CD (sin emojis, texto simple)
+ */
+export type OutputFormat = 'auto' | 'plain' | 'ansi' | 'build' | 'ci';
 
 /**
  * Interfaz de configuración para instancias del logger
@@ -116,6 +129,7 @@ export interface LoggerConfig {
     bannerType?: BannerType;
     bufferSize?: number;
     autoDetectTheme?: boolean;
+    outputFormat?: OutputFormat;
 }
 
 /**

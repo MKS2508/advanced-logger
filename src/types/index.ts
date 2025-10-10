@@ -10,6 +10,7 @@ export type {
     DevToolsTheme,
     BannerType,
     ExportFormat,
+    OutputFormat,
     LoggerConfig,
     StackInfo,
     TimerEntry,

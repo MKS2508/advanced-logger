@@ -21,8 +21,15 @@ import type {
     ILogHandler
 } from './types/index.js';
 
-// Create singleton instance with all features enabled
-const logger = new Logger();
+// Lazy singleton - se inicializa solo cuando se necesita
+let _logger: Logger | null = null;
+
+function getLogger(): Logger {
+    if (!_logger) {
+        _logger = new Logger();
+    }
+    return _logger;
+}
 
 /**
  * Clase principal Logger con conjunto completo de características
@@ -63,7 +70,7 @@ export { Logger };
  * logger.warn('Memoria al 80%');
  * logger.error('Fallo en conexión');
  */
-export default logger;
+export default getLogger();
 
 /**
  * Métodos de logging individuales (enlazados al singleton)
@@ -78,30 +85,30 @@ export default logger;
  * 
  * @since 0.3.0
  */
-export const debug = (...args: any[]) => logger.debug(...args);
-export const info = (...args: any[]) => logger.info(...args);
-export const warn = (...args: any[]) => logger.warn(...args);
-export const error = (...args: any[]) => logger.error(...args);
-export const success = (...args: any[]) => logger.success(...args);
-export const critical = (...args: any[]) => logger.critical(...args);
-export const trace = (...args: any[]) => logger.trace(...args);
-export const table = (data: any, columns?: string[]) => logger.table(data, columns);
-export const group = (label: string, collapsed?: boolean) => logger.group(label, collapsed);
-export const groupEnd = () => logger.groupEnd();
-export const time = (label: string) => logger.time(label);
-export const timeEnd = (label: string) => logger.timeEnd(label);
-export const setGlobalPrefix = (prefix: string) => logger.setGlobalPrefix(prefix);
-export const scope = (prefix: string) => logger.scope(prefix);
-export const setVerbosity = (level: Verbosity) => logger.setVerbosity(level);
-export const addHandler = (handler: ILogHandler) => logger.addHandler(handler);
-export const setTheme = (theme: ThemeVariant) => logger.setTheme(theme);
-export const setBannerType = (bannerType: BannerType) => logger.setBannerType(bannerType);
-export const showBanner = (bannerType?: BannerType) => logger.showBanner(bannerType);
+export const debug = (...args: any[]) => getLogger().debug(...args);
+export const info = (...args: any[]) => getLogger().info(...args);
+export const warn = (...args: any[]) => getLogger().warn(...args);
+export const error = (...args: any[]) => getLogger().error(...args);
+export const success = (...args: any[]) => getLogger().success(...args);
+export const critical = (...args: any[]) => getLogger().critical(...args);
+export const trace = (...args: any[]) => getLogger().trace(...args);
+export const table = (data: any, columns?: string[]) => getLogger().table(data, columns);
+export const group = (label: string, collapsed?: boolean) => getLogger().group(label, collapsed);
+export const groupEnd = () => getLogger().groupEnd();
+export const time = (label: string) => getLogger().time(label);
+export const timeEnd = (label: string) => getLogger().timeEnd(label);
+export const setGlobalPrefix = (prefix: string) => getLogger().setGlobalPrefix(prefix);
+export const scope = (prefix: string) => getLogger().scope(prefix);
+export const setVerbosity = (level: Verbosity) => getLogger().setVerbosity(level);
+export const addHandler = (handler: ILogHandler) => getLogger().addHandler(handler);
+export const setTheme = (theme: ThemeVariant) => getLogger().setTheme(theme);
+export const setBannerType = (bannerType: BannerType) => getLogger().setBannerType(bannerType);
+export const showBanner = (bannerType?: BannerType) => getLogger().showBanner(bannerType);
 export const logWithSVG = (message: string, svgContent?: string, options?: StyleOptions) => 
-    logger.logWithSVG(message, svgContent, options);
+    getLogger().logWithSVG(message, svgContent, options);
 export const logAnimated = (message: string, duration?: number) => 
-    logger.logAnimated(message, duration);
-export const cli = (command: string) => logger.cli(command);
+    getLogger().logAnimated(message, duration);
+export const cli = (command: string) => getLogger().cli(command);
 
 // Type exports
 export type {
@@ -114,7 +121,8 @@ export type {
     LoggerConfig,
     LogMetadata,
     StackInfo,
-    TimerEntry
+    TimerEntry,
+    OutputFormat
 } from './types/index.js';
 
 // Styling utilities
@@ -139,8 +147,35 @@ export { DEFAULT_CONFIG } from './constants.js';
 // Utility exports
 export {
     parseStackTrace,
-    formatTimestamp
+    formatTimestamp,
+    detectOptimalFormat,
+    createOutput,
+    createANSIOutput,
+    createBuildOutput,
+    createCIOutput
 } from './utils/index.js';
+
+// ANSI color utilities
+export {
+    ansiStyle,
+    ansiColor,
+    ansiBackground,
+    ansiBold,
+    ansiDim,
+    ansiUnderline,
+    formatLogLevelANSI,
+    formatSuccessANSI,
+    BUILD_FORMATTERS,
+    sanitizeEmojis
+} from './utils/ansi-colors.js';
+
+// Environment detection and presets
+export {
+    BUILD_PRESETS,
+    ENVIRONMENT_DETECTION,
+    detectEnvironmentPreset,
+    getOptimalConfig
+} from './constants.js';
 
 /**
  * Utilidades de estilo para crear estilos personalizados de consola
