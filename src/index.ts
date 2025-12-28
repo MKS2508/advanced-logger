@@ -98,7 +98,12 @@ export const groupEnd = () => getLogger().groupEnd();
 export const time = (label: string) => getLogger().time(label);
 export const timeEnd = (label: string) => getLogger().timeEnd(label);
 export const setGlobalPrefix = (prefix: string) => getLogger().setGlobalPrefix(prefix);
-export const scope = (prefix: string) => getLogger().scope(prefix);
+export const scope = (name: string) => getLogger().scope(name);
+export const component = (name: string) => getLogger().component(name);
+export const api = (name: string) => getLogger().api(name);
+export const badges = (badgeList: string[]) => getLogger().badges(badgeList);
+export const badge = (badgeName: string) => getLogger().badge(badgeName);
+export const clearBadges = () => getLogger().clearBadges();
 export const setVerbosity = (level: Verbosity) => getLogger().setVerbosity(level);
 export const addHandler = (handler: ILogHandler) => getLogger().addHandler(handler);
 export const setTheme = (theme: ThemeVariant) => getLogger().setTheme(theme);
@@ -122,7 +127,26 @@ export type {
     LogMetadata,
     StackInfo,
     TimerEntry,
-    OutputFormat
+    TimerResult,
+    OutputFormat,
+    IScopedLogger,
+    IAPILogger,
+    IComponentLogger,
+    Bindings,
+    SerializerFn,
+    SerializerContext,
+    SerializerConfig,
+    ISerializerRegistry,
+    HookLogEntry,
+    HookEvent,
+    HookCallback,
+    MiddlewareFn,
+    IHookManager,
+    TransportRecord,
+    TransportOptions,
+    TransportTarget,
+    ITransport,
+    StyleCacheConfig
 } from './types/index.js';
 
 // Styling utilities
@@ -140,6 +164,57 @@ export {
     RemoteLogHandler,
     AnalyticsLogHandler
 } from './handlers/index.js';
+
+// Serializers
+export { SerializerRegistry } from './serializers/index.js';
+
+// Hooks & Middleware
+export { HookManager } from './hooks/index.js';
+
+// Transports
+export {
+    TransportManager,
+    ConsoleTransport,
+    FileTransport,
+    HttpTransport
+} from './transports/index.js';
+
+// Style Cache
+export { StyleCache, getStyleCache } from './styling/StyleCache.js';
+
+// Enterprise feature function exports
+import type { SerializerFn, HookEvent, HookCallback, MiddlewareFn, TransportTarget } from './types/index.js';
+export const addSerializer = <T>(
+    type: new (...args: any[]) => T,
+    serializer: SerializerFn<T>,
+    priority?: number
+) => getLogger().addSerializer(type, serializer, priority);
+export const removeSerializer = <T>(type: new (...args: any[]) => T) =>
+    getLogger().removeSerializer(type);
+export const on = (event: HookEvent, callback: HookCallback, priority?: number) =>
+    getLogger().on(event, callback, priority);
+export const once = (event: HookEvent, callback: HookCallback, priority?: number) =>
+    getLogger().once(event, callback, priority);
+export const off = (event: HookEvent, callback: HookCallback) =>
+    getLogger().off(event, callback);
+export const use = (middleware: MiddlewareFn, priority?: number) =>
+    getLogger().use(middleware, priority);
+export const addTransport = (target: TransportTarget) =>
+    getLogger().addTransport(target);
+export const removeTransport = (id: string) =>
+    getLogger().removeTransport(id);
+export const flushTransports = () =>
+    getLogger().flushTransports();
+export const closeTransports = () =>
+    getLogger().closeTransports();
+
+// Scoped loggers
+export {
+    ScopedLogger,
+    APILogger,
+    ComponentLogger,
+    ContextLogger
+} from './ScopedLogger.js';
 
 // Constants
 export { DEFAULT_CONFIG } from './constants.js';

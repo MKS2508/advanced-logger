@@ -17,8 +17,20 @@ import type {
     TimerEntry,
     ILogHandler,
     LogMetadata,
-    StyleOptions
+    StyleOptions,
+    Bindings,
+    SerializerFn,
+    HookEvent,
+    HookCallback,
+    MiddlewareFn,
+    TransportTarget,
+    TransportRecord
 } from './types/index.js';
+
+// Enterprise features
+import { SerializerRegistry } from './serializers/index.js';
+import { HookManager } from './hooks/index.js';
+import { TransportManager } from './transports/index.js';
 
 // Utility imports
 import { parseStackTrace } from './utils/stackTrace.js';
@@ -38,6 +50,9 @@ import {
 // Smart presets and dynamic scoped loggers
 import { getSmartPreset, getAvailablePresets, hasPreset } from './styling/SmartPresets.js';
 import { createLogStyleBuilder } from './styling/LogStyleBuilder.js';
+
+// Scoped loggers (static import for performance)
+import { ScopedLogger, APILogger, ComponentLogger } from './ScopedLogger.js';
 
 // Handler imports
 import { ExportLogHandler } from './handlers/index.js';
@@ -89,11 +104,16 @@ export class Logger {
     private exportHandler?: ExportLogHandler;
     private cliProcessor?: CommandProcessor;
     private themeChangeListener?: (() => void) | null;
+    private badgeList: string[] = [];
     private displaySettings = {
         showTimestamp: true,
         showLocation: true,
         showBadges: true
     };
+
+    private serializerRegistry: SerializerRegistry;
+    private hookManager: HookManager;
+    private transportManager?: TransportManager;
 
     /**
      * Crea una nueva instancia del Logger
@@ -115,6 +135,10 @@ export class Logger {
             ...config,
         };
 
+        // Initialize enterprise features
+        this.serializerRegistry = new SerializerRegistry();
+        this.hookManager = new HookManager();
+
         // Initialize export handler if buffer size is specified
         if (this.config.bufferSize) {
             this.exportHandler = new ExportLogHandler(this.config.bufferSize);
@@ -123,7 +147,7 @@ export class Logger {
 
         // Initialize CLI processor
         this.cliProcessor = createDefaultCLI();
-        
+
         // Set up theme change listener if auto-detection is enabled
         if (this.config.autoDetectTheme) {
             this.setupAutoThemeDetection();
@@ -324,36 +348,10 @@ export class Logger {
             this.themeChangeListener();
             this.themeChangeListener = null;
         }
+        // Close transports
+        this.transportManager?.close().catch(() => {});
     }
 
-    /**
-     * Factory method para crear loggers con scope evitando dependencias circulares
-     * @private
-     * @param {string} type - Tipo de logger ('scope' | 'api' | 'component')
-     * @param {string} name - Nombre del scope
-     * @returns {Promise<any>} Logger con scope
-     */
-    private async createScopedLogger(type: string, name: string): Promise<any> {
-        try {
-            const { ScopedLogger, APILogger, ComponentLogger } = await import('./ScopedLogger.js');
-            
-            switch (type) {
-                case 'component':
-                    return new ComponentLogger(this, name);
-                case 'api':
-                    return new APILogger(this, name);
-                case 'scope':
-                default:
-                    return new ScopedLogger(this, name);
-            }
-        } catch (error) {
-            // Fallback: crear logger básico con prefijo
-            this.error('Failed to load ScopedLogger, using basic logger with prefix:', error);
-            const basicLogger = new Logger(this.getConfig());
-            basicLogger.setGlobalPrefix(`${this.config.globalPrefix || ''}:${name}`);
-            return basicLogger;
-        }
-    }
 
     // ===== SIMPLIFIED API =====
 
@@ -486,12 +484,12 @@ export class Logger {
 
     /**
      * Muestra los badges en los logs
-     * 
+     *
      * @example
      * logger.showBadges();
      * const api = logger.api('GraphQL');
      * api.info('Con badges'); // [API] [GraphQL] Con badges
-     * 
+     *
      * @since 0.3.0
      */
     showBadges(): void {
@@ -499,71 +497,68 @@ export class Logger {
         this.success('Badges shown');
     }
 
+    /**
+     * Establece múltiples badges para los logs
+     *
+     * @param {string[]} badges - Array de badges a mostrar
+     * @returns {this} Logger instance para encadenamiento
+     *
+     * @example
+     * logger.badges(['v3', 'stable']).info('Release publicado');
+     * logger.badges(['API', 'v2']).warn('Endpoint deprecado');
+     *
+     * @since 3.0.0
+     */
+    badges(badges: string[]): this {
+        this.badgeList = [...badges];
+        return this;
+    }
+
+    /**
+     * Añade un badge individual a la lista
+     *
+     * @param {string} badge - Badge a añadir
+     * @returns {this} Logger instance para encadenamiento
+     *
+     * @example
+     * logger.badge('DEBUG').badge('AUTH').info('Token validado');
+     *
+     * @since 3.0.0
+     */
+    badge(badge: string): this {
+        if (!this.badgeList.includes(badge)) {
+            this.badgeList.push(badge);
+        }
+        return this;
+    }
+
+    /**
+     * Limpia todos los badges activos
+     *
+     * @returns {this} Logger instance para encadenamiento
+     *
+     * @example
+     * logger.clearBadges().info('Sin badges');
+     *
+     * @since 3.0.0
+     */
+    clearBadges(): this {
+        this.badgeList = [];
+        return this;
+    }
+
     // ===== SCOPED LOGGERS =====
 
-    /**
-     * Crea un logger para componentes con estilo automático
-     * 
-     * @param {string} name - Nombre del componente
-     * @returns {ComponentLogger} Logger con scope de componente
-     * 
-     * @example
-     * const authLogger = logger.component('Autenticación');
-     * authLogger.info('Validando credenciales');
-     * // [COMPONENT] [Autenticación] Validando credenciales
-     * 
-     * authLogger.success('Usuario autenticado');
-     * // [COMPONENT] [Autenticación] ✓ Usuario autenticado
-     * 
-     * @since 0.3.0
-     */
-    component(name: string): any {
-        // Lazy dynamic import to avoid circular dependency
-        return this.createScopedLogger('component', name);
+    component(name: string): ComponentLogger {
+        return new ComponentLogger(this, name);
     }
 
-    /**
-     * Crea un logger para APIs con badges automáticos
-     * 
-     * @param {string} name - Nombre de la API o endpoint
-     * @returns {APILogger} Logger con scope de API
-     * 
-     * @example
-     * const api = logger.api('REST');
-     * api.info('GET /users');
-     * // [API] [REST] GET /users
-     * 
-     * // Con badges adicionales
-     * api.badges(['v2', 'cached']).info('Respuesta desde caché');
-     * // [API] [v2] [cached] [REST] Respuesta desde caché
-     * 
-     * @since 0.3.0
-     */
-    api(name: string): any {
-        // Lazy dynamic import to avoid circular dependency
-        return this.createScopedLogger('api', name);
+    api(name: string): APILogger {
+        return new APILogger(this, name);
     }
 
-    /**
-     * Crea un logger con scope general y soporte de badges
-     * 
-     * @param {string} name - Nombre del scope
-     * @returns {ScopedLogger} Logger con scope personalizado
-     * 
-     * @example
-     * const dbLogger = logger.scope('Database');
-     * dbLogger.info('Conectando a MongoDB');
-     * // [Database] Conectando a MongoDB
-     * 
-     * // Con badges personalizados
-     * dbLogger.badge('SLOW').warn('Query tardó 5s');
-     * // [SLOW] [Database] Query tardó 5s
-     * 
-     * @since 0.3.0
-     */
-    scope(name: string): any {
-        // Lazy dynamic import to avoid circular dependency
-        return this.createScopedLogger('scope', name);
+    scope(name: string): ScopedLogger {
+        return new ScopedLogger(this, name);
     }
 
     // ===== SIMPLE CUSTOMIZATION =====
@@ -654,12 +649,218 @@ export class Logger {
 
     /**
      * Obtiene el handler de exportación si está disponible
-     * 
+     *
      * @returns {ExportLogHandler | undefined} Handler de exportación o undefined
      * @since 0.3.0
      */
     getExportHandler(): ExportLogHandler | undefined {
         return this.exportHandler;
+    }
+
+    // ===== SERIALIZERS =====
+
+    /**
+     * Añade un serializador personalizado para un tipo específico
+     *
+     * @param type - Constructor del tipo a serializar
+     * @param serializer - Función de serialización
+     * @param priority - Prioridad (mayor = primero)
+     *
+     * @example
+     * logger.addSerializer(Error, (err) => ({
+     *   name: err.name,
+     *   message: err.message,
+     *   stack: err.stack?.split('\n').slice(0, 5)
+     * }));
+     *
+     * @since 3.0.0
+     */
+    addSerializer<T>(
+        type: new (...args: any[]) => T,
+        serializer: SerializerFn<T>,
+        priority?: number
+    ): void {
+        this.serializerRegistry.add(type, serializer, priority);
+    }
+
+    /**
+     * Elimina un serializador registrado
+     *
+     * @param type - Constructor del tipo a remover
+     * @returns true si se eliminó
+     *
+     * @since 3.0.0
+     */
+    removeSerializer<T>(type: new (...args: any[]) => T): boolean {
+        return this.serializerRegistry.remove(type);
+    }
+
+    /**
+     * Obtiene el registry de serializadores
+     *
+     * @returns SerializerRegistry
+     * @since 3.0.0
+     */
+    getSerializerRegistry(): SerializerRegistry {
+        return this.serializerRegistry;
+    }
+
+    // ===== HOOKS & MIDDLEWARE =====
+
+    /**
+     * Registra un hook para un evento
+     *
+     * @param event - Evento: 'beforeLog' | 'afterLog' | 'onError'
+     * @param callback - Función a ejecutar
+     * @param priority - Prioridad (mayor = primero)
+     * @returns Función para desregistrar
+     *
+     * @example
+     * const unsubscribe = logger.on('beforeLog', (entry) => {
+     *   entry.correlationId = getCorrelationId();
+     *   return entry;
+     * });
+     *
+     * @since 3.0.0
+     */
+    on(event: HookEvent, callback: HookCallback, priority?: number): () => void {
+        return this.hookManager.on(event, callback, priority);
+    }
+
+    /**
+     * Registra un hook que se ejecuta solo una vez
+     *
+     * @param event - Evento: 'beforeLog' | 'afterLog' | 'onError'
+     * @param callback - Función a ejecutar
+     * @param priority - Prioridad (mayor = primero)
+     * @returns Función para desregistrar
+     *
+     * @since 3.0.0
+     */
+    once(event: HookEvent, callback: HookCallback, priority?: number): () => void {
+        return this.hookManager.once(event, callback, priority);
+    }
+
+    /**
+     * Elimina un hook registrado
+     *
+     * @param event - Evento del hook
+     * @param callback - Callback a remover
+     * @returns true si se eliminó
+     *
+     * @since 3.0.0
+     */
+    off(event: HookEvent, callback: HookCallback): boolean {
+        return this.hookManager.off(event, callback);
+    }
+
+    /**
+     * Añade un middleware al pipeline
+     *
+     * @param middleware - Función middleware
+     * @param priority - Prioridad (mayor = primero)
+     * @returns Función para desregistrar
+     *
+     * @example
+     * logger.use((entry, next) => {
+     *   entry.requestId = asyncLocalStorage.getStore()?.requestId;
+     *   next();
+     * });
+     *
+     * @since 3.0.0
+     */
+    use(middleware: MiddlewareFn, priority?: number): () => void {
+        return this.hookManager.use(middleware, priority);
+    }
+
+    /**
+     * Obtiene el HookManager
+     *
+     * @returns HookManager
+     * @since 3.0.0
+     */
+    getHookManager(): HookManager {
+        return this.hookManager;
+    }
+
+    // ===== TRANSPORTS =====
+
+    /**
+     * Añade un transport para envío de logs
+     *
+     * @param target - Configuración del transport
+     * @returns ID único del transport
+     *
+     * @example
+     * // File transport
+     * logger.addTransport({
+     *   target: 'file',
+     *   options: { destination: '/var/log/app.log' }
+     * });
+     *
+     * @example
+     * // HTTP transport con batching
+     * logger.addTransport({
+     *   target: 'http',
+     *   options: {
+     *     url: 'https://logs.example.com',
+     *     batchSize: 100,
+     *     flushInterval: 5000
+     *   },
+     *   level: 'warn'
+     * });
+     *
+     * @since 3.0.0
+     */
+    addTransport(target: TransportTarget): string {
+        if (!this.transportManager) {
+            this.transportManager = new TransportManager();
+        }
+        return this.transportManager.add(target);
+    }
+
+    /**
+     * Elimina un transport
+     *
+     * @param id - ID del transport a remover
+     * @returns true si se eliminó
+     *
+     * @since 3.0.0
+     */
+    removeTransport(id: string): boolean {
+        return this.transportManager?.remove(id) ?? false;
+    }
+
+    /**
+     * Fuerza el flush de todos los transports
+     *
+     * @returns Promise que resuelve cuando todos los buffers están vaciados
+     *
+     * @since 3.0.0
+     */
+    async flushTransports(): Promise<void> {
+        await this.transportManager?.flush();
+    }
+
+    /**
+     * Cierra todos los transports
+     *
+     * @returns Promise que resuelve cuando todos están cerrados
+     *
+     * @since 3.0.0
+     */
+    async closeTransports(): Promise<void> {
+        await this.transportManager?.close();
+    }
+
+    /**
+     * Obtiene el TransportManager
+     *
+     * @returns TransportManager o undefined si no hay transports
+     * @since 3.0.0
+     */
+    getTransportManager(): TransportManager | undefined {
+        return this.transportManager;
     }
 
     // ===== CORE LOGGING METHODS =====
@@ -697,8 +898,33 @@ export class Logger {
 
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         const prefix = this.getEffectivePrefix();
-        const message = args.length > 0 ? String(args[0]) : '';
-        const additionalArgs = args.slice(1);
+        const timestamp = formatTimestamp();
+
+        // Serialize args using registry
+        const serializedArgs = args.map(arg => this.serializerRegistry.serialize(arg));
+
+        // Prepend badges to message if any
+        let message = serializedArgs.length > 0 ? String(serializedArgs[0]) : '';
+        if (this.badgeList.length > 0 && this.displaySettings.showBadges) {
+            const badgePrefix = this.badgeList.map(b => `[${b}]`).join('');
+            message = badgePrefix + ' ' + message;
+        }
+        const additionalArgs = serializedArgs.slice(1);
+
+        // Process beforeLog hooks (sync for performance)
+        let hookEntry = {
+            level,
+            message,
+            args: serializedArgs,
+            timestamp,
+            prefix,
+            stackInfo: stackInfo || undefined
+        };
+
+        // Emit beforeLog event (fire-and-forget for sync logging)
+        this.hookManager.emit('beforeLog', hookEntry).then(processed => {
+            message = processed.message;
+        }).catch(() => {});
 
         // Create styled output with theme detection and display settings
         const [format, ...styles] = createStyledOutput(
@@ -730,7 +956,7 @@ export class Logger {
 
         // Call custom handlers
         const metadata: LogMetadata = {
-            timestamp: formatTimestamp(),
+            timestamp,
             level,
             prefix,
             stackInfo: stackInfo ? stackInfo : undefined,
@@ -738,24 +964,55 @@ export class Logger {
 
         this.handlers.forEach(handler => {
             try {
-                handler.handle(level, message, args, metadata);
+                handler.handle(level, message, serializedArgs, metadata);
             } catch (error) {
                 console.error('Log handler failed:', error);
             }
         });
+
+        // Write to transports (async, fire-and-forget)
+        if (this.transportManager) {
+            const levelValues: Record<LogLevel, number> = {
+                debug: 0, info: 1, warn: 2, error: 3, critical: 4
+            };
+            const record: TransportRecord = {
+                level,
+                levelValue: levelValues[level],
+                time: Date.now(),
+                msg: message,
+                prefix,
+                location: stackInfo ? {
+                    file: stackInfo.file,
+                    line: stackInfo.line,
+                    column: stackInfo.column,
+                    function: stackInfo.function
+                } : undefined
+            };
+            this.transportManager.write(record).catch(() => {});
+        }
+
+        // Emit afterLog event (fire-and-forget)
+        this.hookManager.emit('afterLog', hookEntry).catch(() => {});
     }
 
-    /**
-     * Registra información de debug (prioridad más baja)
-     * 
-     * @param {...any} args - Mensajes y datos a loggear
-     * 
-     * @example
-     * logger.debug('Variable estado:', { usuario: 'Juan', activo: true });
-     * logger.debug('Iniciando proceso de validación');
-     * 
-     * @since 0.3.0
-     */
+    logWithBindings(bindings: Bindings, level: LogLevel, ...args: any[]): void {
+        if (!this.shouldLog(level)) return;
+
+        let prefix = '';
+        if (bindings.badges?.length) {
+            prefix += bindings.badges.map(b => `[${b}]`).join('');
+        }
+        if (bindings.scope) {
+            prefix += `[${bindings.scope}] `;
+        }
+
+        if (prefix && args.length > 0) {
+            args[0] = prefix + String(args[0]);
+        }
+
+        this.log(level, ...args);
+    }
+
     debug(...args: any[]): void {
         this.log('debug', ...args);
     }
@@ -1309,14 +1566,46 @@ export const hideLocation = () => getDefaultLogger().hideLocation();
 export const showLocation = () => getDefaultLogger().showLocation();
 export const hideBadges = () => getDefaultLogger().hideBadges();
 export const showBadges = () => getDefaultLogger().showBadges();
+export const badges = (badgeList: string[]) => getDefaultLogger().badges(badgeList);
+export const badge = (badgeName: string) => getDefaultLogger().badge(badgeName);
+export const clearBadges = () => getDefaultLogger().clearBadges();
 export const component = (name: string) => getDefaultLogger().component(name);
 export const api = (name: string) => getDefaultLogger().api(name);
 export const scope = (name: string) => getDefaultLogger().scope(name);
 export const customize = (overrides: any) => getDefaultLogger().customize(overrides);
 export const styles = () => getDefaultLogger().styles();
 
+// Enterprise features exports
+export const addSerializer = <T>(
+    type: new (...args: any[]) => T,
+    serializer: SerializerFn<T>,
+    priority?: number
+) => getDefaultLogger().addSerializer(type, serializer, priority);
+export const removeSerializer = <T>(type: new (...args: any[]) => T) =>
+    getDefaultLogger().removeSerializer(type);
+export const on = (event: HookEvent, callback: HookCallback, priority?: number) =>
+    getDefaultLogger().on(event, callback, priority);
+export const once = (event: HookEvent, callback: HookCallback, priority?: number) =>
+    getDefaultLogger().once(event, callback, priority);
+export const off = (event: HookEvent, callback: HookCallback) =>
+    getDefaultLogger().off(event, callback);
+export const use = (middleware: MiddlewareFn, priority?: number) =>
+    getDefaultLogger().use(middleware, priority);
+export const addTransport = (target: TransportTarget) =>
+    getDefaultLogger().addTransport(target);
+export const removeTransport = (id: string) =>
+    getDefaultLogger().removeTransport(id);
+export const flushTransports = () =>
+    getDefaultLogger().flushTransports();
+export const closeTransports = () =>
+    getDefaultLogger().closeTransports();
+
 // Re-export handlers and utilities for backward compatibility
 export { FileLogHandler, RemoteLogHandler, AnalyticsLogHandler, ExportLogHandler } from './handlers/index.js';
 export { StyleBuilder, StylePresets as Styles } from './styling/index.js';
-// Commented out to avoid circular dependency - import these directly from ScopedLogger.js if needed
-// export { ScopedLogger, APILogger, ComponentLogger } from './ScopedLogger.js';
+
+// Re-export enterprise features
+export { SerializerRegistry } from './serializers/index.js';
+export { HookManager } from './hooks/index.js';
+export { TransportManager, ConsoleTransport, FileTransport, HttpTransport } from './transports/index.js';
+export { StyleCache, getStyleCache } from './styling/StyleCache.js';

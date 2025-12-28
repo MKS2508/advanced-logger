@@ -202,3 +202,16 @@ npm run test:workflows
 - `GITHUB_ACTIONS=true`: Detects CI environment
 - `RELEASE_WORKFLOW=true`: Activates release-specific conflict strategies
 - `GITHUB_WORKFLOW`: Workflow name for logging and context
+
+## Code Comments Policy
+
+**NO agregar comentarios LLM-generated:**
+- ❌ "estilo Pino", "like Pino", "inspired by X"
+- ❌ "mejorado", "arreglado", "optimizado"
+- ❌ Comentarios obvios que repiten el nombre de la función/interface
+- ❌ "@since 3.0.0" o versiones en JSDoc (ya está en git history)
+
+**SÍ agregar cuando sea necesario:**
+- ✅ JSDoc técnico con @param, @returns, @example útiles
+- ✅ Comentarios que explican el "por qué" no obvio
+- ✅ TODO/FIXME con contexto específico

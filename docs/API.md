@@ -11,6 +11,10 @@ Complete API documentation for Better Logger with detailed method signatures, pa
 ## Table of Contents
 
 - [Core Logger](#core-logger)
+- [Enterprise Features (v3.0.0)](#enterprise-features-v300)
+  - [Custom Serializers](#custom-serializers)
+  - [Hooks & Middleware](#hooks--middleware)
+  - [Transports](#transports)
 - [Style Builder](#style-builder)
 - [CLI Interface](#cli-interface)
 - [Export & Remote](#export--remote)
@@ -188,6 +192,229 @@ logger.addHandler({
   }
 });
 ```
+
+---
+
+## 🔄 Enterprise Features (v3.0.0)
+
+### Custom Serializers
+
+Transform objects before logging with type-based serializers.
+
+#### `logger.addSerializer(type, serializer, priority?)`
+Register a serializer for a specific type.
+
+```typescript
+// Serialize Error objects
+logger.addSerializer(Error, (err) => ({
+  name: err.name,
+  message: err.message,
+  stack: err.stack?.split('\n').slice(0, 5)
+}));
+
+// Serialize User objects (omit sensitive data)
+logger.addSerializer(User, (user) => ({
+  id: user.id,
+  email: user.email
+  // password automatically omitted
+}), 100);  // higher priority
+
+// Now objects are serialized automatically
+logger.error('Failed:', new Error('Connection timeout'));
+logger.info('User:', currentUser);
+```
+
+#### `logger.removeSerializer(type)`
+Remove a registered serializer.
+
+```typescript
+logger.removeSerializer(Error);
+```
+
+#### `logger.getSerializerRegistry()`
+Access the SerializerRegistry for advanced operations.
+
+```typescript
+const registry = logger.getSerializerRegistry();
+const serialized = registry.serialize(complexObject);
+```
+
+### Hooks & Middleware
+
+Intercept and modify log entries with hooks and middleware.
+
+#### `logger.on(event, callback, priority?)`
+Register a hook for an event. Returns unsubscribe function.
+
+```typescript
+// Add correlation ID to all logs
+const unsubscribe = logger.on('beforeLog', (entry) => {
+  entry.correlationId = getCorrelationId();
+  return entry;  // Return modified entry
+});
+
+// Track metrics after logging
+logger.on('afterLog', (entry) => {
+  metrics.increment(`logs.${entry.level}`);
+});
+
+// Handle errors
+logger.on('onError', (entry) => {
+  alertSystem.notify(entry.message);
+});
+
+// Unsubscribe when done
+unsubscribe();
+```
+
+#### `logger.once(event, callback, priority?)`
+Register a hook that fires only once.
+
+```typescript
+logger.once('beforeLog', (entry) => {
+  console.log('First log entry:', entry.message);
+});
+```
+
+#### `logger.off(event, callback)`
+Remove a registered hook.
+
+```typescript
+const myHook = (entry) => { /* ... */ };
+logger.on('beforeLog', myHook);
+// Later...
+logger.off('beforeLog', myHook);
+```
+
+#### `logger.use(middleware, priority?)`
+Add middleware to the processing pipeline.
+
+```typescript
+// Add request context
+logger.use((entry, next) => {
+  entry.requestId = asyncLocalStorage.getStore()?.requestId;
+  next();  // Continue to next middleware
+});
+
+// Redact sensitive data
+logger.use((entry, next) => {
+  entry.message = entry.message.replace(/password=\S+/g, 'password=***');
+  next();
+});
+
+// Middleware with priority (higher = runs first)
+logger.use((entry, next) => {
+  entry.timestamp = new Date().toISOString();
+  next();
+}, 100);
+```
+
+#### Hook Events
+
+| Event | Description | Can Modify Entry |
+|-------|-------------|------------------|
+| `beforeLog` | Before log is processed | Yes |
+| `afterLog` | After log is output | No |
+| `onError` | When an error occurs | No |
+
+### Transports
+
+Send logs to multiple destinations with the transport system.
+
+#### `logger.addTransport(target)`
+Add a transport destination. Returns transport ID.
+
+```typescript
+// Built-in file transport (Node.js)
+const fileId = logger.addTransport({
+  target: 'file',
+  options: { destination: '/var/log/app.log' }
+});
+
+// Built-in HTTP transport with batching
+const httpId = logger.addTransport({
+  target: 'http',
+  options: {
+    url: 'https://logs.example.com/ingest',
+    headers: { 'Authorization': 'Bearer token' },
+    batchSize: 100,      // Send in batches of 100
+    flushInterval: 5000  // Or every 5 seconds
+  },
+  level: 'warn'  // Only warn and above
+});
+
+// Built-in console transport
+logger.addTransport({
+  target: 'console'
+});
+
+// Custom transport
+logger.addTransport({
+  target: {
+    name: 'elasticsearch',
+    write: async (record) => {
+      await esClient.index({
+        index: 'logs',
+        body: record
+      });
+    },
+    flush: async () => {
+      await esClient.indices.refresh({ index: 'logs' });
+    },
+    close: async () => {
+      await esClient.close();
+    }
+  }
+});
+```
+
+#### `logger.removeTransport(id)`
+Remove a transport by ID.
+
+```typescript
+logger.removeTransport(fileId);
+```
+
+#### `logger.flushTransports()`
+Force flush all transport buffers.
+
+```typescript
+await logger.flushTransports();
+```
+
+#### `logger.closeTransports()`
+Close all transports (flush + cleanup).
+
+```typescript
+// Before application shutdown
+await logger.closeTransports();
+```
+
+#### Transport Record Structure
+
+```typescript
+interface TransportRecord {
+  level: LogLevel;
+  levelValue: number;  // 0-4
+  time: number;        // Unix timestamp
+  msg: string;
+  prefix?: string;
+  location?: {
+    file: string;
+    line: number;
+    column: number;
+    function?: string;
+  };
+}
+```
+
+#### Built-in Transports
+
+| Transport | Description | Options |
+|-----------|-------------|---------|
+| `console` | Console output | - |
+| `file` | File logging (Node.js) | `destination`, `batchSize`, `flushInterval` |
+| `http` | HTTP/HTTPS endpoint | `url`, `headers`, `batchSize`, `flushInterval` |
 
 ---
 

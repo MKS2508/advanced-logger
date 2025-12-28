@@ -248,3 +248,49 @@ export interface LogStyles {
     backdrop?: string;
     transparency?: number;
 }
+
+export interface TimerResult {
+    label: string;
+    duration: number;
+    startTime: number;
+    endTime: number;
+}
+
+export interface IScopedLogger {
+    debug(...args: any[]): void;
+    info(...args: any[]): void;
+    warn(...args: any[]): void;
+    error(...args: any[]): void;
+    success(...args: any[]): void;
+    critical(...args: any[]): void;
+    trace(...args: any[]): void;
+
+    badges(badges: string[]): this;
+    badge(badge: string): this;
+    clearBadges(): this;
+
+    time(label: string): void;
+    timeEnd(label: string): number | undefined;
+
+    style(presetName: string): this;
+}
+
+export interface IAPILogger extends IScopedLogger {
+    slow(message: string, duration?: number): void;
+    rateLimit(message: string): void;
+    auth(message: string): void;
+    deprecated(message: string): void;
+}
+
+export interface IComponentLogger extends IScopedLogger {
+    lifecycle(event: string, message?: string): void;
+    stateChange(from: string, to: string, data?: any): void;
+    propsChange(changes: Record<string, any>): void;
+}
+
+export interface Bindings {
+    scope?: string;
+    badges?: string[];
+    type?: 'scope' | 'api' | 'component';
+    context?: string[];
+}
