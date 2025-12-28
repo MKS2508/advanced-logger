@@ -1,6 +1,81 @@
 {
-  "current_version": "0.15.0-alpha.1",
+  "current_version": "0.16.0-alpha.1",
   "versions": [
+    {
+      "version": "0.16.0-alpha.1",
+      "date": "2025-12-28",
+      "type": "minor",
+      "title": "Versión Alpha - Nuevas funcionalidades incluyendo Custom Serializers: `logger y 4 más",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.15.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.15.0-alpha.1 [skip ci]"
+        },
+        {
+          "type": "improvement",
+          "title": "Update package.json",
+          "description": "Update package.json"
+        },
+        {
+          "type": "feature",
+          "title": "Custom Serializers: `logger",
+          "description": "Custom Serializers: `logger.addSerializer(Error, fn)` para transformar objetos"
+        },
+        {
+          "type": "feature",
+          "title": "Hooks System: `logger",
+          "description": "Hooks System: `logger.on('beforeLog', fn)` para interceptar logs"
+        },
+        {
+          "type": "feature",
+          "title": "Middleware: `logger",
+          "description": "Middleware: `logger.use((entry, next) => {...})` pipeline de procesamiento"
+        },
+        {
+          "type": "feature",
+          "title": "Transports: `logger",
+          "description": "Transports: `logger.addTransport({target: 'file'})` para file/http/custom destinations"
+        },
+        {
+          "type": "feature",
+          "title": "Badges: `logger",
+          "description": "Badges: `logger.badges(['v3']).info()` sistema de etiquetado flexible"
+        },
+        {
+          "type": "improvement",
+          "title": "~50-100x menos memoria en child loggers (delegación vs herencia)",
+          "description": "~50-100x menos memoria en child loggers (delegación vs herencia)"
+        },
+        {
+          "type": "improvement",
+          "title": "Style Cache con LRU + TTL para estilos computados",
+          "description": "Style Cache con LRU + TTL para estilos computados"
+        },
+        {
+          "type": "improvement",
+          "title": "Serialización automática con detección de tipos",
+          "description": "Serialización automática con detección de tipos"
+        },
+        {
+          "type": "breaking",
+          "title": "ScopedLogger usa delegación (no herencia)",
+          "description": "ScopedLogger usa delegación (no herencia)"
+        },
+        {
+          "type": "breaking",
+          "title": "Métodos component/api/scope ahora síncronos",
+          "description": "Métodos component/api/scope ahora síncronos"
+        }
+      ],
+      "technical_notes": "Nuevos módulos enterprise:\n- SerializerRegistry (src/serializers/): serialización type-based con prioridad\n- HookManager (src/hooks/): sistema de hooks (beforeLog/afterLog/onError) y middleware pipeline\n- TransportManager + ConsoleTransport/FileTransport/HttpTransport (src/transports/)\n- StyleCache (src/styling/StyleCache.ts): cache LRU con TTL para estilos computados\n\nIntegración en Logger.ts:\n- Nuevas propiedades: serializerRegistry, hookManager, transportManager\n- Nuevos métodos: addSerializer(), removeSerializer(), on(), once(), off(), use()\n- Nuevos métodos transports: addTransport(), removeTransport(), flushTransports(), closeTransports()\n- Método log() modificado: serializa args, emite hooks, escribe a transports async\n\nTypes añadidos (src/types/):\n- serializers.ts: SerializerFn, SerializerContext, ISerializerRegistry\n- hooks.ts: HookLogEntry, HookEvent, HookCallback, MiddlewareFn, IHookManager\n- transports.ts: TransportRecord, TransportTarget, ITransport\n\nScopedLogger refactorizado: delegación en lugar de herencia (~50-100x menos memoria)",
+      "breaking_changes": [
+        "ScopedLogger usa delegación (no herencia)",
+        "Métodos component/api/scope ahora síncronos"
+      ],
+      "commit_hash": "7a27ac9bfd84b56318b54ee37563eed404943e94",
+      "prefix": "alpha"
+    },
     {
       "version": "0.15.0-alpha.1",
       "date": "2025-12-28",
