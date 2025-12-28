@@ -24,6 +24,7 @@ import type {
 import { parseStackTrace } from './utils/stackTrace.js';
 import { formatTimestamp } from './utils/timestamps.js';
 import { createStyledOutput, setupThemeChangeListener } from './utils/output.js';
+import { getEnvironment } from './utils/environment-detector.js';
 
 // Styling imports
 import {
@@ -383,12 +384,15 @@ export class Logger {
             // Apply the smart preset configuration
             this.displaySettings.showTimestamp = presetConfig.timestamp?.show ?? true;
             this.displaySettings.showLocation = presetConfig.location?.show ?? true;
-            
+
             // Store the preset config for use in createStyledOutput
             (this as any)._activePreset = presetConfig;
             (this as any)._activePresetName = name;
-            
-            this.success(`Applied preset: ${name}`);
+
+            // Only show success message in browser to avoid verbose terminal logs
+            if (getEnvironment() === 'browser') {
+                this.success(`Applied preset: ${name}`);
+            }
         }
     }
 
@@ -698,12 +702,14 @@ export class Logger {
 
         // Create styled output with theme detection and display settings
         const [format, ...styles] = createStyledOutput(
-            level, 
-            LEVEL_STYLES, 
-            prefix, 
-            message, 
+            level,
+            LEVEL_STYLES,
+            prefix,
+            message,
             this.displaySettings.showLocation ? stackInfo : null,
-            this.config.autoDetectTheme
+            this.config.autoDetectTheme,
+            (this as any)._activePreset,
+            (this as any)._activePresetName
         );
 
         // Add group indentation
@@ -824,12 +830,14 @@ export class Logger {
 
         // Handle success as special case - use info level with success styling
         const [format, ...styles] = createStyledOutput(
-            'info', 
-            LEVEL_STYLES, 
-            prefix, 
-            message, 
+            'info',
+            LEVEL_STYLES,
+            prefix,
+            message,
             this.displaySettings.showLocation ? stackInfo : null,
-            this.config.autoDetectTheme
+            this.config.autoDetectTheme,
+            (this as any)._activePreset,
+            (this as any)._activePresetName
         );
         
         // Override with success styling

@@ -6,6 +6,9 @@ import type { LogLevel, StackInfo, DevToolsTheme, AdaptiveColors } from '../type
 import { formatTimestamp } from './timestamps.js';
 import { StyleBuilder } from '../styling/index.js';
 import { ADAPTIVE_COLORS } from '../constants.js';
+import { getEnvironment, supportsANSI } from './environment-detector.js';
+import { adaptToTerminal } from './adapter.js';
+import type { LogStyles } from '../types/index.js';
 
 /**
  * Style configuration for each log level
@@ -77,6 +80,7 @@ export function setupThemeChangeListener(callback: (theme: DevToolsTheme) => voi
 
 /**
  * Creates styled console output with multiple %c formatters
+ * Automatically adapts to browser or terminal environment
  */
 export function createStyledOutput(
     level: LogLevel,
@@ -84,10 +88,20 @@ export function createStyledOutput(
     prefix: string | undefined,
     message: string,
     stackInfo: StackInfo | null,
-    autoDetectTheme: boolean = true
+    autoDetectTheme: boolean = true,
+    presetStyles?: LogStyles,
+    presetName?: string
 ): [string, ...string[]] {
     const levelConfig = levelStyles[level];
     const timestamp = formatTimestamp();
+    const environment = getEnvironment();
+
+    // Check if we should use terminal rendering
+    if (environment !== 'browser' && supportsANSI()) {
+        return createTerminalOutput(level, message, timestamp, prefix, stackInfo, presetStyles, presetName);
+    }
+
+    // Browser rendering (existing logic)
     const currentTheme = autoDetectTheme ? detectDevToolsTheme() : 'light';
 
     // Base styles with adaptive colors
@@ -182,4 +196,32 @@ export function safeStringify(obj: any, _maxDepth = 3): string {
     } catch (error) {
         return String(obj);
     }
+}
+
+/**
+ * Create terminal output with ANSI colors and formatting
+ */
+export function createTerminalOutput(
+    level: LogLevel,
+    message: string,
+    timestamp?: string,
+    prefix?: string,
+    stackInfo?: StackInfo | null,
+    presetStyles?: LogStyles,
+    presetName?: string
+): [string, ...string[]] {
+    const location = stackInfo ? `${stackInfo.file}:${stackInfo.line}:${stackInfo.column}` : undefined;
+
+    // Use the adapter to convert styles to ANSI
+    const ansiStyle = adaptToTerminal(
+        level,
+        message,
+        timestamp,
+        prefix,
+        location,
+        presetStyles,
+        presetName
+    );
+
+    return [ansiStyle.text];
 }

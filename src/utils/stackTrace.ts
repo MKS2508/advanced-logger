@@ -5,6 +5,42 @@
 import type { StackInfo } from '../types/index.js';
 
 /**
+ * Check if a filename represents a minified/bundle file
+ */
+function isMinifiedFile(filename: string): boolean {
+    // Skip if filename contains minified patterns
+    const minifiedPatterns = [
+        /\.min\.js$/,
+        /\.bundle\.js$/,
+        /\.chunk\.js$/,
+        /-[\w\d]{8,}\.js$/, // Hash-based filenames
+        /Logger-[A-Za-z0-9]+\.js$/, // Logger bundle files
+        /node_modules/,
+        /dist\//,
+        /build\//,
+        /\.mjs$/
+    ];
+
+    return minifiedPatterns.some(pattern => pattern.test(filename));
+}
+
+/**
+ * Extract clean filename from full path
+ */
+function extractCleanFilename(fullPath: string): string {
+    // Extract just the filename from the full path
+    const filename = fullPath.split(/[/\\]/).pop() || fullPath;
+
+    // Remove common build/minified suffixes
+    return filename
+        .replace(/\.min\.js$/, '.js')
+        .replace(/\.bundle\.js$/, '.js')
+        .replace(/\.chunk\.js$/, '.js')
+        .replace(/-[\w\d]{8,}\.js$/, '.js')
+        .replace(/Logger-[A-Za-z0-9]+\.js$/, 'logger.ts');
+}
+
+/**
  * Parses the current stack trace to extract caller information
  */
 export function parseStackTrace(): StackInfo | null {
@@ -38,16 +74,31 @@ export function parseStackTrace(): StackInfo | null {
             // Chrome format: "at functionName (file:line:column)" or "at file:line:column"
             const chromeMatch = line.match(/at\s+(?:(.+?)\s+\()?(.+?):(\d+):(\d+)\)?$/);
             if (chromeMatch) {
+                const filename = chromeMatch[2];
+                // Skip minified/bundle files
+                if (filename && isMinifiedFile(filename)) {
+                    continue;
+                }
                 match = chromeMatch;
             } else {
                 // Firefox format: "functionName@file:line:column"
                 const firefoxMatch = line.match(/(.+?)@(.+?):(\d+):(\d+)$/);
                 if (firefoxMatch) {
+                    const filename = firefoxMatch[2];
+                    // Skip minified/bundle files
+                    if (filename && isMinifiedFile(filename)) {
+                        continue;
+                    }
                     match = firefoxMatch;
                 } else {
                     // Safari/other formats
                     const safariMatch = line.match(/(\S+)?@(.+?):(\d+):(\d+)$/);
                     if (safariMatch) {
+                        const filename = safariMatch[2];
+                        // Skip minified/bundle files
+                        if (filename && isMinifiedFile(filename)) {
+                            continue;
+                        }
                         match = safariMatch;
                     }
                 }
@@ -63,13 +114,11 @@ export function parseStackTrace(): StackInfo | null {
                 continue;
             }
             
-            // Process file path - remove query params and get filename
-            const fileParts = file.split('/');
-            const fileName = fileParts[fileParts.length - 1];
-            if (!fileName) {
+            // Use clean filename extraction to avoid minified files
+            const cleanFileName = extractCleanFilename(file).split('?')[0];
+            if (!cleanFileName) {
                 continue;
             }
-            const cleanFileName = fileName.split('?')[0];
             
             // Parse line and column numbers
             const lineNum = lineStr ? parseInt(lineStr, 10) : 0;
