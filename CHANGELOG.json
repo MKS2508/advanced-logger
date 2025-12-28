@@ -1,6 +1,98 @@
 {
-  "current_version": "0.14.0-alpha.1",
+  "current_version": "0.15.0-alpha.1",
   "versions": [
+    {
+      "version": "0.15.0-alpha.1",
+      "date": "2025-12-28",
+      "type": "minor",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.14.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.14.0-alpha.1 [skip ci]"
+        },
+        {
+          "type": "improvement",
+          "title": "**Colores ANSI completos** para terminales con 16 colores + estilos",
+          "description": "**Colores ANSI completos** para terminales con 16 colores + estilos"
+        },
+        {
+          "type": "improvement",
+          "title": "**Detección automática** de entorno Next",
+          "description": "**Detección automática** de entorno Next.js, Webpack, CI/CD"
+        },
+        {
+          "type": "improvement",
+          "title": "**Formateo inteligente** según capacidades del terminal",
+          "description": "**Formateo inteligente** según capacidades del terminal"
+        },
+        {
+          "type": "improvement",
+          "title": "**Presets optimizados** para cada caso de uso",
+          "description": "**Presets optimizados** para cada caso de uso"
+        },
+        {
+          "type": "improvement",
+          "title": "`auto`: Detección automática del entorno óptimo",
+          "description": "`auto`: Detección automática del entorno óptimo"
+        },
+        {
+          "type": "improvement",
+          "title": "`ansi`: Colores ANSI para terminales modernos",
+          "description": "`ansi`: Colores ANSI para terminales modernos"
+        },
+        {
+          "type": "improvement",
+          "title": "`build`: Formato optimizado para builds (Next",
+          "description": "`build`: Formato optimizado para builds (Next.js/webpack)"
+        },
+        {
+          "type": "improvement",
+          "title": "`ci`: Formato simple para CI/CD sin emojis",
+          "description": "`ci`: Formato simple para CI/CD sin emojis"
+        },
+        {
+          "type": "improvement",
+          "title": "`plain`: Texto plano para máxima compatibilidad",
+          "description": "`plain`: Texto plano para máxima compatibilidad"
+        },
+        {
+          "type": "improvement",
+          "title": "Eliminadas dependencias circulares entre módulos",
+          "description": "Eliminadas dependencias circulares entre módulos"
+        },
+        {
+          "type": "improvement",
+          "title": "Imports directos para mejor tree-shaking",
+          "description": "Imports directos para mejor tree-shaking"
+        },
+        {
+          "type": "improvement",
+          "title": "Bundle size optimizado",
+          "description": "Bundle size optimizado"
+        },
+        {
+          "type": "improvement",
+          "title": "Construcción sin warnings",
+          "description": "Construcción sin warnings"
+        },
+        {
+          "type": "improvement",
+          "title": "1.1.0",
+          "description": "1.1.0"
+        },
+        {
+          "type": "improvement",
+          "title": "w",
+          "description": "w"
+        }
+      ],
+      "technical_notes": "- Implementa sistema completo de colores ANSI para terminales Node.js\n- Agrega detección automática de entorno (Next.js, CI/CD, terminal)\n- Crea presets optimizados: nextjs, webpack, ci, terminal\n- Añade formatos de salida: auto, ansi, build, ci, plain\n- Soluciona dependencias circulares entre módulos utils\n- Mejora tree-shaking con imports directos específicos\n- Configuración automática basada en variables de entorno\n- Soporte para emojis con alternativas de texto para CI",
+      "breaking_changes": [],
+      "commit_hash": "7571e0cf9cfe9c7b4f19d7b525987f530229445b",
+      "prefix": "alpha"
+    },
     {
       "version": "0.14.0-alpha.1",
       "date": "2025-09-08",
