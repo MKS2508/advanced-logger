@@ -101,6 +101,48 @@ export type ExportFormat = 'json' | 'csv' | 'markdown' | 'plain' | 'html';
 export type OutputFormat = 'auto' | 'plain' | 'ansi' | 'build' | 'ci';
 
 /**
+ * Output modes for controlling where logs are written
+ * @typedef {'console' | 'silent' | 'custom'} OutputMode
+ *
+ * @description
+ * - console: Standard console.log output (default)
+ * - silent: No output at all
+ * - custom: Use custom OutputWriter for advanced scenarios
+ */
+export type OutputMode = 'console' | 'silent' | 'custom';
+
+/**
+ * Custom output writer interface for redirecting log output
+ *
+ * @interface OutputWriter
+ * @since 4.0.0
+ *
+ * @description
+ * Allows redirecting log output to custom destinations like:
+ * - DraftLog for CLI spinners with concurrent logging
+ * - Buffers for collecting logs during operations
+ * - Custom streams or transports
+ *
+ * @example
+ * class BufferWriter implements OutputWriter {
+ *   private buffer: string[] = [];
+ *
+ *   write(message: string, level: LogLevel, styles: string[]): void {
+ *     this.buffer.push(message);
+ *   }
+ *
+ *   flush(): void {
+ *     this.buffer.forEach(msg => console.log(msg));
+ *     this.buffer = [];
+ *   }
+ * }
+ */
+export interface OutputWriter {
+    write(message: string, level: LogLevel, styles: string[]): void;
+    flush?(): void;
+}
+
+/**
  * Interfaz de configuración para instancias del logger
  * 
  * @interface LoggerConfig
@@ -130,6 +172,10 @@ export interface LoggerConfig {
     bufferSize?: number;
     autoDetectTheme?: boolean;
     outputFormat?: OutputFormat;
+    /** Output mode: 'console' (default), 'silent', or 'custom' @since 4.0.0 */
+    outputMode?: OutputMode;
+    /** Custom writer when outputMode is 'custom' @since 4.0.0 */
+    outputWriter?: OutputWriter;
 }
 
 /**

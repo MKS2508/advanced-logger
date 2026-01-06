@@ -372,3 +372,7 @@ export {
 } from './utils/environment-detector.js';
 
 export type { Environment } from './utils/environment-detector.js';
+
+// Output writers for custom log destinations
+export { BufferWriter, type BufferEntry } from './writers/index.js';
+export type { OutputWriter, OutputMode } from './types/core.js';

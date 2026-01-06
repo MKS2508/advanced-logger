@@ -36,7 +36,8 @@ import { TransportManager } from './transports/index.js';
 import { parseStackTrace } from './utils/stackTrace.js';
 import { formatTimestamp } from './utils/timestamps.js';
 import { createStyledOutput, setupThemeChangeListener } from './utils/output.js';
-import { getEnvironment } from './utils/environment-detector.js';
+import { getEnvironment, getColorCapability } from './utils/environment-detector.js';
+import { formatBadge } from './terminal/formatter.js';
 
 // Styling imports
 import {
@@ -942,12 +943,8 @@ export class Logger {
         const groupIndent = '  '.repeat(this.groupDepth);
         const finalFormat = groupIndent + format;
 
-        // Output to console
-        if (additionalArgs.length > 0) {
-            console.log(finalFormat, ...styles, ...additionalArgs);
-        } else {
-            console.log(finalFormat, ...styles);
-        }
+        // Output via configured writer (console by default)
+        this.writeOutput(finalFormat, level, styles, additionalArgs);
 
         // Update export handler group info
         if (this.exportHandler) {
@@ -999,11 +996,13 @@ export class Logger {
         if (!this.shouldLog(level)) return;
 
         let prefix = '';
+        const colorCapability = getColorCapability();
+
         if (bindings.badges?.length) {
-            prefix += bindings.badges.map(b => `[${b}]`).join('');
+            prefix += bindings.badges.map(b => formatBadge(b, 'pill', colorCapability, '#00ff88')).join(' ') + ' ';
         }
         if (bindings.scope) {
-            prefix += `[${bindings.scope}] `;
+            prefix += formatBadge(bindings.scope, 'pill', colorCapability, '#00ffff') + ' ';
         }
 
         if (prefix && args.length > 0) {
@@ -1460,6 +1459,49 @@ export class Logger {
             });
         } catch {
             this.info('Grouped data:', items);
+        }
+    }
+
+    // ===== OUTPUT WRITER SYSTEM =====
+
+    /**
+     * Writes formatted output to the configured destination.
+     * Respects outputMode configuration for console, silent, or custom output.
+     *
+     * @private
+     * @param {string} message - Formatted log message
+     * @param {LogLevel} level - Log level
+     * @param {string[]} styles - CSS styles for browser console
+     * @param {any[]} additionalArgs - Additional arguments to log
+     * @since 4.0.0
+     */
+    private writeOutput(
+        message: string,
+        level: LogLevel,
+        styles: string[],
+        additionalArgs: any[]
+    ): void {
+        const mode = this.config.outputMode ?? 'console';
+
+        // Silent mode: no output
+        if (mode === 'silent') {
+            return;
+        }
+
+        // Custom mode: use configured writer
+        if (mode === 'custom' && this.config.outputWriter) {
+            const fullMessage = additionalArgs.length > 0
+                ? `${message} ${additionalArgs.map(a => String(a)).join(' ')}`
+                : message;
+            this.config.outputWriter.write(fullMessage, level, styles);
+            return;
+        }
+
+        // Default: console output
+        if (additionalArgs.length > 0) {
+            console.log(message, ...styles, ...additionalArgs);
+        } else {
+            console.log(message, ...styles);
         }
     }
 
