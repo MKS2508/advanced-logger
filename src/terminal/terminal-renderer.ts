@@ -5,6 +5,7 @@
 
 import type { LogLevel } from '../types/index.js';
 import type { LogStyles } from '../types/index.js';
+import { getANSIForeground, getANSIBackground, ANSI, type ColorCapability } from './color-converter.js';
 
 export type ANSIStyle = {
     text: string;
@@ -17,32 +18,19 @@ export type ANSIStyle = {
 };
 
 export class TerminalRenderer {
-    private colorCapability: 'full' | 'basic' | 'none';
+    private colorCapability: ColorCapability;
 
-    constructor(colorCapability: 'full' | 'basic' | 'none' = 'full') {
+    constructor(colorCapability: ColorCapability = 'full') {
         this.colorCapability = colorCapability;
     }
 
     /**
-     * Get ANSI color codes for basic colors
+     * Get ANSI color codes - now supports truecolor/256-color
      */
     private getColorCode(color: string, background: boolean = false): string {
-        const colorCodes: Record<string, { normal: string; bright: string }> = {
-            'black': { normal: '30', bright: '90' },
-            'red': { normal: '31', bright: '91' },
-            'green': { normal: '32', bright: '92' },
-            'yellow': { normal: '33', bright: '93' },
-            'blue': { normal: '34', bright: '94' },
-            'magenta': { normal: '35', bright: '95' },
-            'cyan': { normal: '36', bright: '96' },
-            'white': { normal: '37', bright: '97' },
-            'gray': { normal: '90', bright: '37' },
-            'grey': { normal: '90', bright: '37' }
-        };
-
-        const codes = colorCodes[color.toLowerCase()] || { normal: '37', bright: '97' };
-        const prefix = background ? '4' : '3';
-        return `\x1b[${codes.normal}m`;
+        return background
+            ? getANSIBackground(color, this.colorCapability)
+            : getANSIForeground(color, this.colorCapability);
     }
 
     /**
@@ -207,7 +195,7 @@ export class TerminalRenderer {
     }
 
     /**
-     * Create cyberpunk-style ANSI rendering
+     * Create cyberpunk-style ANSI rendering with truecolor support
      */
     renderCyberpunk(
         level: LogLevel,
@@ -216,35 +204,36 @@ export class TerminalRenderer {
         prefix?: string,
         location?: string
     ): ANSIStyle {
-        const reset = '\x1b[0m';
-        const levelColors: Record<LogLevel, string> = {
-            'debug': '\x1b[95m', // Bright magenta
-            'info': '\x1b[94m',  // Bright blue
-            'warn': '\x1b[93m',  // Bright yellow
-            'error': '\x1b[91m', // Bright red
-            'critical': '\x1b[91m\x1b[1m' // Bright red + bold
+        const reset = ANSI.reset;
+
+        const cyberpunkColors: Record<LogLevel, string> = {
+            'debug': '#ff00ff',   // Neon magenta
+            'info': '#00ffff',    // Neon cyan
+            'warn': '#ffff00',    // Neon yellow
+            'error': '#ff0040',   // Neon red-pink
+            'critical': '#ff0000' // Pure red
         };
 
         const parts: string[] = [];
 
         if (timestamp) {
-            parts.push(`\x1b[90m${timestamp}${reset}`);
+            parts.push(`${ANSI.dim}${timestamp}${reset}`);
         }
 
-        // Cyberpunk level styling
-        const levelColor = levelColors[level] || '\x1b[97m';
-        const bgBlack = '\x1b[40m';
-        parts.push(`${bgBlack}${levelColor} ${this.getLevelText(level)} ${reset}`);
+        const levelColor = this.getColorCode(cyberpunkColors[level] || '#ffffff');
+        const bgBlack = ANSI.bg.black;
+        const bold = level === 'critical' ? ANSI.bold : '';
+        parts.push(`${bgBlack}${levelColor}${bold} ${this.getLevelText(level)} ${reset}`);
 
         if (prefix) {
-            const bgBlack = '\x1b[40m';
-            parts.push(`${bgBlack}\x1b[96m[${prefix.toUpperCase()}]${reset}`);
+            const cyanColor = this.getColorCode('#00ffff');
+            parts.push(`${bgBlack}${cyanColor}[${prefix.toUpperCase()}]${reset}`);
         }
 
         parts.push(message);
 
         if (location) {
-            parts.push(`\x1b[90m(${location})${reset}`);
+            parts.push(`${ANSI.dim}(${location})${reset}`);
         }
 
         return {
@@ -254,7 +243,7 @@ export class TerminalRenderer {
     }
 
     /**
-     * Create minimal ANSI rendering
+     * Create minimal ANSI rendering with truecolor support
      */
     renderMinimal(
         level: LogLevel,
@@ -262,26 +251,29 @@ export class TerminalRenderer {
         timestamp?: string,
         prefix?: string
     ): ANSIStyle {
-        const reset = '\x1b[0m';
-        const levelColors: Record<LogLevel, string> = {
-            'debug': '\x1b[95m', // Magenta
-            'info': '\x1b[94m',  // Blue
-            'warn': '\x1b[93m',  // Yellow
-            'error': '\x1b[91m', // Red
-            'critical': '\x1b[91m\x1b[1m' // Red + bold
+        const reset = ANSI.reset;
+
+        const minimalColors: Record<LogLevel, string> = {
+            'debug': '#c678dd', // Soft purple
+            'info': '#61afef',  // Soft blue
+            'warn': '#e5c07b',  // Soft yellow
+            'error': '#e06c75', // Soft red
+            'critical': '#be5046' // Dark red
         };
 
         const parts: string[] = [];
 
         if (timestamp) {
-            parts.push(`\x1b[90m${timestamp}${reset}`);
+            parts.push(`${ANSI.dim}${timestamp}${reset}`);
         }
 
-        const levelColor = levelColors[level] || '\x1b[97m';
-        parts.push(`${levelColor}${this.getLevelText(level)}:${reset}`);
+        const levelColor = this.getColorCode(minimalColors[level] || '#abb2bf');
+        const bold = level === 'critical' ? ANSI.bold : '';
+        parts.push(`${levelColor}${bold}${this.getLevelText(level)}:${reset}`);
 
         if (prefix) {
-            parts.push(`\x1b[96m[${prefix.toUpperCase()}]${reset}`);
+            const cyanColor = this.getColorCode('#56b6c2');
+            parts.push(`${cyanColor}[${prefix.toUpperCase()}]${reset}`);
         }
 
         parts.push(message);
@@ -293,55 +285,58 @@ export class TerminalRenderer {
     }
 
     /**
-     * Get chalk instance for log level (for compatibility with adapter)
+     * Get chalk-like interface for log level with truecolor support
      */
-    public getChalkForLevel(level: LogLevel): any {
+    public getChalkForLevel(level: LogLevel): ChalkLikeInterface {
         const levelColors: Record<LogLevel, string> = {
-            'debug': 'magenta',
-            'info': 'blue',
-            'warn': 'yellow',
-            'error': 'red',
-            'critical': 'red'
+            'debug': '#c678dd',
+            'info': '#61afef',
+            'warn': '#e5c07b',
+            'error': '#e06c75',
+            'critical': '#be5046'
         };
+
+        const reset = ANSI.reset;
 
         return {
             color: (text: string) => {
-                const color = levelColors[level] || 'white';
+                const color = levelColors[level] || '#abb2bf';
                 const colorCode = this.getColorCode(color);
-                return `${colorCode}${text}${'\x1b[0m'}`;
+                return `${colorCode}${text}${reset}`;
             },
-            bold: (text: string) => {
-                const boldStyle = this.getStyleCode(['bold']);
-                return `${boldStyle}${text}${'\x1b[0m'}`;
-            },
-            dim: (text: string) => {
-                const dimStyle = this.getStyleCode(['dim']);
-                return `${dimStyle}${text}${'\x1b[0m'}`;
-            },
-            bgGray: (text: string) => {
-                return `\x1b[100m${text}${'\x1b[0m'}`;
-            },
-            bgBlue: (text: string) => {
-                return `\x1b[104m${text}${'\x1b[0m'}`;
-            },
+            bold: (text: string) => `${ANSI.bold}${text}${reset}`,
+            dim: (text: string) => `${ANSI.dim}${text}${reset}`,
+            bgGray: (text: string) => `${ANSI.bg.gray}${text}${reset}`,
+            bgBlue: (text: string) => `${this.getColorCode('#1e3a5f', true)}${text}${reset}`,
             reset: (text: string) => text,
             cyan: {
                 bold: (text: string) => {
-                    const cyan = this.getColorCode('cyan');
-                    const bold = this.getStyleCode(['bold']);
-                    return `${cyan}${bold}${text}${'\x1b[0m'}`;
+                    const cyan = this.getColorCode('#00ffff');
+                    return `${cyan}${ANSI.bold}${text}${reset}`;
                 },
                 dim: (text: string) => {
-                    const cyan = this.getColorCode('cyan');
-                    const dim = this.getStyleCode(['dim']);
-                    return `${cyan}${dim}${text}${'\x1b[0m'}`;
+                    const cyan = this.getColorCode('#00ffff');
+                    return `${cyan}${ANSI.dim}${text}${reset}`;
                 },
                 bg: (text: string) => {
-                    const bgBlack = '\x1b[40m';
-                    const cyan = this.getColorCode('cyan');
-                    return `${bgBlack}${cyan}[${text.toUpperCase()}]${'\x1b[0m'}`;
+                    const cyan = this.getColorCode('#00ffff');
+                    return `${ANSI.bg.black}${cyan}[${text.toUpperCase()}]${reset}`;
                 }
             }
         };
     }
+}
+
+export interface ChalkLikeInterface {
+    color: (text: string) => string;
+    bold: (text: string) => string;
+    dim: (text: string) => string;
+    bgGray: (text: string) => string;
+    bgBlue: (text: string) => string;
+    reset: (text: string) => string;
+    cyan: {
+        bold: (text: string) => string;
+        dim: (text: string) => string;
+        bg: (text: string) => string;
+    };
 }

@@ -420,9 +420,9 @@ export class Logger {
      * 
      * @since 0.3.0
      */
-    hideTimestamp(): void {
+    hideTimestamp(): this {
         this.displaySettings.showTimestamp = false;
-        this.success('Timestamp hidden');
+        return this;
     }
 
     /**
@@ -434,9 +434,9 @@ export class Logger {
      * 
      * @since 0.3.0
      */
-    showTimestamp(): void {
+    showTimestamp(): this {
         this.displaySettings.showTimestamp = true;
-        this.success('Timestamp shown');
+        return this;
     }
 
     /**
@@ -448,9 +448,9 @@ export class Logger {
      * 
      * @since 0.3.0
      */
-    hideLocation(): void {
+    hideLocation(): this {
         this.displaySettings.showLocation = false;
-        this.success('Location info hidden');
+        return this;
     }
 
     /**
@@ -462,9 +462,9 @@ export class Logger {
      * 
      * @since 0.3.0
      */
-    showLocation(): void {
+    showLocation(): this {
         this.displaySettings.showLocation = true;
-        this.success('Location info shown');
+        return this;
     }
 
     /**
@@ -477,9 +477,9 @@ export class Logger {
      * 
      * @since 0.3.0
      */
-    hideBadges(): void {
+    hideBadges(): this {
         this.displaySettings.showBadges = false;
-        this.success('Badges hidden');
+        return this;
     }
 
     /**
@@ -492,9 +492,9 @@ export class Logger {
      *
      * @since 0.3.0
      */
-    showBadges(): void {
+    showBadges(): this {
         this.displaySettings.showBadges = true;
-        this.success('Badges shown');
+        return this;
     }
 
     /**

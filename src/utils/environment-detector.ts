@@ -132,6 +132,26 @@ export function getColorCapability(): 'full' | 'basic' | 'none' {
 }
 
 /**
+ * Get terminal width in columns
+ */
+export function getTerminalWidth(): number {
+    if (typeof process !== 'undefined' && process.stdout?.columns) {
+        return process.stdout.columns;
+    }
+    return 80;
+}
+
+/**
+ * Get terminal height in rows
+ */
+export function getTerminalHeight(): number {
+    if (typeof process !== 'undefined' && process.stdout?.rows) {
+        return process.stdout.rows;
+    }
+    return 24;
+}
+
+/**
  * Environment information for debugging
  */
 export function getEnvironmentInfo() {
@@ -143,6 +163,8 @@ export function getEnvironmentInfo() {
         platform: typeof process !== 'undefined' ? process.platform : 'unknown',
         nodeVersion: typeof process !== 'undefined' ? process.versions?.node : null,
         term: typeof process !== 'undefined' ? process.env?.TERM : null,
-        colorTerm: typeof process !== 'undefined' ? process.env?.COLORTERM : null
+        colorTerm: typeof process !== 'undefined' ? process.env?.COLORTERM : null,
+        terminalWidth: getTerminalWidth(),
+        terminalHeight: getTerminalHeight()
     };
 }

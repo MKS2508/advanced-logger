@@ -146,7 +146,12 @@ export type {
     TransportOptions,
     TransportTarget,
     ITransport,
-    StyleCacheConfig
+    StyleCacheConfig,
+    BadgeStyle,
+    TimestampFormat,
+    ColumnAlign,
+    ColumnConfig,
+    LogOptions,
 } from './types/index.js';
 
 // Styling utilities
@@ -317,3 +322,53 @@ export const stylePresets = {
     info: StylePresets.info().build(),
     accent: StylePresets.accent().build(),
 };
+
+// Terminal formatting utilities
+export {
+    formatWithRightAlign,
+    formatColumns,
+    formatKeyValue,
+    formatBadge,
+    formatTimestamp as formatTimestampExt,
+    formatRelativeTime,
+    formatElapsedTime,
+    resetStartTime,
+    isKeyValueObject,
+    stripAnsi,
+    getVisibleLength,
+    padToWidth,
+    applyLogOptions,
+} from './terminal/formatter.js';
+
+// Color converter utilities
+export {
+    hexToRgb,
+    rgbToHex,
+    hexTo256,
+    colorToHex,
+    getANSIForeground,
+    getANSIBackground,
+    getANSI256Foreground,
+    getANSI256Background,
+    cssColorToANSI,
+    ANSI,
+} from './terminal/color-converter.js';
+
+export type { RGB, ColorCapability } from './terminal/color-converter.js';
+
+// Terminal renderer
+export { TerminalRenderer } from './terminal/terminal-renderer.js';
+export type { ANSIStyle, ChalkLikeInterface } from './terminal/terminal-renderer.js';
+
+// Environment detection
+export {
+    getEnvironment,
+    isRunningInTerminal,
+    supportsANSI,
+    getColorCapability,
+    getTerminalWidth,
+    getTerminalHeight,
+    getEnvironmentInfo,
+} from './utils/environment-detector.js';
+
+export type { Environment } from './utils/environment-detector.js';

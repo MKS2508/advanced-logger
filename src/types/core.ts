@@ -294,3 +294,25 @@ export interface Bindings {
     type?: 'scope' | 'api' | 'component';
     context?: string[];
 }
+
+export type BadgeStyle = 'brackets' | 'rounded' | 'plain' | 'unicode' | 'pill';
+
+export type TimestampFormat = 'iso' | 'time' | 'timeMs' | 'relative' | 'elapsed' | 'date' | 'custom';
+
+export type ColumnAlign = 'left' | 'right' | 'center';
+
+export interface ColumnConfig {
+    content: string;
+    width?: number;
+    align?: ColumnAlign;
+    color?: string;
+}
+
+export interface LogOptions {
+    rightAlign?: string;
+    columns?: ColumnConfig[];
+    maxWidth?: number;
+    keyValue?: boolean;
+    badgeStyle?: BadgeStyle;
+    timestampFormat?: TimestampFormat;
+}

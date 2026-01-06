@@ -25,6 +25,11 @@ export type {
     IAPILogger,
     IComponentLogger,
     Bindings,
+    BadgeStyle,
+    TimestampFormat,
+    ColumnAlign,
+    ColumnConfig,
+    LogOptions,
 } from './core.js';
 
 export { LOG_LEVELS } from './core.js';

@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger",
-  "version": "0.16.0-alpha.1",
+  "version": "3.1.0",
   "type": "module",
   "description": "Logger avanzado para consola con estilos CSS, temas adaptativos, badges automáticos, SVG, animaciones, CLI integrado y soporte dual browser/terminal con colores ANSI",
   "main": "dist/index.js",
