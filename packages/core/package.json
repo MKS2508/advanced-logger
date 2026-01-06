@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger-core",
-  "version": "0.16.1-alpha.1",
+  "version": "0.17.0-alpha.1",
   "type": "module",
   "description": "Universal core logging functionality for Better Logger - Works in both Node.js and browser environments",
   "main": "dist/index.cjs",

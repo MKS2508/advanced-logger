@@ -1,6 +1,28 @@
 {
-  "current_version": "0.16.1-alpha.1",
+  "current_version": "0.17.0-alpha.1",
   "versions": [
+    {
+      "version": "0.17.0-alpha.1",
+      "date": "2026-01-06",
+      "type": "minor",
+      "title": "Versión Alpha - Nueva funcionalidad: feat(v4.0.0 - OutputWriter + Badge Styling)",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.16.1-alpha.1 [skip ci]",
+          "description": "chore: release 0.16.1-alpha.1 [skip ci]"
+        },
+        {
+          "type": "feature",
+          "title": "feat(v4.0.0 - OutputWriter + Badge Styling)",
+          "description": "feat(v4.0.0 - OutputWriter + Badge Styling)"
+        }
+      ],
+      "technical_notes": "- Agregado OutputWriter interface para custom output destinations\n- Agregado OutputMode type: 'console' | 'silent' | 'custom'\n- Nuevo BufferWriter class en src/writers/ para buffering de logs durante spinners CLI\n- Modificado Logger.ts writeOutput() para soportar custom writers\n- Modificado logWithBindings() para usar formatBadge() con estilo pill (⦗⦘)\n- Badges y scopes ahora usan mismo estilo visual que level badges (INFO, DEBUG)\n- Importado formatBadge y getColorCapability en Logger.ts",
+      "breaking_changes": [],
+      "commit_hash": "358bb5cdd4ff27a8d996d837adec14d03b6b9369",
+      "prefix": "alpha"
+    },
     {
       "version": "0.16.1-alpha.1",
       "date": "2026-01-06",
