@@ -1,6 +1,28 @@
 {
-  "current_version": "0.16.0-alpha.1",
+  "current_version": "0.16.1-alpha.1",
   "versions": [
+    {
+      "version": "0.16.1-alpha.1",
+      "date": "2026-01-06",
+      "type": "patch",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.16.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.16.0-alpha.1 [skip ci]"
+        },
+        {
+          "type": "improvement",
+          "title": "3.1",
+          "description": "3.1"
+        }
+      ],
+      "technical_notes": "",
+      "breaking_changes": [],
+      "commit_hash": "a8e307c3b71f7e62fb9c36d3ef32dbbdd023ae7e",
+      "prefix": "alpha"
+    },
     {
       "version": "0.16.0-alpha.1",
       "date": "2025-12-28",
