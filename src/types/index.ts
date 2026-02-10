@@ -30,6 +30,10 @@ export type {
     ColumnAlign,
     ColumnConfig,
     LogOptions,
+    CLILogLevel,
+    ISpinnerHandle,
+    IBoxOptions,
+    ITableOptions,
 } from './core.js';
 
 export { LOG_LEVELS } from './core.js';

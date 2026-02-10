@@ -176,6 +176,8 @@ export interface LoggerConfig {
     outputMode?: OutputMode;
     /** Custom writer when outputMode is 'custom' @since 4.0.0 */
     outputWriter?: OutputWriter;
+    /** CLI verbosity level for controlling primitive output @since 5.0.0 */
+    cliLevel?: CLILogLevel;
 }
 
 /**
@@ -361,4 +363,55 @@ export interface LogOptions {
     keyValue?: boolean;
     badgeStyle?: BadgeStyle;
     timestampFormat?: TimestampFormat;
+}
+
+// ===== CLI PRIMITIVES (v5.0) =====
+
+/**
+ * CLI verbosity levels for controlling primitive output
+ * @since 5.0.0
+ */
+export type CLILogLevel = 'silent' | 'quiet' | 'normal' | 'verbose' | 'debug';
+
+/**
+ * Handle returned by logger.spinner() for controlling spinner lifecycle
+ * @since 5.0.0
+ */
+export interface ISpinnerHandle {
+    /** Start the spinner animation */
+    start(): void;
+    /** Stop the spinner without a status message */
+    stop(): void;
+    /** Stop the spinner with a success message */
+    succeed(msg?: string): void;
+    /** Stop the spinner with a failure message */
+    fail(msg?: string): void;
+    /** Update the spinner text while running */
+    text(msg: string): void;
+}
+
+/**
+ * Options for logger.box() output
+ * @since 5.0.0
+ */
+export interface IBoxOptions {
+    /** Title displayed in the top border */
+    title?: string;
+    /** Color of the border (hex, CSS name, or ANSI name) */
+    borderColor?: string;
+    /** Border character style */
+    borderStyle?: 'single' | 'double' | 'rounded' | 'bold';
+    /** Inner padding lines (default: 0) */
+    padding?: number;
+}
+
+/**
+ * Options for logger.cliTable() output
+ * @since 5.0.0
+ */
+export interface ITableOptions {
+    /** Column names to display (overrides auto-detection) */
+    columns?: string[];
+    /** Header labels (defaults to column names) */
+    head?: string[];
 }

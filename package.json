@@ -1,10 +1,27 @@
 {
   "name": "@mks2508/better-logger",
-  "version": "0.17.0-alpha.1",
+  "version": "5.0.0-alpha.1",
   "type": "module",
   "description": "Logger avanzado para consola con estilos CSS, temas adaptativos, badges automáticos, SVG, animaciones, CLI integrado y soporte dual browser/terminal con colores ANSI",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./core": {
+      "import": "./dist/core.js",
+      "require": "./dist/core.cjs",
+      "types": "./dist/core.d.ts"
+    },
+    "./cli": {
+      "import": "./dist/cli.js",
+      "require": "./dist/cli.cjs",
+      "types": "./dist/cli-module.d.ts"
+    }
+  },
   "keywords": [
     "logger",
     "console",
@@ -46,7 +63,8 @@
     "build:core": "tsc && BUILD_MODE=core vite build",
     "build:styling": "tsc && BUILD_MODE=styling vite build",
     "build:exports": "tsc && BUILD_MODE=exports vite build",
-    "build:all": "npm run build:full && npm run build:core && npm run build:styling && npm run build:exports",
+    "build:cli": "tsc && BUILD_MODE=cli vite build",
+    "build:all": "npm run build:full && npm run build:core && npm run build:styling && npm run build:exports && npm run build:cli",
     "clean": "rm -rf dist node_modules/.vite",
     "type-check": "tsc --noEmit",
     "test": "echo 'Running tests...' && exit 0",

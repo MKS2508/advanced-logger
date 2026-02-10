@@ -57,6 +57,7 @@ const buildConfigs = {
         entry: {
           index: resolve(__dirname, 'src/index.ts'),
           core: resolve(__dirname, 'src/core.ts'),
+          cli: resolve(__dirname, 'src/cli-module.ts'),
           styling: resolve(__dirname, 'src/styling-module.ts'),
           exports: resolve(__dirname, 'src/exports-module.ts')
         },
@@ -196,6 +197,38 @@ const buildConfigs = {
       lib: {
         entry: resolve(__dirname, 'src/exports-module.ts'),
         name: 'BetterLoggerExports',
+        formats: ['es', 'cjs'],
+        fileName: (format) => {
+          const ext = format === 'cjs' ? 'cjs' : 'js';
+          return `index.${ext}`;
+        }
+      },
+      rollupOptions: {
+        external: [],
+        output: {
+          globals: {},
+          exports: 'named'
+        }
+      }
+    }
+  },
+
+  // Build modular - Solo CLI primitives (spinners, boxes, tables, steps)
+  cli: {
+    ...baseConfig,
+    plugins: [
+      dts({
+        ...baseConfig.plugins[0].options,
+        outDir: 'packages/cli/dist/types',
+        include: ['src/cli-module.ts', 'src/cli-primitives/**/*', 'src/types/**/*', 'src/terminal/**/*', 'src/utils/environment-detector.ts'],
+      })
+    ],
+    build: {
+      ...baseConfig.build,
+      outDir: 'packages/cli/dist',
+      lib: {
+        entry: resolve(__dirname, 'src/cli-module.ts'),
+        name: 'BetterLoggerCLI',
         formats: ['es', 'cjs'],
         fileName: (format) => {
           const ext = format === 'cjs' ? 'cjs' : 'js';

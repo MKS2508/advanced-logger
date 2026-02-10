@@ -2,7 +2,7 @@
  * @fileoverview Global constants for Advanced Logger
  */
 
-import type { LogLevel, AdaptiveColors } from './types/index.js';
+import type { LogLevel, AdaptiveColors, CLILogLevel, Verbosity } from './types/index.js';
 import type { LevelStyleConfig } from './utils/index.js';
 
 /**
@@ -299,3 +299,15 @@ export function getOptimalConfig() {
         ...BUILD_PRESETS[preset]
     };
 }
+
+/**
+ * CLI log level to internal verbosity mapping
+ * @since 5.0.0
+ */
+export const CLI_LEVEL_MAP: Record<CLILogLevel, { verbosity: Verbosity; showPrimitives: boolean }> = {
+    silent:  { verbosity: 'silent',  showPrimitives: false },
+    quiet:   { verbosity: 'error',   showPrimitives: false },
+    normal:  { verbosity: 'info',    showPrimitives: true  },
+    verbose: { verbosity: 'debug',   showPrimitives: true  },
+    debug:   { verbosity: 'debug',   showPrimitives: true  },
+} as const;

@@ -1,5 +1,5 @@
 import { Logger } from './Logger.js';
-import type { TimerEntry, Bindings } from './types/index.js';
+import type { TimerEntry, Bindings, ISpinnerHandle, IBoxOptions, ITableOptions, CLILogLevel } from './types/index.js';
 
 export class ScopedLogger {
     private readonly parent: Logger;
@@ -103,6 +103,48 @@ export class ScopedLogger {
     trace(...args: any[]): void {
         this.parent.logWithBindings(this.getBindings(), 'debug', ...args);
         console.trace(`[${this.scopeName}]`);
+    }
+
+    // ===== CLI PRIMITIVES (v5.0 delegation) =====
+
+    /** @see Logger.step */
+    step(current: number, total: number, message: string): void {
+        this.parent.step(current, total, message);
+    }
+
+    /** @see Logger.header */
+    header(title: string, subtitle?: string): void {
+        this.parent.header(title, subtitle);
+    }
+
+    /** @see Logger.divider */
+    divider(): void {
+        this.parent.divider();
+    }
+
+    /** @see Logger.blank */
+    blank(): void {
+        this.parent.blank();
+    }
+
+    /** @see Logger.box */
+    box(content: string, options?: IBoxOptions): void {
+        this.parent.box(content, options);
+    }
+
+    /** @see Logger.cliTable */
+    cliTable(rows: Record<string, unknown>[], options?: ITableOptions): void {
+        this.parent.cliTable(rows, options);
+    }
+
+    /** @see Logger.spinner */
+    spinner(message: string): ISpinnerHandle {
+        return this.parent.spinner(message);
+    }
+
+    /** @see Logger.setCLILevel */
+    setCLILevel(level: CLILogLevel): void {
+        this.parent.setCLILevel(level);
     }
 
     _pushContext(context: string): void {

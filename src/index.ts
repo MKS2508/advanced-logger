@@ -18,7 +18,10 @@ import type {
     ThemeVariant,
     BannerType,
     StyleOptions,
-    ILogHandler
+    ILogHandler,
+    CLILogLevel,
+    IBoxOptions,
+    ITableOptions,
 } from './types/index.js';
 
 // Lazy singleton - se inicializa solo cuando se necesita
@@ -115,6 +118,16 @@ export const logAnimated = (message: string, duration?: number) =>
     getLogger().logAnimated(message, duration);
 export const cli = (command: string) => getLogger().cli(command);
 
+// CLI Primitives (v5.0)
+export const step = (current: number, total: number, message: string) => getLogger().step(current, total, message);
+export const spinner = (message: string) => getLogger().spinner(message);
+export const box = (content: string, options?: IBoxOptions) => getLogger().box(content, options);
+export const cliTable = (rows: Record<string, unknown>[], options?: ITableOptions) => getLogger().cliTable(rows, options);
+export const header = (title: string, subtitle?: string) => getLogger().header(title, subtitle);
+export const divider = () => getLogger().divider();
+export const blank = () => getLogger().blank();
+export const setCLILevel = (level: CLILogLevel) => getLogger().setCLILevel(level);
+
 // Type exports
 export type {
     LogLevel,
@@ -152,6 +165,10 @@ export type {
     ColumnAlign,
     ColumnConfig,
     LogOptions,
+    CLILogLevel,
+    ISpinnerHandle,
+    IBoxOptions,
+    ITableOptions,
 } from './types/index.js';
 
 // Styling utilities

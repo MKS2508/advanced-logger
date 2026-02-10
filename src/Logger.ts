@@ -36,7 +36,7 @@ import { TransportManager } from './transports/index.js';
 import { parseStackTrace } from './utils/stackTrace.js';
 import { formatTimestamp } from './utils/timestamps.js';
 import { createStyledOutput, setupThemeChangeListener } from './utils/output.js';
-import { getEnvironment, getColorCapability } from './utils/environment-detector.js';
+import { getEnvironment, getColorCapability, isRunningInTerminal } from './utils/environment-detector.js';
 import { formatBadge } from './terminal/formatter.js';
 
 // Styling imports
@@ -62,7 +62,17 @@ import { ExportLogHandler } from './handlers/index.js';
 import { createDefaultCLI, type CommandProcessor } from './cli/index.js';
 
 // Constants
-import { DEFAULT_CONFIG } from './constants.js';
+import { DEFAULT_CONFIG, CLI_LEVEL_MAP } from './constants.js';
+
+// CLI Primitives
+import type { CLILogLevel, ISpinnerHandle, IBoxOptions, ITableOptions } from './types/index.js';
+import { renderStep } from './cli-primitives/step.js';
+import { renderHeader } from './cli-primitives/header.js';
+import { renderDivider } from './cli-primitives/divider.js';
+import { renderBox } from './cli-primitives/box.js';
+import { renderTable } from './cli-primitives/cli-table.js';
+import { SpinnerManager, NoopSpinner } from './cli-primitives/spinner.js';
+import { ServerFallback } from './cli-primitives/server-fallback.js';
 
 /**
  * Estilos del tema activo actual
@@ -115,6 +125,11 @@ export class Logger {
     private serializerRegistry: SerializerRegistry;
     private hookManager: HookManager;
     private transportManager?: TransportManager;
+
+    /** Whether CLI primitives (step, box, header, etc.) should be shown @since 5.0.0 */
+    private _showPrimitives = true;
+    /** Server-mode fallback for non-TTY environments @since 5.0.0 */
+    private _serverFallback?: ServerFallback;
 
     /**
      * Crea una nueva instancia del Logger
@@ -1292,21 +1307,22 @@ export class Logger {
 
     /**
      * Finaliza un temporizador y muestra el tiempo transcurrido
-     * 
+     *
      * @param {string} label - Etiqueta del temporizador a finalizar
-     * 
+     * @returns {number} Elapsed milliseconds, or -1 if timer not found
+     *
      * @example
      * logger.time('consulta-db');
      * await consultarBaseDatos();
-     * logger.timeEnd('consulta-db'); // ⏱️ Timer ended: consulta-db - 234.56ms
-     * 
+     * const elapsed = logger.timeEnd('consulta-db'); // ⏱️ Timer ended: consulta-db - 234.56ms
+     *
      * @since 0.3.0
      */
-    timeEnd(label: string): void {
+    timeEnd(label: string): number {
         const timer = this.timers.get(label);
         if (!timer) {
             this.warn(`Timer '${label}' does not exist`);
-            return;
+            return -1;
         }
 
         const elapsed = performance.now() - timer.startTime;
@@ -1314,6 +1330,8 @@ export class Logger {
 
         const timerStyle = StylePresets.success().build();
         console.log(`%c⏱️ Timer ended: ${label} - ${elapsed.toFixed(2)}ms`, timerStyle);
+
+        return elapsed;
     }
 
     // ===== ADVANCED VISUAL FEATURES =====
@@ -1460,6 +1478,193 @@ export class Logger {
         } catch {
             this.info('Grouped data:', items);
         }
+    }
+
+    // ===== CLI PRIMITIVES (v5.0) =====
+
+    /**
+     * Displays a step progress indicator in the terminal
+     *
+     * @param {number} current - Current step number
+     * @param {number} total - Total number of steps
+     * @param {string} message - Step description
+     *
+     * @example
+     * logger.step(1, 5, 'Analyzing repository...');
+     * logger.step(2, 5, 'Generating commit message...');
+     *
+     * @since 5.0.0
+     */
+    step(current: number, total: number, message: string): void {
+        if (!this._showPrimitives) return;
+        if (!isRunningInTerminal()) {
+            this.getServerFallback().step(current, total, message);
+            return;
+        }
+        const colorCap = getColorCapability();
+        const output = renderStep(current, total, message, colorCap);
+        process.stderr.write(output + '\n');
+    }
+
+    /**
+     * Displays a styled header with optional subtitle
+     *
+     * @param {string} title - Main title text
+     * @param {string} subtitle - Optional subtitle (rendered dimmed)
+     *
+     * @example
+     * logger.header('Commit Wizard', 'v2.0.0');
+     *
+     * @since 5.0.0
+     */
+    header(title: string, subtitle?: string): void {
+        if (!this._showPrimitives) return;
+        if (!isRunningInTerminal()) {
+            this.getServerFallback().header(title, subtitle);
+            return;
+        }
+        const output = renderHeader(title, subtitle);
+        process.stderr.write(output + '\n');
+    }
+
+    /**
+     * Displays a horizontal divider line
+     *
+     * @example
+     * logger.divider();
+     *
+     * @since 5.0.0
+     */
+    divider(): void {
+        if (!this._showPrimitives) return;
+        if (!isRunningInTerminal()) {
+            this.getServerFallback().divider();
+            return;
+        }
+        const output = renderDivider();
+        process.stderr.write(output + '\n');
+    }
+
+    /**
+     * Outputs a blank line
+     *
+     * @example
+     * logger.blank();
+     *
+     * @since 5.0.0
+     */
+    blank(): void {
+        if (!this._showPrimitives) return;
+        if (!isRunningInTerminal()) {
+            this.getServerFallback().blank();
+            return;
+        }
+        process.stderr.write('\n');
+    }
+
+    /**
+     * Renders content inside a bordered box
+     *
+     * @param {string} content - Content string (may contain newlines)
+     * @param {IBoxOptions} options - Box rendering options
+     *
+     * @example
+     * logger.box('3 commits generated\nProvider: Groq', { title: 'Done', borderColor: '#00ff00' });
+     *
+     * @since 5.0.0
+     */
+    box(content: string, options?: IBoxOptions): void {
+        if (!this._showPrimitives) return;
+        if (!isRunningInTerminal()) {
+            this.getServerFallback().box(content, options);
+            return;
+        }
+        const colorCap = getColorCapability();
+        const output = renderBox(content, options, colorCap);
+        process.stderr.write(output + '\n');
+    }
+
+    /**
+     * Renders an array of objects as a formatted ASCII table.
+     * Note: This is distinct from the existing table() method which uses console.table.
+     *
+     * @param {Record<string, unknown>[]} rows - Array of row objects
+     * @param {ITableOptions} options - Table rendering options
+     *
+     * @example
+     * logger.cliTable([
+     *   { provider: 'Groq', status: 'Available', model: 'llama-3.3-70b' },
+     *   { provider: 'Gemini', status: 'Configured', model: 'gemini-2.5-flash' },
+     * ]);
+     *
+     * @since 5.0.0
+     */
+    cliTable(rows: Record<string, unknown>[], options?: ITableOptions): void {
+        if (!this._showPrimitives) return;
+        if (!isRunningInTerminal()) {
+            this.getServerFallback().cliTable(rows, options);
+            return;
+        }
+        const colorCap = getColorCapability();
+        const output = renderTable(rows, options, colorCap);
+        process.stderr.write(output + '\n');
+    }
+
+    /**
+     * Creates a spinner handle for showing progress during async operations.
+     * Returns a NoopSpinner in non-TTY environments.
+     *
+     * @param {string} message - Initial spinner text
+     * @returns {ISpinnerHandle} Spinner controller
+     *
+     * @example
+     * const s = logger.spinner('Analyzing repository...');
+     * s.start();
+     * await analyzeRepo();
+     * s.succeed('Analysis complete (1.2s)');
+     *
+     * @since 5.0.0
+     */
+    spinner(message: string): ISpinnerHandle {
+        if (!isRunningInTerminal() || this.config.outputMode === 'silent') {
+            return new NoopSpinner(message, this);
+        }
+        return new SpinnerManager(message, this.config, this);
+    }
+
+    /**
+     * Sets the CLI verbosity level, controlling both log verbosity and primitive visibility
+     *
+     * @param {CLILogLevel} level - CLI log level
+     *
+     * @example
+     * logger.setCLILevel('quiet');   // Only errors, no CLI primitives
+     * logger.setCLILevel('verbose'); // Debug logs + all CLI primitives
+     *
+     * @since 5.0.0
+     */
+    setCLILevel(level: CLILogLevel): void {
+        const mapping = CLI_LEVEL_MAP[level];
+        this.setVerbosity(mapping.verbosity);
+        this._showPrimitives = mapping.showPrimitives;
+        this.config.cliLevel = level;
+    }
+
+    /**
+     * Returns the current CLI log level
+     * @returns {CLILogLevel} Current CLI log level
+     * @since 5.0.0
+     */
+    get cliLevel(): CLILogLevel {
+        return this.config.cliLevel ?? 'normal';
+    }
+
+    /** Lazily creates the server fallback instance @private */
+    private getServerFallback(): ServerFallback {
+        if (!this._serverFallback) {
+            this._serverFallback = new ServerFallback(this);
+        }
+        return this._serverFallback;
     }
 
     // ===== OUTPUT WRITER SYSTEM =====
