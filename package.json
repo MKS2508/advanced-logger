@@ -103,7 +103,14 @@
     "publish:all-packages": "npm run publish:core && npm run publish:styling && npm run publish:exports",
     "workflow:full": "npm run commit:auto && npm run release:full",
     "workflow:commit": "npm run commit:auto",
-    "workflow:release": "npm run version:auto && npm run build:all && npm run release:github"
+    "workflow:release": "npm run version:auto && npm run build:all && npm run release:github",
+    "play": "bun playground/demo-all.ts",
+    "play:spinner": "bun playground/demo-spinner.ts",
+    "play:box": "bun playground/demo-box.ts",
+    "play:table": "bun playground/demo-table.ts",
+    "play:steps": "bun playground/demo-steps.ts",
+    "play:levels": "bun playground/demo-levels.ts",
+    "play:real": "bun playground/demo-real-world.ts"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
