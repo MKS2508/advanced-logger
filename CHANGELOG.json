@@ -1,6 +1,23 @@
 {
-  "current_version": "0.17.0-alpha.1",
+  "current_version": "0.18.0-alpha.1",
   "versions": [
+    {
+      "version": "0.18.0-alpha.1",
+      "date": "2026-02-11",
+      "type": "minor",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.17.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.17.0-alpha.1 [skip ci]"
+        }
+      ],
+      "technical_notes": "- New types: CLILogLevel, ISpinnerHandle, IBoxOptions, ITableOptions in types/core.ts\n- New dir: src/cli-primitives/ with step, header, divider, box (4 border styles),\n  cli-table (auto-column width), spinner (Braille frames at 80ms on stderr),\n  server-fallback (plain text for non-TTY), barrel index\n- Logger.ts: 8 new methods (step, header, divider, blank, box, cliTable, spinner,\n  setCLILevel), cliLevel getter, private _showPrimitives flag, ServerFallback lazy init\n- ScopedLogger.ts: delegation methods for all CLI primitives\n- constants.ts: CLI_LEVEL_MAP mapping CLILogLevel to Verbosity + showPrimitives\n- timeEnd() now returns elapsed ms (number) instead of void — non-breaking\n- index.ts: singleton bound exports for all new methods + type re-exports\n- vite.config.ts: cli entry in full build + dedicated BUILD_MODE=cli config\n- package.json: version 5.0.0-alpha.1, exports map with ./cli subpath, build:cli script\n- src/cli-module.ts: CLI-only entry point for @mks2508/better-logger/cli\n- 7 demo scripts in playground/ importing directly from local src/\n- demo-all.ts: full sequential showcase of every primitive\n- demo-spinner.ts: lifecycle tests (succeed, fail, text update, sequential)\n- demo-box.ts: all 4 border styles, colors, titles, multiline\n- demo-table.ts: auto-detect columns, explicit columns, mixed types\n- demo-steps.ts: step progress with spinners, long sequences\n- demo-levels.ts: setCLILevel toggling (silent/quiet/normal/verbose)\n- demo-real-world.ts: commit-wizard-like workflow simulation\n- Added play:* scripts to package.json",
+      "breaking_changes": [],
+      "commit_hash": "13f116d2fc59ec58b0d7c88b7b81e29c74c6a8f1",
+      "prefix": "alpha"
+    },
     {
       "version": "0.17.0-alpha.1",
       "date": "2026-01-06",
