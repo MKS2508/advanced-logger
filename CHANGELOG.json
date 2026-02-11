@@ -1,6 +1,33 @@
 {
-  "current_version": "0.18.0-alpha.1",
+  "current_version": "0.18.1-alpha.1",
   "versions": [
+    {
+      "version": "0.18.1-alpha.1",
+      "date": "2026-02-11",
+      "type": "patch",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.18.0-alpha.1 [skip ci]",
+          "description": "chore: release 0.18.0-alpha.1 [skip ci]"
+        },
+        {
+          "type": "improvement",
+          "title": "Update package.json",
+          "description": "Update package.json"
+        },
+        {
+          "type": "improvement",
+          "title": "Merge branch 'main' of https://github.com/MKS2508/advanced-logger",
+          "description": "Merge branch 'main' of https://github.com/MKS2508/advanced-logger"
+        }
+      ],
+      "technical_notes": "",
+      "breaking_changes": [],
+      "commit_hash": "1781bddf139510d56a112e9a43e84372ec4357ca",
+      "prefix": "alpha"
+    },
     {
       "version": "0.18.0-alpha.1",
       "date": "2026-02-11",
