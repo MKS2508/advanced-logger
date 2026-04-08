@@ -3,7 +3,7 @@
  */
 
 import { getTerminalWidth } from '../utils/environment-detector.js';
-import { getANSIForeground, ANSI, type ColorCapability } from './color-converter.js';
+import { getANSIForeground, getANSIBackground, ANSI, type ColorCapability } from './color-converter.js';
 import type { ColumnConfig, ColumnAlign, BadgeStyle, TimestampFormat, LogOptions } from '../types/index.js';
 
 export function stripAnsi(str: string): string {
@@ -137,26 +137,32 @@ export function formatBadge(
     colorCapability: ColorCapability = 'full',
     color?: string
 ): string {
-    const colorCode = color && colorCapability !== 'none'
-        ? getANSIForeground(color, colorCapability)
-        : '';
     const reset = colorCapability !== 'none' ? ANSI.reset : '';
-    const bgBlack = colorCapability !== 'none' ? ANSI.bg.black : '';
 
     const text = badge.toUpperCase();
 
     switch (style) {
         case 'rounded':
-            return `${bgBlack}${colorCode}⟨${text}⟩${reset}`;
+            const colorCode1 = color && colorCapability !== 'none' ? getANSIForeground(color, colorCapability) : '';
+            const bgBlack1 = colorCapability !== 'none' ? ANSI.bg.black : '';
+            return `${bgBlack1}${colorCode1}⟨${text}⟩${reset}`;
         case 'plain':
-            return `${colorCode}${text}${reset}`;
+            const colorCode2 = color && colorCapability !== 'none' ? getANSIForeground(color, colorCapability) : '';
+            return `${colorCode2}${text}${reset}`;
         case 'unicode':
-            return `${bgBlack}${colorCode}╭${text}╮${reset}`;
+            const colorCode3 = color && colorCapability !== 'none' ? getANSIForeground(color, colorCapability) : '';
+            const bgBlack3 = colorCapability !== 'none' ? ANSI.bg.black : '';
+            return `${bgBlack3}${colorCode3}╭${text}╮${reset}`;
         case 'pill':
-            return `${bgBlack}${colorCode}⦗${text}⦘${reset}`;
+            // Badge con background de color y texto blanco/negro
+            const bgColor = color && colorCapability !== 'none' ? getANSIBackground(color, colorCapability) : '';
+            const fgColor = colorCapability !== 'none' ? getANSIForeground('#000000', colorCapability) : '';
+            return `${bgColor}${fgColor}[${text}]${reset}`;
         case 'brackets':
         default:
-            return `${bgBlack}${colorCode}[${text}]${reset}`;
+            const colorCode5 = color && colorCapability !== 'none' ? getANSIForeground(color, colorCapability) : '';
+            const bgBlack5 = colorCapability !== 'none' ? ANSI.bg.black : '';
+            return `${bgBlack5}${colorCode5}[${text}]${reset}`;
     }
 }
 
