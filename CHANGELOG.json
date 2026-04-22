@@ -1,6 +1,28 @@
 {
-  "current_version": "0.18.1-alpha.1",
+  "current_version": "0.18.2-alpha.1",
   "versions": [
+    {
+      "version": "0.18.2-alpha.1",
+      "date": "2026-04-22",
+      "type": "patch",
+      "title": "Versión Alpha - Mejoras y optimizaciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "title": "chore: release 0.18.1-alpha.1 [skip ci]",
+          "description": "chore: release 0.18.1-alpha.1 [skip ci]"
+        },
+        {
+          "type": "improvement",
+          "title": "5.2",
+          "description": "5.2"
+        }
+      ],
+      "technical_notes": "",
+      "breaking_changes": [],
+      "commit_hash": "a049e8c2384cef2e62f29da92618f2a37134a852",
+      "prefix": "alpha"
+    },
     {
       "version": "0.18.1-alpha.1",
       "date": "2026-02-11",
