@@ -172,7 +172,7 @@ export type {
 } from './types/index.js';
 
 // Styling utilities
-export { 
+export {
     StyleBuilder,
     StylePresets,
     THEME_PRESETS,
@@ -194,9 +194,6 @@ export {
     HttpTransport,
     OtlpTransport
 } from './transports/index.js';
-
-// Style Cache
-export { StyleCache, getStyleCache } from './styling/StyleCache.js';
 
 // Enterprise feature function exports
 import type { SerializerFn, HookEvent, HookCallback, MiddlewareFn, TransportTarget } from './types/index.js';
@@ -334,43 +331,6 @@ export const stylePresets = {
     accent: StylePresets.accent().build(),
 };
 
-// Terminal formatting utilities
-export {
-    formatWithRightAlign,
-    formatColumns,
-    formatKeyValue,
-    formatBadge,
-    formatTimestamp as formatTimestampExt,
-    formatRelativeTime,
-    formatElapsedTime,
-    resetStartTime,
-    isKeyValueObject,
-    stripAnsi,
-    getVisibleLength,
-    padToWidth,
-    applyLogOptions,
-} from './terminal/formatter.js';
-
-// Color converter utilities
-export {
-    hexToRgb,
-    rgbToHex,
-    hexTo256,
-    colorToHex,
-    getANSIForeground,
-    getANSIBackground,
-    getANSI256Foreground,
-    getANSI256Background,
-    cssColorToANSI,
-    ANSI,
-} from './terminal/color-converter.js';
-
-export type { RGB, ColorCapability } from './terminal/color-converter.js';
-
-// Terminal renderer
-export { TerminalRenderer } from './terminal/terminal-renderer.js';
-export type { ANSIStyle, ChalkLikeInterface } from './terminal/terminal-renderer.js';
-
 // Environment detection
 export {
     getEnvironment,
@@ -383,7 +343,3 @@ export {
 } from './utils/environment-detector.js';
 
 export type { Environment } from './utils/environment-detector.js';
-
-// Output writers for custom log destinations
-export { BufferWriter, type BufferEntry } from './writers/index.js';
-export type { OutputWriter, OutputMode } from './types/core.js';
