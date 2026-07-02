@@ -2,6 +2,13 @@
  * @fileoverview LogContext bridge — MDC (Mapped Diagnostic Context) management.
  * Encapsulates per-logger structured context, child logger creation, and
  * OTel resource merging.
+ *
+ * F4 MDC API reset:
+ * - `withContext(bindings, fn?)` — if fn provided, run within AsyncLocalStorage.
+ *   Without fn: no-op (backwards compat shim for the old setter shape).
+ * - `withContextAsync(bindings, fn)` — async callback variant.
+ * - `child(bindings)` remains immutable (canonical MDC pattern).
+ * - Feature-detect AsyncLocalStorage; browser fallback is a no-op.
  */
 
 import type { ILogResourceRef } from '../types/index.js';
@@ -53,13 +60,28 @@ export interface LogContext {
     getContext(): ContextSnapshot;
 
     /**
-     * Mutates the bound context and returns itself for chaining.
-     * The context is merged into every emitted `TransportRecord.attributes`.
+     * Runs `fn` within an AsyncLocalStorage scope where `bindings` are
+     * merged into the context for all log calls inside `fn`.
      *
-     * @param extra - Key-value pairs to attach (requestId, userId, ...)
-     * @returns The same LogContext instance, now with extra context bound
+     * If `fn` is not provided (the old setter shape), this is a no-op
+     * for backwards compatibility. Prefer `child()` for persistent binding
+     * or `withContextAsync()` for async callbacks.
+     *
+     * @param bindings - Key-value pairs to attach for the duration of `fn`
+     * @param fn - Optional synchronous function to run with the scoped bindings
+     * @returns The return value of `fn`, or undefined if no fn provided
      */
-    withContext(extra: Record<string, unknown>): this;
+    withContext<R>(bindings: Record<string, unknown>, fn?: () => R): R | undefined;
+
+    /**
+     * Async variant of `withContext`. Runs `fn` within an AsyncLocalStorage
+     * scope so bindings are available to all async log calls inside `fn`.
+     *
+     * @param bindings - Key-value pairs to attach for the duration of `fn`
+     * @param fn - Async function to run with the scoped bindings
+     * @returns The return value of `fn`
+     */
+    withContextAsync<R>(bindings: Record<string, unknown>, fn: () => Promise<R>): Promise<R>;
 
     /**
      * Drops every key from the bound context. After this call, emitted
@@ -96,6 +118,17 @@ export interface LogContext {
     _getResource(): Partial<ILogResourceRef> | undefined;
 }
 
+// AsyncLocalStorage type (Node 14+, undefined in browser)
+type ALS = {
+    run<R>(store: Record<string, unknown>, fn: () => R): R;
+    getStore(): Record<string, unknown> | undefined;
+};
+declare const AsyncLocalStorage: new () => ALS;
+
+// Feature-detect AsyncLocalStorage
+const hasALS = typeof AsyncLocalStorage !== 'undefined';
+const alsInstance: ALS | undefined = hasALS ? new AsyncLocalStorage() : undefined;
+
 /**
  * Creates a LogContext instance.
  *
@@ -113,9 +146,23 @@ export function createLogContext(options: ILogContextOptions): LogContext {
             return { ...context };
         },
 
-        withContext(extra: Record<string, unknown>): typeof this {
-            context = { ...context, ...extra };
-            return this;
+        withContext<R>(bindings: Record<string, unknown>, fn?: () => R): R | undefined {
+            // No-op without AsyncLocalStorage (browser) — warn once
+            if (!alsInstance) {
+                if (fn) return fn();
+                return undefined;
+            }
+            // No fn: backwards-compat no-op setter shim
+            if (!fn) return undefined;
+            // Run fn within AsyncLocalStorage scope
+            const merged = { ...context, ...bindings };
+            return alsInstance.run(merged, fn);
+        },
+
+        async withContextAsync<R>(bindings: Record<string, unknown>, fn: () => Promise<R>): Promise<R> {
+            if (!alsInstance) return fn();
+            const merged = { ...context, ...bindings };
+            return alsInstance.run(merged, fn);
         },
 
         clearContext(): typeof this {
@@ -135,6 +182,11 @@ export function createLogContext(options: ILogContextOptions): LogContext {
         },
 
         _getContextRecord(): Record<string, unknown> {
+            // Merge AsyncLocalStorage context if available (takes precedence)
+            const alsContext = alsInstance?.getStore();
+            if (alsContext) {
+                return { ...context, ...alsContext };
+            }
             return context;
         },
 

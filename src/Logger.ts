@@ -383,21 +383,53 @@ export class Logger {
     }
 
     /**
-     * Mutates this logger's structured context and returns itself for chaining.
-     * The context is merged into every emitted `TransportRecord.attributes`.
+     * Runs `fn` within an AsyncLocalStorage scope where `bindings` are
+     * merged into the context for all log calls inside `fn`.
      *
-     * @param extra - Key-value pairs to attach (requestId, userId, ...)
-     * @returns The same logger instance, now with extra context bound
+     * Without `fn` (the old setter shape): no-op for backwards compatibility.
+     * Prefer `child()` for persistent bindings or `withContextAsync()` for
+     * async callbacks.
+     *
+     * @param bindings - Key-value pairs to attach for the duration of `fn`
+     * @param fn - Optional synchronous function to run with scoped bindings
+     * @returns The return value of `fn`, or undefined if no fn provided
      *
      * @example
-     * logger.withContext({ requestId: req.id }).info('handling request');
-     * logger.withContext({ requestId: req.id, userId: user.id }).debug('auth ok');
+     * // Scoped synchronous callback
+     * logger.withContext({ requestId: 'r-42' }, () => {
+     *   doWork(); // logs inside see requestId in attributes
+     * });
+     *
+     * @example
+     * // Persistent binding: use child()
+     * const reqLog = logger.child({ requestId: 'r-42' });
+     * reqLog.info('handling request'); // attributes include requestId
      *
      * @see {@link child} for an immutable copy with the merged context
+     * @see {@link withContextAsync} for async callback variant
      */
-    withContext(extra: Record<string, unknown>): this {
-        this.logContext.withContext(extra);
-        return this;
+    withContext<R>(bindings: Record<string, unknown>, fn?: () => R): R | undefined {
+        return this.logContext.withContext(bindings, fn);
+    }
+
+    /**
+     * Async variant of `withContext`. Runs `fn` within an AsyncLocalStorage
+     * scope so bindings are available to all async log calls inside `fn`.
+     *
+     * @param bindings - Key-value pairs to attach for the duration of `fn`
+     * @param fn - Async function to run with the scoped bindings
+     * @returns The return value of `fn`
+     *
+     * @example
+     * await logger.withContextAsync({ requestId: 'r-42' }, async () => {
+     *   await fetchData(); // logs inside see requestId in attributes
+     * });
+     *
+     * @see {@link child} for a persistent child logger
+     * @see {@link withContext} for synchronous callback variant
+     */
+    withContextAsync<R>(bindings: Record<string, unknown>, fn: () => Promise<R>): Promise<R> {
+        return this.logContext.withContextAsync(bindings, fn);
     }
 
     /**
