@@ -1712,51 +1712,6 @@ export class Logger {
         });
     }
 
-    /**
-     * Agrupa logs por una propiedad específica usando Object.groupBy (cuando esté disponible)
-     * 
-     * @param {T[]} items - Array de elementos a agrupar
-     * @param {Function} groupBy - Función que retorna la clave de agrupación
-     * 
-     * @example
-     * const ventas = [
-     *   { producto: 'Laptop', categoria: 'Electrónica', precio: 1200 },
-     *   { producto: 'Mouse', categoria: 'Electrónica', precio: 25 },
-     *   { producto: 'Libro', categoria: 'Literatura', precio: 15 }
-     * ];
-     * logger.logGrouped(ventas, item => item.categoria);
-     * 
-     * @since 0.3.0
-     */
-    logGrouped<T>(items: T[], groupBy: (item: T) => string): void {
-        try {
-            // Use Object.groupBy if available (ES2024), otherwise fallback to reduce
-            let grouped: Record<string, T[]>;
-
-            const objectGroupBy = (Object as { groupBy?<U>(items: U[], fn: (item: U) => string): Record<string, U[]> }).groupBy;
-            if (objectGroupBy) {
-                grouped = objectGroupBy(items, groupBy) as Record<string, T[]>;
-            } else {
-                grouped = items.reduce<Record<string, T[]>>((acc, item) => {
-                    const key = groupBy(item);
-                    if (!acc[key]) {
-                        acc[key] = [];
-                    }
-                    acc[key].push(item);
-                    return acc;
-                }, {});
-            }
-
-            Object.entries(grouped).forEach(([group, groupItems]) => {
-                this.group(`Group: ${group}`);
-                this.table(groupItems);
-                this.groupEnd();
-            });
-        } catch {
-            this.info('Grouped data:', items);
-        }
-    }
-
     // ===== CLI PRIMITIVES (v5.0) =====
 
     /**

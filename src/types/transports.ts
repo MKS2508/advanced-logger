@@ -101,10 +101,6 @@ export interface TransportOptions {
     flushInterval?: number;
     /** Hard cap on buffered records. Older entries are dropped on overflow. */
     maxBufferSize?: number;
-    /** Drop oldest (true) or newest (false) record on buffer overflow. */
-    dropOldest?: boolean;
-    /** Override the per-batch OTel resource (service.name, version, env). */
-    resource?: Partial<ILogResource>;
 }
 
 /**
