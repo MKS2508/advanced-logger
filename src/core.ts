@@ -43,7 +43,7 @@ import { createStyledOutput } from './utils/output.js';
 
 // Constants
 import { DEFAULT_CONFIG, LEVEL_STYLES } from './constants.js';
-import { LOG_LEVELS } from './types/index.js';
+import { LOG_LEVELS } from './types/core.js';
 
 /**
  * Minimal Logger class with core functionality only
