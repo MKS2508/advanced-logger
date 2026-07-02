@@ -4,7 +4,7 @@
  */
 
 import type { SerializerFn } from '../types/index.js';
-import { SerializerRegistry } from '../serializers/index.js';
+import { SerializerRegistry } from './index.js';
 
 /**
  * Bridge for serializer management.

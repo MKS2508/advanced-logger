@@ -1,13 +1,13 @@
 /**
- * @fileoverview CLI Primitives - Built-in terminal UI components for better-logger
+ * @fileoverview CLI Primitives barrel — re-exported from playground/.
  * @version 5.0.0
  * @since 5.0.0
  */
 
-export { renderStep } from './step.js';
-export { renderHeader } from './header.js';
-export { renderDivider } from './divider.js';
-export { renderBox } from './box.js';
-export { renderTable } from './cli-table.js';
-export { SpinnerManager, NoopSpinner } from './spinner.js';
-export { ServerFallback } from './server-fallback.js';
+export { renderStep } from '../playground/step.js';
+export { renderHeader } from '../playground/header.js';
+export { renderDivider } from '../playground/divider.js';
+export { renderBox } from '../playground/box.js';
+export { renderTable } from '../playground/cli-table.js';
+export { SpinnerManager, NoopSpinner } from '../playground/spinner.js';
+export { ServerFallback } from '../playground/server-fallback.js';

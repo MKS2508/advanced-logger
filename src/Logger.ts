@@ -82,12 +82,12 @@ import { DEFAULT_CONFIG, CLI_LEVEL_MAP } from './constants.js';
 import type { CLILogLevel, ISpinnerHandle, IBoxOptions, ITableOptions } from './types/index.js';
 
 // Bridge imports
-import { createLogContext, type LogContext } from './bridges/LogContext.js';
+import { createLogContext, type LogContext } from './context/LogContext.js';
 import { createTransportBridge, type TransportBridge } from './bridges/TransportBridge.js';
-import { createHookBridge, type HookBridge } from './bridges/HookBridge.js';
-import { createSerializerBridge, type SerializerBridge } from './bridges/SerializerBridge.js';
+import { createHookBridge, type HookBridge } from './hooks/HookBridge.js';
+import { createSerializerBridge, type SerializerBridge } from './serializers/SerializerBridge.js';
 import { createTerminalBridge, type TerminalBridge } from './bridges/TerminalBridge.js';
-import { createStyleManager, type StyleManager } from './bridges/StyleManager.js';
+import { createStyleManager, type StyleManager } from './styles/StyleManager.js';
 
 /**
  * Estilos del tema activo actual

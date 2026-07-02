@@ -21,9 +21,44 @@
       "types": "./dist/core.d.ts"
     },
     "./cli": {
-      "types": "./dist/cli-module.d.ts",
       "import": "./dist/cli.js",
-      "require": "./dist/cli.cjs"
+      "require": "./dist/cli.cjs",
+      "types": "./dist/cli-module.d.ts"
+    },
+    "./transports": {
+      "import": "./dist/transports-module.js",
+      "require": "./dist/transports-module.cjs",
+      "types": "./dist/transports-module.d.ts"
+    },
+    "./context": {
+      "import": "./dist/context-module.js",
+      "require": "./dist/context-module.cjs",
+      "types": "./dist/context-module.d.ts"
+    },
+    "./hooks": {
+      "import": "./dist/hooks-module.js",
+      "require": "./dist/hooks-module.cjs",
+      "types": "./dist/hooks-module.d.ts"
+    },
+    "./serializers": {
+      "import": "./dist/serializers-module.js",
+      "require": "./dist/serializers-module.cjs",
+      "types": "./dist/serializers-module.d.ts"
+    },
+    "./styles": {
+      "import": "./dist/styles-module.js",
+      "require": "./dist/styles-module.cjs",
+      "types": "./dist/styles-module.d.ts"
+    },
+    "./playground": {
+      "import": "./dist/playground-module.js",
+      "require": "./dist/playground-module.cjs",
+      "types": "./dist/playground-module.d.ts"
+    },
+    "./node": {
+      "import": "./dist/node-module.js",
+      "require": "./dist/node-module.cjs",
+      "types": "./dist/node-module.d.ts"
     }
   },
   "keywords": [

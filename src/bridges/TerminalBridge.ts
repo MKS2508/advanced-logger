@@ -5,13 +5,13 @@
  */
 
 import type { CLILogLevel, ISpinnerHandle, IBoxOptions, ITableOptions } from '../types/index.js';
-import { renderStep } from '../cli-primitives/step.js';
-import { renderHeader } from '../cli-primitives/header.js';
-import { renderDivider } from '../cli-primitives/divider.js';
-import { renderBox } from '../cli-primitives/box.js';
-import { renderTable } from '../cli-primitives/cli-table.js';
-import { SpinnerManager, NoopSpinner } from '../cli-primitives/spinner.js';
-import { ServerFallback } from '../cli-primitives/server-fallback.js';
+import { renderStep } from '../playground/step.js';
+import { renderHeader } from '../playground/header.js';
+import { renderDivider } from '../playground/divider.js';
+import { renderBox } from '../playground/box.js';
+import { renderTable } from '../playground/cli-table.js';
+import { SpinnerManager, NoopSpinner } from '../playground/spinner.js';
+import { ServerFallback } from '../playground/server-fallback.js';
 import { getColorCapability, isRunningInTerminal } from '../utils/environment-detector.js';
 import type { LoggerConfig } from '../types/index.js';
 import type { Logger } from '../Logger.js';

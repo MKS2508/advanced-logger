@@ -4,7 +4,7 @@
  */
 
 import type { HookEvent, HookCallback, MiddlewareFn } from '../types/index.js';
-import { HookManager } from '../hooks/index.js';
+import { HookManager } from './index.js';
 
 /**
  * Bridge for hook and middleware management.

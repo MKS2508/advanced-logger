@@ -5,13 +5,13 @@
  * @since 5.0.0
  */
 
-export { renderStep } from './cli-primitives/step.js';
-export { renderHeader } from './cli-primitives/header.js';
-export { renderDivider } from './cli-primitives/divider.js';
-export { renderBox } from './cli-primitives/box.js';
-export { renderTable } from './cli-primitives/cli-table.js';
-export { SpinnerManager, NoopSpinner } from './cli-primitives/spinner.js';
-export { ServerFallback } from './cli-primitives/server-fallback.js';
+export { renderStep } from './playground/step.js';
+export { renderHeader } from './playground/header.js';
+export { renderDivider } from './playground/divider.js';
+export { renderBox } from './playground/box.js';
+export { renderTable } from './playground/cli-table.js';
+export { SpinnerManager, NoopSpinner } from './playground/spinner.js';
+export { ServerFallback } from './playground/server-fallback.js';
 
 export type {
     CLILogLevel,

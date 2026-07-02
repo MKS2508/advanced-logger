@@ -8,6 +8,13 @@ const entries = {
     index: resolve(root, 'src/index.ts'),
     core: resolve(root, 'src/core.ts'),
     cli: resolve(root, 'src/cli-module.ts'),
+    context: resolve(root, 'src/context-module.ts'),
+    transports: resolve(root, 'src/transports-module.ts'),
+    hooks: resolve(root, 'src/hooks-module.ts'),
+    serializers: resolve(root, 'src/serializers-module.ts'),
+    styles: resolve(root, 'src/styles-module.ts'),
+    playground: resolve(root, 'src/playground-module.ts'),
+    node: resolve(root, 'src/node-module.ts'),
 }
 
 const external = [
