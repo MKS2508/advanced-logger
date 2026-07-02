@@ -90,6 +90,7 @@ import { ServerFallback } from './cli-primitives/server-fallback.js';
 // Bridge imports
 import { createLogContext, type LogContext } from './bridges/LogContext.js';
 import { createTransportBridge, type TransportBridge } from './bridges/TransportBridge.js';
+import { createHookBridge, type HookBridge } from './bridges/HookBridge.js';
 
 /**
  * Estilos del tema activo actual
@@ -139,7 +140,7 @@ export class Logger {
     };
 
     private serializerRegistry: SerializerRegistry;
-    private hookManager: HookManager;
+    private hookBridge: HookBridge;
     private logContext: LogContext;
     private transportBridge: TransportBridge;
 
@@ -186,7 +187,7 @@ export class Logger {
 
         // Initialize enterprise features
         this.serializerRegistry = new SerializerRegistry();
-        this.hookManager = new HookManager();
+        this.hookBridge = createHookBridge();
 
         // Initialize LogContext bridge
         this.logContext = createLogContext({
@@ -891,7 +892,7 @@ export class Logger {
      * @since 3.0.0
      */
     on(event: HookEvent, callback: HookCallback, priority?: number): () => void {
-        return this.hookManager.on(event, callback, priority);
+        return this.hookBridge.on(event, callback, priority);
     }
 
     /**
@@ -905,7 +906,7 @@ export class Logger {
      * @since 3.0.0
      */
     once(event: HookEvent, callback: HookCallback, priority?: number): () => void {
-        return this.hookManager.once(event, callback, priority);
+        return this.hookBridge.once(event, callback, priority);
     }
 
     /**
@@ -918,7 +919,7 @@ export class Logger {
      * @since 3.0.0
      */
     off(event: HookEvent, callback: HookCallback): boolean {
-        return this.hookManager.off(event, callback);
+        return this.hookBridge.off(event, callback);
     }
 
     /**
@@ -937,7 +938,7 @@ export class Logger {
      * @since 3.0.0
      */
     use(middleware: MiddlewareFn, priority?: number): () => void {
-        return this.hookManager.use(middleware, priority);
+        return this.hookBridge.use(middleware, priority);
     }
 
     /**
@@ -947,7 +948,7 @@ export class Logger {
      * @since 3.0.0
      */
     getHookManager(): HookManager {
-        return this.hookManager;
+        return this.hookBridge.getHookManager();
     }
 
     // ===== TRANSPORTS =====
@@ -1144,7 +1145,7 @@ export class Logger {
         // in the emitted message. Fixed in 5.1.0 (BUG-N / F002).
         let processed;
         try {
-            processed = await this.hookManager.emit('beforeLog', hookEntry);
+            processed = await this.hookBridge.getHookManager().emit('beforeLog', hookEntry);
         } catch (error) {
             // Hook manager already fires onError on its own; fall back to
             // the pre-hook values to keep the log call from breaking.
@@ -1190,7 +1191,7 @@ export class Logger {
 
         // Fire-and-forget afterLog — after-side mutations don't change the
         // message that's already on screen, so we don't block on it.
-        this.hookManager.emit('afterLog', processed).catch(() => {});
+        this.hookBridge.getHookManager().emit('afterLog', processed).catch(() => {});
     }
 
     logWithBindings(bindings: Bindings, level: LogLevel, ...args: any[]): Promise<void> {
@@ -1293,7 +1294,7 @@ export class Logger {
 
         // Await beforeLog so redactions propagate (matches log())
         try {
-            const processed = await this.hookManager.emit('beforeLog', hookEntry);
+            const processed = await this.hookBridge.getHookManager().emit('beforeLog', hookEntry);
             message = processed.message;
         } catch {
             // Hook manager has already fired onError
@@ -1337,7 +1338,7 @@ export class Logger {
 
         this.dispatchToTransports('info', message, prefix, stackInfo, { tag: 'success' });
 
-        this.hookManager.emit('afterLog', hookEntry).catch(() => {});
+        this.hookBridge.getHookManager().emit('afterLog', hookEntry).catch(() => {});
     }
 
     /**
