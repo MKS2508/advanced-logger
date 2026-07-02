@@ -172,20 +172,11 @@ export {
     BANNER_VARIANTS
 } from './styling/index.js';
 
-// Serializers
-export { SerializerRegistry } from './serializers/index.js';
+// Serializers moved to ./serializers subpath
 
-// Hooks & Middleware
-export { HookManager } from './hooks/index.js';
+// Hooks & Middleware moved to ./hooks subpath
 
-// Transports
-export {
-    TransportManager,
-    ConsoleTransport,
-    FileTransport,
-    HttpTransport,
-    OtlpTransport
-} from './transports/index.js';
+// Transports moved to ./transports subpath
 
 // Enterprise feature function exports
 import type { SerializerFn, HookEvent, HookCallback, MiddlewareFn, TransportTarget } from './types/index.js';
