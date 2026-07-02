@@ -10,6 +10,7 @@
 // Type imports
 import type {
     LogLevel,
+    LogTag,
     Verbosity,
     ThemeVariant,
     BannerType,
@@ -139,6 +140,8 @@ export class Logger {
     private hookBridge: HookBridge;
     private logContext: LogContext;
     private transportBridge: TransportBridge;
+    /** Set during success() so log() skips its own dispatch (N2 fix). */
+    private _successTagDispatched = false;
     private styleManager: StyleManager;
 
     /** Whether CLI primitives (step, box, header, etc.) should be shown @since 5.0.0 */
@@ -1055,7 +1058,9 @@ export class Logger {
      * @param stackInfo - Optional caller location
      * @param extra - Optional fields to merge into the record (e.g. `{ tag: 'success' }`)
      */
-    private dispatchToTransports(
+    protected _dispatchTag: string | undefined;
+
+    protected dispatchToTransports(
         level: LogLevel,
         message: string,
         prefix: string | undefined,
@@ -1118,8 +1123,34 @@ export class Logger {
      *
      * @since 0.3.0 (return type changed to `Promise<void>` in 5.1.0)
      */
+    /**
+     * Protected logging method. Awaits the `beforeLog` hook pipeline
+     * synchronously (so redactions / enrichments are reflected in the
+     * emitted message before console + transport dispatch).
+     *
+     * Fire-and-forget callers (e.g. `logger.info(...)` without `await`)
+     * still work — the resulting `Promise<void>` is dropped on the floor.
+     * Awaiting is recommended when `beforeLog` hooks mutate `message`
+     * (e.g. PII redaction, correlation IDs).
+     *
+     * @protected
+     * @param level - Nivel del log
+     * @param args - Argumentos a loggear
+     * @param tag - Optional tag forwarded to `dispatchToTransports` as
+     *              `TransportRecord.tag` (e.g. `'success'` for success records).
+     * @returns Promise that resolves once the record has been dispatched
+     *
+     * @since 0.3.0 (return type changed to `Promise<void>` in 5.1.0)
+     * @since 0.18.2-alpha.1 (tag parameter added for N2 fix)
+     */
     protected async log(level: LogLevel, ...args: unknown[]): Promise<void> {
         if (!this.shouldLog(level)) return;
+
+        // N2 fix: check _dispatchTag BEFORE processing args so the tag does
+        // NOT end up in additionalArgs. success() sets this instead of
+        // passing 'success' as an arg.
+        const dispatchTag = this._dispatchTag;
+        this._dispatchTag = undefined;
 
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         const prefix = this.getEffectivePrefix();
@@ -1189,7 +1220,12 @@ export class Logger {
             }
         });
 
-        this.dispatchToTransports(level, message, prefix, stackInfo);
+        // N2 fix: if dispatchTag was set (by success()), dispatch with it.
+        if (dispatchTag !== undefined) {
+            this.dispatchToTransports(level, message, prefix, stackInfo, { tag: dispatchTag as LogTag });
+        } else {
+            this.dispatchToTransports(level, message, prefix, stackInfo);
+        }
 
         // Fire-and-forget afterLog — after-side mutations don't change the
         // message that's already on screen, so we don't block on it.
@@ -1214,6 +1250,16 @@ export class Logger {
         }
 
         return this.log(level, ...args);
+    }
+
+    /**
+     * Like `logWithBindings()` but sets _dispatchTag first so that
+     * `log()` dispatches with the tag. Used by ScopedLogger.success()
+     * to propagate tag:'success' through the normal log() pipeline.
+     */
+    logWithBindingsAndTag(bindings: Bindings, level: LogLevel, tag: LogTag, ...args: unknown[]): Promise<void> {
+        this._dispatchTag = tag;
+        return this.logWithBindings(bindings, level, ...args);
     }
 
     debug(...args: unknown[]): Promise<void> {
@@ -1338,7 +1384,10 @@ export class Logger {
             }
         });
 
-        this.dispatchToTransports('info', message, prefix, stackInfo, { tag: 'success' });
+        // N2 fix: set _dispatchTag so log() dispatches with the tag.
+        // 'success' is NOT passed as an arg (avoids it appearing in additionalArgs).
+        this._dispatchTag = 'success';
+        await this.log('info', ...args);
 
         this.hookBridge.getHookManager().emit('afterLog', hookEntry).catch(() => {});
     }

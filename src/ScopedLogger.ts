@@ -93,7 +93,7 @@ export class ScopedLogger {
 
     success(...args: unknown[]): void {
         const bindings = this.getBindings();
-        this.parent.logWithBindings(bindings, 'info', ...args);
+        this.parent.logWithBindingsAndTag(bindings, 'info', 'success', ...args);
     }
 
     critical(...args: unknown[]): void {
