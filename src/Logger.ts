@@ -86,6 +86,7 @@ import { createTransportBridge, type TransportBridge } from './bridges/Transport
 import { createHookBridge, type HookBridge } from './bridges/HookBridge.js';
 import { createSerializerBridge, type SerializerBridge } from './bridges/SerializerBridge.js';
 import { createTerminalBridge, type TerminalBridge } from './bridges/TerminalBridge.js';
+import { createStyleManager, type StyleManager } from './bridges/StyleManager.js';
 
 /**
  * Estilos del tema activo actual
@@ -138,6 +139,7 @@ export class Logger {
     private hookBridge: HookBridge;
     private logContext: LogContext;
     private transportBridge: TransportBridge;
+    private styleManager: StyleManager;
 
     /** Whether CLI primitives (step, box, header, etc.) should be shown @since 5.0.0 */
     private _showPrimitives = true;
@@ -194,6 +196,9 @@ export class Logger {
 
         // Initialize TransportBridge
         this.transportBridge = createTransportBridge();
+
+        // Initialize StyleManager bridge
+        this.styleManager = createStyleManager();
 
         // Initialize TerminalBridge (lazy — uses getter to avoid circular ref)
         this.terminalBridge = createTerminalBridge({
@@ -335,13 +340,10 @@ export class Logger {
             return;
         }
 
-        // Fallback to old theme system
-        if (theme in THEME_PRESETS) {
-            const themeRecord = THEME_PRESETS as unknown as Record<string, typeof LEVEL_STYLES>;
-            const newStyles = themeRecord[theme];
-            if (newStyles) {
-                LEVEL_STYLES = newStyles;
-            }
+        // Fallback to old theme system — delegate to StyleManager to keep
+        // the module-level LEVEL_STYLES in sync with the bridge.
+        const applied = this.styleManager.setTheme(theme);
+        if (applied) {
             this.config.theme = theme;
 
             // Show theme-specific banner through the centralised writer
@@ -470,7 +472,7 @@ export class Logger {
         }
         
         this.config = { ...DEFAULT_CONFIG };
-        LEVEL_STYLES = THEME_PRESETS.default;
+        this.styleManager.resetStyles();
         
         // Re-setup auto theme detection if enabled in default config
         if (this.config.autoDetectTheme) {
@@ -1157,7 +1159,7 @@ export class Logger {
 
         const [format, ...styles] = createStyledOutput(
             level,
-            LEVEL_STYLES,
+            this.styleManager.getStyles(),
             prefix,
             message,
             this.displaySettings.showLocation ? stackInfo : null,
@@ -1302,7 +1304,7 @@ export class Logger {
 
         const [format, ...styles] = createStyledOutput(
             'info',
-            LEVEL_STYLES,
+            this.styleManager.getStyles(),
             prefix,
             message,
             this.displaySettings.showLocation ? stackInfo : null,
@@ -1311,7 +1313,7 @@ export class Logger {
             this._activePresetName
         );
 
-        const successStyle = LEVEL_STYLES.success;
+        const successStyle = this.styleManager.getStyles().success;
         const emoji = successStyle?.emoji ?? '✅';
         const label = successStyle?.label ?? 'SUCCESS';
         const successFormat = format.replace(/ℹ️ INFO/, `${emoji} ${label}`);

@@ -2,6 +2,10 @@
  * @fileoverview StyleManager — style preset and display settings management.
  * Encapsulates active preset tracking, display toggles, and the
  * module-level LEVEL_STYLES variable.
+ *
+ * Wired into Logger.ts in F4. Logger delegates style queries and theme
+ * changes through this bridge so that the module-level LEVEL_STYLES stay
+ * in sync across the module.
  */
 
 import {
@@ -70,6 +74,10 @@ export interface StyleManager {
     setCustomization(overrides: unknown): void;
     /** Resolves the effective styles for a theme variant. */
     resolveThemeStyle(theme: ThemeVariant): typeof THEME_PRESETS.default;
+    /** Sets the active theme by name, updating the module-level LEVEL_STYLES. */
+    setTheme(theme: ThemeVariant): boolean;
+    /** Resets LEVEL_STYLES to the default preset. */
+    resetStyles(): void;
 }
 
 function createDefaultDisplaySettings(): DisplaySettings {
@@ -139,6 +147,22 @@ export function createStyleManager(options: IStyleManagerOptions = {}): StyleMan
                 return themeRecord[theme] ?? THEME_PRESETS.default;
             }
             return THEME_PRESETS.default;
+        },
+
+        setTheme(theme: ThemeVariant): boolean {
+            if (theme in THEME_PRESETS) {
+                const themeRecord = THEME_PRESETS as unknown as Record<string, typeof LEVEL_STYLES>;
+                const newStyles = themeRecord[theme];
+                if (newStyles) {
+                    LEVEL_STYLES = newStyles;
+                    return true;
+                }
+            }
+            return false;
+        },
+
+        resetStyles(): void {
+            LEVEL_STYLES = THEME_PRESETS.default;
         }
     };
 }
