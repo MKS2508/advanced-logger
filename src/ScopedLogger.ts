@@ -75,32 +75,32 @@ export class ScopedLogger {
         return elapsed;
     }
 
-    debug(...args: any[]): void {
+    debug(...args: unknown[]): void {
         this.parent.logWithBindings(this.getBindings(), 'debug', ...args);
     }
 
-    info(...args: any[]): void {
+    info(...args: unknown[]): void {
         this.parent.logWithBindings(this.getBindings(), 'info', ...args);
     }
 
-    warn(...args: any[]): void {
+    warn(...args: unknown[]): void {
         this.parent.logWithBindings(this.getBindings(), 'warn', ...args);
     }
 
-    error(...args: any[]): void {
+    error(...args: unknown[]): void {
         this.parent.logWithBindings(this.getBindings(), 'error', ...args);
     }
 
-    success(...args: any[]): void {
+    success(...args: unknown[]): void {
         const bindings = this.getBindings();
         this.parent.logWithBindings(bindings, 'info', ...args);
     }
 
-    critical(...args: any[]): void {
+    critical(...args: unknown[]): void {
         this.parent.logWithBindings(this.getBindings(), 'critical', ...args);
     }
 
-    trace(...args: any[]): void {
+    trace(...args: unknown[]): void {
         this.parent.logWithBindings(this.getBindings(), 'trace', ...args);
     }
 
@@ -195,7 +195,7 @@ export class ComponentLogger extends ScopedLogger {
         this.info(msg);
     }
 
-    stateChange(from: string, to: string, data?: any): void {
+    stateChange(from: string, to: string, data?: unknown): void {
         this.badge('STATE');
         const msg = `${from} → ${to}`;
         if (data) {
@@ -205,7 +205,7 @@ export class ComponentLogger extends ScopedLogger {
         }
     }
 
-    propsChange(changes: Record<string, any>): void {
+    propsChange(changes: Record<string, unknown>): void {
         this.badge('PROPS');
         this.debug('Props changed:', changes);
     }
@@ -246,10 +246,10 @@ export class ContextLogger {
         this.parentLogger._popContext();
     }
 
-    debug(...args: any[]): void { this.parentLogger.debug(...args); }
-    info(...args: any[]): void { this.parentLogger.info(...args); }
-    warn(...args: any[]): void { this.parentLogger.warn(...args); }
-    error(...args: any[]): void { this.parentLogger.error(...args); }
-    success(...args: any[]): void { this.parentLogger.success(...args); }
-    critical(...args: any[]): void { this.parentLogger.critical(...args); }
+    debug(...args: unknown[]): void { this.parentLogger.debug(...args); }
+    info(...args: unknown[]): void { this.parentLogger.info(...args); }
+    warn(...args: unknown[]): void { this.parentLogger.warn(...args); }
+    error(...args: unknown[]): void { this.parentLogger.error(...args); }
+    success(...args: unknown[]): void { this.parentLogger.success(...args); }
+    critical(...args: unknown[]): void { this.parentLogger.critical(...args); }
 }

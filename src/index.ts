@@ -88,14 +88,14 @@ export default getLogger();
  * 
  * @since 0.3.0
  */
-export const debug = (...args: any[]) => getLogger().debug(...args);
-export const info = (...args: any[]) => getLogger().info(...args);
-export const warn = (...args: any[]) => getLogger().warn(...args);
-export const error = (...args: any[]) => getLogger().error(...args);
-export const success = (...args: any[]) => getLogger().success(...args);
-export const critical = (...args: any[]) => getLogger().critical(...args);
-export const trace = (...args: any[]) => getLogger().trace(...args);
-export const table = (data: any, columns?: string[]) => getLogger().table(data, columns);
+export const debug = (...args: unknown[]) => getLogger().debug(...args);
+export const info = (...args: unknown[]) => getLogger().info(...args);
+export const warn = (...args: unknown[]) => getLogger().warn(...args);
+export const error = (...args: unknown[]) => getLogger().error(...args);
+export const success = (...args: unknown[]) => getLogger().success(...args);
+export const critical = (...args: unknown[]) => getLogger().critical(...args);
+export const trace = (...args: unknown[]) => getLogger().trace(...args);
+export const table = (data: unknown, columns?: string[]) => getLogger().table(data, columns);
 export const group = (label: string, collapsed?: boolean) => getLogger().group(label, collapsed);
 export const groupEnd = () => getLogger().groupEnd();
 export const time = (label: string) => getLogger().time(label);
@@ -198,11 +198,11 @@ export {
 // Enterprise feature function exports
 import type { SerializerFn, HookEvent, HookCallback, MiddlewareFn, TransportTarget } from './types/index.js';
 export const addSerializer = <T>(
-    type: new (...args: any[]) => T,
+    type: new (...args: unknown[]) => T,
     serializer: SerializerFn<T>,
     priority?: number
 ) => getLogger().addSerializer(type, serializer, priority);
-export const removeSerializer = <T>(type: new (...args: any[]) => T) =>
+export const removeSerializer = <T>(type: new (...args: unknown[]) => T) =>
     getLogger().removeSerializer(type);
 export const on = (event: HookEvent, callback: HookCallback, priority?: number) =>
     getLogger().on(event, callback, priority);

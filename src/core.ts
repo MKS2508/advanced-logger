@@ -143,7 +143,7 @@ export class CoreLogger {
     /**
      * Core logging method with universal formatting
      */
-    private log(level: LogLevel, ...args: any[]): void {
+    private log(level: LogLevel, ...args: unknown[]): void {
         if (!this.shouldLog(level)) return;
 
         const prefix = this.getEffectivePrefix();
@@ -197,42 +197,42 @@ export class CoreLogger {
     /**
      * Logs debug information (lowest priority)
      */
-    debug(...args: any[]): void {
+    debug(...args: unknown[]): void {
         this.log('debug', ...args);
     }
 
     /**
      * Logs informational messages
      */
-    info(...args: any[]): void {
+    info(...args: unknown[]): void {
         this.log('info', ...args);
     }
 
     /**
      * Logs warning messages
      */
-    warn(...args: any[]): void {
+    warn(...args: unknown[]): void {
         this.log('warn', ...args);
     }
 
     /**
      * Logs error messages
      */
-    error(...args: any[]): void {
+    error(...args: unknown[]): void {
         this.log('error', ...args);
     }
 
     /**
      * Logs critical errors (highest priority)
      */
-    critical(...args: any[]): void {
+    critical(...args: unknown[]): void {
         this.log('critical', ...args);
     }
 
     /**
      * Logs trace information (detailed debugging)
      */
-    trace(...args: any[]): void {
+    trace(...args: unknown[]): void {
         this.log('debug', ...args);
         if (this.shouldLog('debug')) {
             console.trace(...args);
