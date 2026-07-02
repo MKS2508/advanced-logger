@@ -4,7 +4,7 @@
  */
 
 import type { LogLevel } from '../types/index.js';
-import { supportsANSIColors } from './environment.js';
+import { supportsANSI } from './environment-detector.js';
 
 /**
  * ANSI color codes for terminal styling
@@ -134,7 +134,7 @@ function ansi(code: number | number[]): string {
  * Applies ANSI styling to text
  */
 export function ansiStyle(text: string, codes: number[]): string {
-    if (!supportsANSIColors()) return text;
+    if (!supportsANSI()) return text;
     return `${ansi(codes)}${text}${ansi(ANSI_CODES.reset)}`;
 }
 
@@ -195,7 +195,7 @@ export function formatLogLevelANSI(level: LogLevel, useEmojis: boolean = true): 
     const emoji = useEmojis ? style.emoji : '';
     const label = level.toUpperCase().padEnd(8);
 
-    if (!supportsANSIColors()) {
+    if (!supportsANSI()) {
         return `${emoji} ${label}`;
     }
 
@@ -214,7 +214,7 @@ export function formatSuccessANSI(message: string, useEmojis: boolean = true): s
     const style = ANSI_LEVEL_STYLES.success;
     const emoji = useEmojis ? style.emoji : '';
 
-    if (!supportsANSIColors()) {
+    if (!supportsANSI()) {
         return `${emoji} SUCCESS: ${message}`;
     }
 
@@ -226,7 +226,7 @@ export function formatSuccessANSI(message: string, useEmojis: boolean = true): s
  * Format prefix for terminal
  */
 export function formatPrefixANSI(prefix: string): string {
-    if (!supportsANSIColors()) {
+    if (!supportsANSI()) {
         return `[${prefix}]`;
     }
 
@@ -237,7 +237,7 @@ export function formatPrefixANSI(prefix: string): string {
  * Format file location for terminal
  */
 export function formatLocationANSI(location: string): string {
-    if (!supportsANSIColors()) {
+    if (!supportsANSI()) {
         return `(${location})`;
     }
 
