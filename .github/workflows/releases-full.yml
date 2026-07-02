@@ -43,11 +43,6 @@ on:
         required: false
         default: false
         type: boolean
-  push:
-    branches: [main]
-    paths-ignore:
-      - '*.md'
-      - '.github/workflows/docs-demo.yml'
 
 # Concurrency control para evitar conflictos entre workflows de release
 concurrency:
