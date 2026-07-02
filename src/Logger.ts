@@ -67,7 +67,6 @@ import {
 
 // Smart presets and dynamic scoped loggers
 import { getSmartPreset, getAvailablePresets, hasPreset } from './styling/SmartPresets.js';
-import { createLogStyleBuilder } from './styling/LogStyleBuilder.js';
 
 // Scoped loggers (static import for performance)
 import { ScopedLogger, APILogger, ComponentLogger } from './ScopedLogger.js';
@@ -774,13 +773,6 @@ export class Logger {
         // Store customization for use in createStyledOutput
         this._customization = overrides;
         this.success('Customization applied');
-    }
-
-    /**
-     * Access advanced styling API (for power users)
-     */
-    styles(): any {
-        return createLogStyleBuilder(this);
     }
 
     // ===== HANDLER MANAGEMENT =====
@@ -2174,7 +2166,6 @@ export const component = (name: string) => getDefaultLogger().component(name);
 export const api = (name: string) => getDefaultLogger().api(name);
 export const scope = (name: string) => getDefaultLogger().scope(name);
 export const customize = (overrides: any) => getDefaultLogger().customize(overrides);
-export const styles = () => getDefaultLogger().styles();
 
 // Enterprise features exports
 export const addSerializer = <T>(
