@@ -180,13 +180,6 @@ export {
     BANNER_VARIANTS
 } from './styling/index.js';
 
-// Handler exports
-export {
-    FileLogHandler,
-    RemoteLogHandler,
-    AnalyticsLogHandler
-} from './handlers/index.js';
-
 // Serializers
 export { SerializerRegistry } from './serializers/index.js';
 
@@ -198,7 +191,8 @@ export {
     TransportManager,
     ConsoleTransport,
     FileTransport,
-    HttpTransport
+    HttpTransport,
+    OtlpTransport
 } from './transports/index.js';
 
 // Style Cache

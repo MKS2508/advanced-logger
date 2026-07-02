@@ -21,8 +21,9 @@ import logger, {
     cli,
     createStyle,
     stylePresets,
-    FileLogHandler,
-    AnalyticsLogHandler
+    FileTransport,
+    HttpTransport,
+    OtlpTransport
 } from './index.js';
 
 // Visual features demonstrations

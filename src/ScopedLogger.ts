@@ -101,8 +101,7 @@ export class ScopedLogger {
     }
 
     trace(...args: any[]): void {
-        this.parent.logWithBindings(this.getBindings(), 'debug', ...args);
-        console.trace(`[${this.scopeName}]`);
+        this.parent.logWithBindings(this.getBindings(), 'trace', ...args);
     }
 
     // ===== CLI PRIMITIVES (v5.0 delegation) =====

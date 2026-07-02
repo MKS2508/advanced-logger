@@ -113,6 +113,7 @@ export class TerminalRenderer {
 
         const levelText = this.getLevelText(level);
         const levelColors: Record<LogLevel, string> = {
+            'trace': 'gray',
             'debug': 'magenta',
             'info': 'blue',
             'warn': 'yellow',
@@ -184,6 +185,7 @@ export class TerminalRenderer {
      */
     public getLevelText(level: LogLevel): string {
         const levelMap: Record<LogLevel, string> = {
+            'trace': 'TRACE',
             'debug': 'DEBUG',
             'info': 'INFO',
             'warn': 'WARN',
@@ -207,6 +209,7 @@ export class TerminalRenderer {
         const reset = ANSI.reset;
 
         const cyberpunkColors: Record<LogLevel, string> = {
+            'trace': '#808080',  // Dim gray
             'debug': '#ff00ff',   // Neon magenta
             'info': '#00ffff',    // Neon cyan
             'warn': '#ffff00',    // Neon yellow
@@ -254,6 +257,7 @@ export class TerminalRenderer {
         const reset = ANSI.reset;
 
         const minimalColors: Record<LogLevel, string> = {
+            'trace': '#5c6370',  // Dim gray
             'debug': '#c678dd', // Soft purple
             'info': '#61afef',  // Soft blue
             'warn': '#e5c07b',  // Soft yellow
@@ -289,6 +293,7 @@ export class TerminalRenderer {
      */
     public getChalkForLevel(level: LogLevel): ChalkLikeInterface {
         const levelColors: Record<LogLevel, string> = {
+            'trace': '#5c6370',
             'debug': '#c678dd',
             'info': '#61afef',
             'warn': '#e5c07b',

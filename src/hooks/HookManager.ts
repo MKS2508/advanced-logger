@@ -8,13 +8,20 @@ import type {
     IHookManager
 } from '../types/index.js';
 
+const MAX_ONERROR_DEPTH = 5;
+
 function generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 export class HookManager implements IHookManager {
     private hooks: Map<HookEvent, HookRegistration[]> = new Map();
     private middlewares: MiddlewareRegistration[] = [];
+    /**
+     * Tracks current recursion depth for each hook event so `onError` chains
+     * that throw can't loop forever. Reset when the outer emit returns.
+     */
+    private _onErrorDepth: Map<HookEvent, number> = new Map();
 
     constructor() {
         this.hooks.set('beforeLog', []);
@@ -95,32 +102,53 @@ export class HookManager implements IHookManager {
     }
 
     async emit(event: HookEvent, entry: HookLogEntry): Promise<HookLogEntry> {
-        const hooks = this.hooks.get(event) || [];
-        let currentEntry = { ...entry };
-        const toRemove: string[] = [];
+        // Re-entrancy guard. Without this, an onError hook that itself throws
+        // would re-enter emit('onError', ...) and either spin forever or
+        // recurse until the stack blows. We allow a small burst (MAX_ONERROR_DEPTH)
+        // so legitimate fan-out keeps working, but break the cycle.
+        const depth = (this._onErrorDepth.get(entry.hookEvent ?? event) ?? 0);
+        if (event === 'onError' && depth >= MAX_ONERROR_DEPTH) {
+            // eslint-disable-next-line no-console
+            console.error('HookManager: onError recursion limit reached, dropping entry:', entry);
+            return entry;
+        }
+        this._onErrorDepth.set(event, depth + 1);
 
-        for (const hook of hooks) {
-            try {
-                const result = await hook.callback(currentEntry);
-                if (result) {
-                    currentEntry = { ...currentEntry, ...result };
-                }
-                if (hook.once) {
-                    toRemove.push(hook.id);
-                }
-            } catch (error) {
-                if (event !== 'onError') {
-                    await this.emit('onError', {
-                        ...currentEntry,
-                        error,
-                        hookEvent: event
-                    } as HookLogEntry);
+        try {
+            const hooks = this.hooks.get(event) || [];
+            let currentEntry = { ...entry };
+            const toRemove: string[] = [];
+
+            for (const hook of hooks) {
+                try {
+                    const result = await hook.callback(currentEntry);
+                    if (result) {
+                        currentEntry = { ...currentEntry, ...result };
+                    }
+                    if (hook.once) {
+                        toRemove.push(hook.id);
+                    }
+                } catch (error) {
+                    if (event !== 'onError') {
+                        await this.emit('onError', {
+                            ...currentEntry,
+                            error: error instanceof Error ? error : new Error(String(error)),
+                            hookEvent: event
+                        });
+                    } else {
+                        // An onError hook threw — surface to console (single shot)
+                        // without dispatching another onError (which would recurse).
+                        // eslint-disable-next-line no-console
+                        console.error('HookManager: onError hook threw, swallowed to break recursion:', error);
+                    }
                 }
             }
-        }
 
-        toRemove.forEach(id => this.removeHook(event, id));
-        return currentEntry;
+            toRemove.forEach(id => this.removeHook(event, id));
+            return currentEntry;
+        } finally {
+            this._onErrorDepth.set(event, depth);
+        }
     }
 
     async process(entry: HookLogEntry): Promise<HookLogEntry> {

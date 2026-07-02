@@ -46,6 +46,7 @@ import { createStyledOutput } from './utils/output.js';
 
 // Constants
 import { DEFAULT_CONFIG, LEVEL_STYLES } from './constants.js';
+import { LOG_LEVELS } from './types/index.js';
 
 /**
  * Minimal Logger class with core functionality only
@@ -130,8 +131,8 @@ export class CoreLogger {
      */
     private shouldLog(level: LogLevel): boolean {
         if (this.config.verbosity === 'silent') return false;
-        const levels = { debug: 0, info: 1, warn: 2, error: 3, critical: 4 };
-        return levels[level] >= levels[this.config.verbosity];
+        const verbosity = this.config.verbosity as LogLevel;
+        return LOG_LEVELS[level] >= LOG_LEVELS[verbosity];
     }
 
     /**

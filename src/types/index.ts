@@ -5,6 +5,7 @@
 // Core types
 export type {
     LogLevel,
+    LogTag,
     Verbosity,
     ThemeVariant,
     DevToolsTheme,
@@ -34,14 +35,16 @@ export type {
     ISpinnerHandle,
     IBoxOptions,
     ITableOptions,
+    ILogResourceRef,
 } from './core.js';
 
-export { LOG_LEVELS } from './core.js';
+export { LOG_LEVELS, SUCCESS_LEVEL } from './core.js';
 
 // Handler types
 export type {
     LogMetadata,
     ILogHandler,
+    ExportLogHandler,
     LogEntry,
     ExportFilters,
     ExportOptions,
@@ -77,6 +80,14 @@ export type {
     ITransport,
     IBufferedTransport,
     ITransportManager,
+    ILogResource,
+    ILogAttributes,
+    LogAttributeValue,
+} from './transports.js';
+
+export {
+    LOG_LEVEL_TO_SEVERITY_NUMBER,
+    LOG_LEVEL_TO_SEVERITY_TEXT,
 } from './transports.js';
 
 // Style Cache types

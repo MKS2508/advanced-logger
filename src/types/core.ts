@@ -5,15 +5,17 @@
  */
 
 /**
- * Niveles de log soportados en orden jerárquico (debug < info < warn < error < critical)
- * 
+ * Niveles de log soportados en orden jerárquico
+ * (trace < debug < info < warn < error < critical)
+ *
  * @constant {Object} LOG_LEVELS
+ * @property {number} trace - Nivel -1: Trazas muy verbosas (alineado con OTel TRACE severity 1-4)
  * @property {number} debug - Nivel 0: Información de depuración detallada
  * @property {number} info - Nivel 1: Mensajes informativos generales
  * @property {number} warn - Nivel 2: Advertencias que no detienen la ejecución
  * @property {number} error - Nivel 3: Errores que pueden afectar funcionalidad
  * @property {number} critical - Nivel 4: Errores críticos que requieren atención inmediata
- * 
+ *
  * @example
  * // Verificar si un nivel debe mostrarse
  * if (LOG_LEVELS[currentLevel] >= LOG_LEVELS.warn) {
@@ -21,6 +23,7 @@
  * }
  */
 export const LOG_LEVELS = {
+    trace: -1,
     debug: 0,
     info: 1,
     warn: 2,
@@ -30,9 +33,23 @@ export const LOG_LEVELS = {
 
 /**
  * Tipo de nivel de log derivado de las claves de LOG_LEVELS
- * @typedef {'debug' | 'info' | 'warn' | 'error' | 'critical'} LogLevel
+ * @typedef {'trace' | 'debug' | 'info' | 'warn' | 'error' | 'critical'} LogLevel
  */
 export type LogLevel = keyof typeof LOG_LEVELS;
+
+/**
+ * Special "level" tag used by `success()` — maps to OTel INFO severity.
+ * Exists outside the standard LogLevel union so internal level comparisons
+ * (trace < debug < info < warn < error < critical) are not perturbed.
+ */
+export const SUCCESS_LEVEL = 'success' as const;
+
+/**
+ * Tags accepted by `log()` family and visual methods (success() emits at
+ * INFO severity but uses success styling). Useful for transport layers that
+ * need to distinguish "success" from generic info logs.
+ */
+export type LogTag = LogLevel | typeof SUCCESS_LEVEL;
 
 /**
  * Tipo de nivel de verbosidad para filtrar logs
@@ -161,6 +178,19 @@ export interface OutputWriter {
  *   autoDetectTheme: true
  * };
  */
+/**
+ * Minimal OTel resource shape — duplicated here to avoid a circular
+ * import with `./transports.js`. The canonical `ILogResource` lives in
+ * `./transports.js`; both shapes stay in sync via the public contract
+ * (service.name + optional version + optional environment).
+ */
+export interface ILogResourceRef {
+    'service.name': string;
+    'service.version'?: string;
+    'deployment.environment'?: string;
+    [key: string]: string | undefined;
+}
+
 export interface LoggerConfig {
     globalPrefix?: string;
     verbosity: Verbosity;
@@ -178,6 +208,11 @@ export interface LoggerConfig {
     outputWriter?: OutputWriter;
     /** CLI verbosity level for controlling primitive output @since 5.0.0 */
     cliLevel?: CLILogLevel;
+    /**
+     * Default OTel resource attached to every record that doesn't override it.
+     * Set once per process (service.name, service.version, deployment.environment).
+     */
+    resource?: Partial<ILogResourceRef>;
 }
 
 /**

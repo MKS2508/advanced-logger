@@ -173,12 +173,23 @@ export function generateLogId(): string {
 }
 
 /**
- * Escape HTML entities for safe HTML output
+ * Escape HTML entities for safe HTML output. Falls back to a hand-rolled
+ * entity map when `document` is not available (Node, SSR, Web Workers).
+ *
+ * @since 0.3.0 (DOM guard added in 5.1.0)
  */
 export function escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (typeof document !== 'undefined') {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**

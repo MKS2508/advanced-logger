@@ -92,23 +92,29 @@ export const THEME_BANNERS: Record<ThemeVariant, { simple: string; style: string
 };
 
 /**
- * Feature detection for banner capabilities
+ * Feature detection for banner capabilities. Returns `'simple'` immediately
+ * if neither `navigator` nor `document` exist (Node, SSR, workers).
+ *
+ * @since 0.3.0 (DOM guards added in 5.1.0)
  */
 export function detectBannerCapabilities(): BannerType {
+    if (typeof navigator === 'undefined' || typeof document === 'undefined') {
+        return 'simple';
+    }
+
     // Try to detect browser capabilities
     const userAgent = navigator.userAgent;
     const isChrome = /Chrome/.test(userAgent);
     const isFirefox = /Firefox/.test(userAgent);
     const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
-    
+
     // Check for SVG support (most modern browsers)
-    const supportsSVG = !!document.createElementNS && 
+    const supportsSVG = !!document.createElementNS &&
         !!document.createElementNS('http://www.w3.org/2000/svg', 'svg').createSVGRect;
-    
+
     // Check for CSS animation support
-    const supportsAnimations = typeof document !== 'undefined' && 
-        'animationName' in document.createElement('div').style;
-    
+    const supportsAnimations = 'animationName' in document.createElement('div').style;
+
     // Progressive enhancement
     if (supportsAnimations && isChrome) {
         return 'animated';
@@ -119,17 +125,22 @@ export function detectBannerCapabilities(): BannerType {
     } else if (isSafari) {
         return 'ascii';
     }
-    
+
     return 'simple';
 }
 
 /**
- * Display initialization banner with advanced styling
+ * Display initialization banner with advanced styling. No-op in Node,
+ * SSR, or Web Workers (DOM-guard at the top).
+ *
+ * @since 0.3.0 (DOM guards added in 5.1.0)
  */
 export function displayInitBanner(bannerType?: BannerType): void {
+    if (typeof document === 'undefined') return;
+
     const selectedType = bannerType || detectBannerCapabilities();
     const banner = BANNER_VARIANTS[selectedType];
-    
+
     // Add CSS animation keyframes if needed
     if (selectedType === 'animated') {
         const style = document.createElement('style');
@@ -142,7 +153,7 @@ export function displayInitBanner(bannerType?: BannerType): void {
         `;
         document.head.appendChild(style);
     }
-    
+
     console.log(`%c${banner.text}`, banner.style);
 
     // Show feature highlights

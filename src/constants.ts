@@ -24,6 +24,14 @@ export const DEFAULT_CONFIG = {
  * Basic level styles for core module (minimal CSS styling)
  */
 export const LEVEL_STYLES: Record<LogLevel | 'success', LevelStyleConfig> = {
+    trace: {
+        emoji: '🔬',
+        label: 'TRACE',
+        background: 'linear-gradient(90deg, #495057, #343a40)',
+        color: '#dee2e6',
+        border: '1px solid #495057',
+        shadow: '0 1px 2px rgba(73, 80, 87, 0.3)'
+    },
     debug: {
         emoji: '🔍',
         label: 'DEBUG',
@@ -138,6 +146,7 @@ export const STYLE_DEFAULTS = {
  * Level priority mapping for filtering
  */
 export const LEVEL_PRIORITIES: Record<LogLevel, number> = {
+    trace: -1,
     debug: 0,
     info: 1,
     warn: 2,

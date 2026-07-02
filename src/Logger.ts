@@ -24,7 +24,24 @@ import type {
     HookCallback,
     MiddlewareFn,
     TransportTarget,
-    TransportRecord
+    TransportRecord,
+    ILogResourceRef,
+    StackInfo,
+    LogStyles,
+    ILogAttributes,
+    LogAttributeValue,
+    ExportLogHandler,
+    ExportResult,
+    ExportFilters,
+    ExportOptions,
+    BufferStats
+} from './types/index.js';
+
+import { LOG_LEVELS } from './types/index.js';
+import {
+    LOG_LEVEL_TO_SEVERITY_NUMBER,
+    LOG_LEVEL_TO_SEVERITY_TEXT,
+    type ILogResource as ITransportLogResource
 } from './types/index.js';
 
 // Enterprise features
@@ -54,9 +71,6 @@ import { createLogStyleBuilder } from './styling/LogStyleBuilder.js';
 
 // Scoped loggers (static import for performance)
 import { ScopedLogger, APILogger, ComponentLogger } from './ScopedLogger.js';
-
-// Handler imports
-import { ExportLogHandler } from './handlers/index.js';
 
 // CLI imports
 import { createDefaultCLI, type CommandProcessor } from './cli/index.js';
@@ -112,7 +126,6 @@ export class Logger {
     private handlers: ILogHandler[] = [];
     private timers: Map<string, TimerEntry> = new Map();
     private groupDepth: number = 0;
-    private exportHandler?: ExportLogHandler;
     private cliProcessor?: CommandProcessor;
     private themeChangeListener?: (() => void) | null;
     private badgeList: string[] = [];
@@ -125,6 +138,35 @@ export class Logger {
     private serializerRegistry: SerializerRegistry;
     private hookManager: HookManager;
     private transportManager?: TransportManager;
+
+    /**
+     * Per-logger structured context (requestId, userId, ...). Merged into
+     * every `TransportRecord.attributes` so transports like `OtlpTransport`
+     * can correlate logs without additional wiring.
+     */
+    private context: Record<string, unknown> = {};
+
+    /**
+     * Stack of context labels pushed by `ContextLogger.run()`. Each entry
+     * contributes to the effective scope prefix. Cleared on cleanup.
+     */
+    private contextStack: string[] = [];
+
+    /**
+     * Active smart-preset reference (set by `preset()`). Typed as `unknown`
+     * to keep the public surface clean; consumed by `createStyledOutput`.
+     */
+    private _activePreset?: unknown;
+    /**
+     * Name of the active smart-preset. Stored separately so theme-change
+     * detection can re-render without re-running the preset body.
+     */
+    private _activePresetName?: string;
+    /**
+     * Last-applied `customize()` overrides. Stored for later read by
+     * `createStyledOutput`.
+     */
+    private _customization?: unknown;
 
     /** Whether CLI primitives (step, box, header, etc.) should be shown @since 5.0.0 */
     private _showPrimitives = true;
@@ -155,13 +197,13 @@ export class Logger {
         this.serializerRegistry = new SerializerRegistry();
         this.hookManager = new HookManager();
 
-        // Initialize export handler if buffer size is specified
-        if (this.config.bufferSize) {
-            this.exportHandler = new ExportLogHandler(this.config.bufferSize);
-            this.handlers.push(this.exportHandler);
-        }
+        // Legacy ExportLogHandler has been removed in 5.1.0 (F013-delete).
+        // For log capture & export, use transports (`addTransport({ target: new FileTransport(...) })`)
+        // or the new `withContext` + `OtlpTransport` for SigNoz ingestion.
 
-        // Initialize CLI processor
+        // Initialize CLI processor lazily (BUG-N13)
+        // We don't trigger the full CLI machinery here; consumers who use
+        // `logger.cli(...)` or related commands will pay for the setup at call time.
         this.cliProcessor = createDefaultCLI();
 
         // Set up theme change listener if auto-detection is enabled
@@ -288,18 +330,26 @@ export class Logger {
             this.preset(theme);
             return;
         }
-        
+
         // Fallback to old theme system
         if (theme in THEME_PRESETS) {
-            LEVEL_STYLES = (THEME_PRESETS as any)[theme];
-            this.config.theme = theme;
-            
-            // Show theme-specific banner
-            if (theme in THEME_BANNERS) {
-                const themeBanner = (THEME_BANNERS as any)[theme];
-                console.log(`%c${themeBanner.simple}`, themeBanner.style);
+            const themeRecord = THEME_PRESETS as unknown as Record<string, typeof LEVEL_STYLES>;
+            const newStyles = themeRecord[theme];
+            if (newStyles) {
+                LEVEL_STYLES = newStyles;
             }
-            
+            this.config.theme = theme;
+
+            // Show theme-specific banner through the centralised writer
+            // so silent/custom output modes are respected.
+            const bannersRecord = THEME_BANNERS as Record<string, { simple: string; style: string }>;
+            if (theme in bannersRecord) {
+                const themeBanner = bannersRecord[theme];
+                if (themeBanner) {
+                    this.writeOutput(`%c${themeBanner.simple}`, 'info', [themeBanner.style], []);
+                }
+            }
+
             this.success(`Theme changed to: ${theme}`);
         } else {
             this.error(`Invalid theme: ${theme}. Available:`, [...getAvailablePresets(), ...Object.keys(THEME_PRESETS)]);
@@ -321,6 +371,83 @@ export class Logger {
     setBannerType(bannerType: BannerType): void {
         this.config.bannerType = bannerType;
         this.success(`Banner type changed to: ${bannerType}`);
+    }
+
+    /**
+     * Mutates this logger's structured context and returns itself for chaining.
+     * The context is merged into every emitted `TransportRecord.attributes`.
+     *
+     * @param extra - Key-value pairs to attach (requestId, userId, ...)
+     * @returns The same logger instance, now with extra context bound
+     *
+     * @example
+     * logger.withContext({ requestId: req.id }).info('handling request');
+     * logger.withContext({ requestId: req.id, userId: user.id }).debug('auth ok');
+     *
+     * @see {@link child} for an immutable copy with the merged context
+     */
+    withContext(extra: Record<string, unknown>): this {
+        this.context = { ...this.context, ...extra };
+        return this;
+    }
+
+    /**
+     * Returns an immutable copy of this logger with the extra context bound.
+     * Future calls on the child emit with the merged context, without
+     * mutating the parent — the canonical MDC pattern.
+     *
+     * @param extra - Key-value pairs to attach (requestId, userId, ...)
+     * @returns A new Logger with merged context
+     *
+     * @example
+     * const reqLog = logger.child({ requestId: req.id });
+     * reqLog.info('start');     // emits attributes: { requestId }
+     * logger.info('unrelated'); // NOT affected — parent's context untouched
+     *
+     */
+    child(extra: Record<string, unknown>): Logger {
+        const childLogger = new Logger({ ...this.config });
+        childLogger.context = { ...this.context, ...extra };
+        return childLogger;
+    }
+
+    /**
+     * Drops every key from the bound context. After this call, emitted
+     * records no longer carry `attributes` until {@link withContext} or
+     * {@link child} re-establish one.
+     *
+     * @returns The same logger instance, now context-free
+     */
+    clearContext(): this {
+        this.context = {};
+        return this;
+    }
+
+    /**
+     * Snapshot of the bound context. Returned object is a shallow copy:
+     * mutating it does NOT affect what subsequent log calls emit.
+     *
+     * @returns A read-only snapshot of the current context
+     */
+    getContext(): Readonly<Record<string, unknown>> {
+        return { ...this.context };
+    }
+
+    /**
+     * Updates the default OTel resource (service.name, version, env).
+     * Persisted into every emitted record's `resource` field unless the
+     * record itself overrides it.
+     *
+     * @param resource - Partial OTel resource to merge into the current one
+     * @returns The same logger instance, for chaining
+     *
+     * @example
+     * logger.setResource({ 'service.name': 'api', 'service.version': '1.2.3' });
+     *
+     */
+    setResource(resource: Partial<ILogResourceRef>): this {
+        this.config.resource = { ...(this.config.resource ?? {}), ...resource };
+        return this;
     }
 
     /**
@@ -359,13 +486,39 @@ export class Logger {
      * 
      * @since 0.3.0
      */
-    cleanup(): void {
+    /**
+     * Tears down every resource held by this Logger. Safe to call multiple
+     * times. Fixed in 5.1.0 to fully drain transports + clear timers +
+     * drop the legacy handler list + reset group depth + clear context.
+     *
+     * @example
+     * await logger.cleanup(); // before process exit / hot reload
+     *
+     * @since 0.3.0 (rewritten in 5.1.0 to await transports fully)
+     */
+    async cleanup(): Promise<void> {
         if (this.themeChangeListener) {
-            this.themeChangeListener();
+            try {
+                this.themeChangeListener();
+            } catch {
+                // Listener cleanup is best-effort
+            }
             this.themeChangeListener = null;
         }
-        // Close transports
-        this.transportManager?.close().catch(() => {});
+
+        // Drain transport queue (fixed: was fire-and-forget in 5.0.x — BUG-N14)
+        if (this.transportManager) {
+            await this.transportManager.close();
+        }
+
+        // Drop legacy handler refs so GC can collect them (BUG-N17)
+        this.handlers.length = 0;
+        // Reset mutable runtime state
+        this.timers.clear();
+        this.badgeList = [];
+        this.context = {};
+        this.groupDepth = 0;
+        this.contextStack.length = 0;
     }
 
 
@@ -400,8 +553,8 @@ export class Logger {
             this.displaySettings.showLocation = presetConfig.location?.show ?? true;
 
             // Store the preset config for use in createStyledOutput
-            (this as any)._activePreset = presetConfig;
-            (this as any)._activePresetName = name;
+            this._activePreset = presetConfig;
+            this._activePresetName = name;
 
             // Only show success message in browser to avoid verbose terminal logs
             if (getEnvironment() === 'browser') {
@@ -619,7 +772,7 @@ export class Logger {
         }
 
         // Store customization for use in createStyledOutput
-        (this as any)._customization = overrides;
+        this._customization = overrides;
         this.success('Customization applied');
     }
 
@@ -636,17 +789,19 @@ export class Logger {
      * Añade un handler personalizado para extender funcionalidad
      * 
      * @param {ILogHandler} handler - Handler que implementa ILogHandler
-     * 
+     *
      * @example
      * // Handler personalizado para enviar logs a servidor
-     * const remoteHandler = new RemoteLogHandler('https://api.ejemplo.com/logs');
-     * logger.addHandler(remoteHandler);
-     * 
+     * logger.addHandler({
+     *   handle(level, message, args, metadata) {
+     *     fetch('/logs', { method: 'POST', body: JSON.stringify({ level, message }) });
+     *   }
+     * });
+     *
      * @example
-     * // Handler para guardar en archivo
-     * const fileHandler = new FileLogHandler('./app.log');
-     * logger.addHandler(fileHandler);
-     * 
+     * // Para escribir a archivo, usa `addTransport` con un `FileTransport`
+     * logger.addTransport({ target: new FileTransport({ destination: 'app.log' }) });
+     *
      * @since 0.3.0
      */
     addHandler(handler: ILogHandler): void {
@@ -664,13 +819,17 @@ export class Logger {
     }
 
     /**
-     * Obtiene el handler de exportación si está disponible
+     * Removed in 5.1.0 (F013-delete). The legacy `ExportLogHandler` is gone;
+     * for log capture + export use `addTransport({ target: new FileTransport(...) })`.
      *
-     * @returns {ExportLogHandler | undefined} Handler de exportación o undefined
-     * @since 0.3.0
+     * Returns a no-op stub that satisfies the `ExportLogHandler` interface
+     * (so existing CLI commands don't crash) but never produces output.
+     *
+     * @returns A no-op handler instance
+     * @since 0.3.0 (deprecated in 5.1.0)
      */
-    getExportHandler(): ExportLogHandler | undefined {
-        return this.exportHandler;
+    getExportHandler(): ExportLogHandler {
+        return _noopExportHandler;
     }
 
     // ===== SERIALIZERS =====
@@ -882,15 +1041,65 @@ export class Logger {
     // ===== CORE LOGGING METHODS =====
 
     /**
-     * Verifica si un nivel de log debe mostrarse según la verbosidad actual
+     * Verifica si un nivel de log debe mostrarse según la verbosidad actual.
      * @private
      * @param {LogLevel} level - Nivel de log a verificar
      * @returns {boolean} True si debe mostrarse, false si no
      */
     private shouldLog(level: LogLevel): boolean {
         if (this.config.verbosity === 'silent') return false;
-        const levels = { debug: 0, info: 1, warn: 2, error: 3, critical: 4 };
-        return levels[level] >= levels[this.config.verbosity];
+        return LOG_LEVELS[level] >= LOG_LEVELS[this.config.verbosity as LogLevel];
+    }
+
+    /**
+     * Builds and dispatches a `TransportRecord` to the {@link TransportManager}
+     * (no-op if no transports are registered). Shared by every log path —
+     * `log()`, `success()`, and visual methods like `table()` / `group()` /
+     * `time()` — so all emissions hit the same transport pipeline.
+     *
+     * @param level - The canonical log level (trace/debug/info/warn/error/critical)
+     * @param message - Final, post-hook message text
+     * @param prefix - Effective prefix (global + scope)
+     * @param stackInfo - Optional caller location
+     * @param extra - Optional fields to merge into the record (e.g. `{ tag: 'success' }`)
+     */
+    private dispatchToTransports(
+        level: LogLevel,
+        message: string,
+        prefix: string | undefined,
+        stackInfo: StackInfo | null,
+        extra?: Partial<TransportRecord>
+    ): void {
+        if (!this.transportManager) return;
+
+        const record: TransportRecord = {
+            level,
+            levelValue: LOG_LEVELS[level],
+            severityNumber: LOG_LEVEL_TO_SEVERITY_NUMBER[level],
+            severityText: LOG_LEVEL_TO_SEVERITY_TEXT[level],
+            time: Date.now(),
+            msg: message,
+            prefix,
+            location: stackInfo
+                ? {
+                    file: stackInfo.file,
+                    line: stackInfo.line,
+                    column: stackInfo.column,
+                    function: stackInfo.function
+                }
+                : undefined,
+            attributes: Object.keys(this.context).length > 0
+                ? toLogAttributes(this.context)
+                : undefined,
+            resource: this.config.resource
+                ? { ...this.config.resource } as Partial<ITransportLogResource>
+                : undefined,
+            ...extra
+        };
+
+        // Fire-and-forget — never break the sync log path. Transport failures
+        // are surfaced via the manager's `console.error` channel (not silent).
+        this.transportManager.write(record).catch(() => {});
     }
 
     /**
@@ -904,22 +1113,31 @@ export class Logger {
     }
 
     /**
-     * Método central de logging que maneja estilos y formato
+     * Método central de logging. Awaits the `beforeLog` hook pipeline
+     * synchronously (so redactions / enrichments are reflected in the
+     * emitted message before console + transport dispatch).
+     *
+     * Fire-and-forget callers (e.g. `logger.info(...)` without `await`)
+     * still work — the resulting `Promise<void>` is dropped on the floor.
+     * Awaiting is recommended when `beforeLog` hooks mutate `message`
+     * (e.g. PII redaction, correlation IDs).
+     *
      * @protected
-     * @param {LogLevel} level - Nivel del log
-     * @param {...any} args - Argumentos a loggear
+     * @param level - Nivel del log
+     * @param args - Argumentos a loggear
+     * @returns Promise that resolves once the record has been dispatched
+     *
+     * @since 0.3.0 (return type changed to `Promise<void>` in 5.1.0)
      */
-    protected log(level: LogLevel, ...args: any[]): void {
+    protected async log(level: LogLevel, ...args: any[]): Promise<void> {
         if (!this.shouldLog(level)) return;
 
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         const prefix = this.getEffectivePrefix();
         const timestamp = formatTimestamp();
 
-        // Serialize args using registry
         const serializedArgs = args.map(arg => this.serializerRegistry.serialize(arg));
 
-        // Prepend badges to message if any
         let message = serializedArgs.length > 0 ? String(serializedArgs[0]) : '';
         if (this.badgeList.length > 0 && this.displaySettings.showBadges) {
             const badgePrefix = this.badgeList.map(b => `[${b}]`).join('');
@@ -927,22 +1145,29 @@ export class Logger {
         }
         const additionalArgs = serializedArgs.slice(1);
 
-        // Process beforeLog hooks (sync for performance)
-        let hookEntry = {
+        const hookEntry = {
             level,
             message,
             args: serializedArgs,
             timestamp,
             prefix,
-            stackInfo: stackInfo || undefined
+            stackInfo: stackInfo ?? undefined
         };
 
-        // Emit beforeLog event (fire-and-forget for sync logging)
-        this.hookManager.emit('beforeLog', hookEntry).then(processed => {
-            message = processed.message;
-        }).catch(() => {});
+        // Await beforeLog hooks so redactions / enrichments are reflected
+        // in the emitted message. Fixed in 5.1.0 (BUG-N / F002).
+        let processed;
+        try {
+            processed = await this.hookManager.emit('beforeLog', hookEntry);
+        } catch (error) {
+            // Hook manager already fires onError on its own; fall back to
+            // the pre-hook values to keep the log call from breaking.
+            // eslint-disable-next-line no-console
+            console.error('HookManager beforeLog failed:', error);
+            processed = hookEntry;
+        }
+        message = processed.message;
 
-        // Create styled output with theme detection and display settings
         const [format, ...styles] = createStyledOutput(
             level,
             LEVEL_STYLES,
@@ -950,65 +1175,40 @@ export class Logger {
             message,
             this.displaySettings.showLocation ? stackInfo : null,
             this.config.autoDetectTheme,
-            (this as any)._activePreset,
-            (this as any)._activePresetName
+            this._activePreset as LogStyles | undefined,
+            this._activePresetName
         );
 
-        // Add group indentation
         const groupIndent = '  '.repeat(this.groupDepth);
         const finalFormat = groupIndent + format;
 
-        // Output via configured writer (console by default)
         this.writeOutput(finalFormat, level, styles, additionalArgs);
 
-        // Update export handler group info
-        if (this.exportHandler) {
-            this.exportHandler.setGroupInfo(this.groupDepth);
-        }
-
-        // Call custom handlers
         const metadata: LogMetadata = {
             timestamp,
             level,
             prefix,
-            stackInfo: stackInfo ? stackInfo : undefined,
+            stackInfo: stackInfo ?? undefined
         };
 
         this.handlers.forEach(handler => {
             try {
                 handler.handle(level, message, serializedArgs, metadata);
             } catch (error) {
+                // eslint-disable-next-line no-console
                 console.error('Log handler failed:', error);
             }
         });
 
-        // Write to transports (async, fire-and-forget)
-        if (this.transportManager) {
-            const levelValues: Record<LogLevel, number> = {
-                debug: 0, info: 1, warn: 2, error: 3, critical: 4
-            };
-            const record: TransportRecord = {
-                level,
-                levelValue: levelValues[level],
-                time: Date.now(),
-                msg: message,
-                prefix,
-                location: stackInfo ? {
-                    file: stackInfo.file,
-                    line: stackInfo.line,
-                    column: stackInfo.column,
-                    function: stackInfo.function
-                } : undefined
-            };
-            this.transportManager.write(record).catch(() => {});
-        }
+        this.dispatchToTransports(level, message, prefix, stackInfo);
 
-        // Emit afterLog event (fire-and-forget)
-        this.hookManager.emit('afterLog', hookEntry).catch(() => {});
+        // Fire-and-forget afterLog — after-side mutations don't change the
+        // message that's already on screen, so we don't block on it.
+        this.hookManager.emit('afterLog', processed).catch(() => {});
     }
 
-    logWithBindings(bindings: Bindings, level: LogLevel, ...args: any[]): void {
-        if (!this.shouldLog(level)) return;
+    logWithBindings(bindings: Bindings, level: LogLevel, ...args: any[]): Promise<void> {
+        if (!this.shouldLog(level)) return Promise.resolve();
 
         let prefix = '';
         const colorCapability = getColorCapability();
@@ -1024,82 +1224,95 @@ export class Logger {
             args[0] = prefix + String(args[0]);
         }
 
-        this.log(level, ...args);
+        return this.log(level, ...args);
     }
 
-    debug(...args: any[]): void {
-        this.log('debug', ...args);
+    debug(...args: any[]): Promise<void> {
+        return this.log('debug', ...args);
     }
 
     /**
-     * Registra mensajes informativos
-     * 
-     * @param {...any} args - Mensajes y datos informativos
-     * 
+     * Registra mensajes informativos. Devuelve `Promise<void>` desde 5.1.0.
+     *
+     * @param args - Mensajes y datos informativos
+     *
      * @example
      * logger.info('Servidor iniciado en puerto 3000');
-     * logger.info('Usuario conectado:', userId);
-     * logger.info('Procesando', totalItems, 'elementos');
-     * 
-     * @since 0.3.0
+     * await logger.info('Procesando', totalItems, 'elementos'); // espera hooks
+     *
+     * @since 0.3.0 (return type changed in 5.1.0)
      */
-    info(...args: any[]): void {
-        this.log('info', ...args);
+    info(...args: any[]): Promise<void> {
+        return this.log('info', ...args);
     }
 
     /**
-     * Registra mensajes de advertencia
-     * 
-     * @param {...any} args - Mensajes de advertencia
-     * 
-     * @example
-     * logger.warn('Memoria al 85% de capacidad');
-     * logger.warn('API deprecada, usar v2');
-     * logger.warn('Reintentos agotados:', maxRetries);
-     * 
-     * @since 0.3.0
+     * Registra mensajes de advertencia. Devuelve `Promise<void>` desde 5.1.0.
+     *
+     * @param args - Mensajes de advertencia
+     *
+     * @since 0.3.0 (return type changed in 5.1.0)
      */
-    warn(...args: any[]): void {
-        this.log('warn', ...args);
+    warn(...args: any[]): Promise<void> {
+        return this.log('warn', ...args);
     }
 
     /**
-     * Registra mensajes de error
-     * 
-     * @param {...any} args - Mensajes de error y stack traces
-     * 
-     * @example
-     * logger.error('Fallo en conexión a base de datos');
-     * logger.error('Error al procesar:', error.message, error.stack);
-     * logger.error('Código de error:', errorCode);
-     * 
-     * @since 0.3.0
+     * Registra mensajes de error. Devuelve `Promise<void>` desde 5.1.0.
+     *
+     * @param args - Mensaje de error y stack traces
+     *
+     * @since 0.3.0 (return type changed in 5.1.0)
      */
-    error(...args: any[]): void {
-        this.log('error', ...args);
+    error(...args: any[]): Promise<void> {
+        return this.log('error', ...args);
     }
 
     /**
-     * Registra mensajes de éxito (nivel info especial)
-     * 
-     * @param {...any} args - Mensajes de operaciones exitosas
-     * 
+     * Registra mensajes de éxito. Mapeado internamente a nivel `info` con
+     * styling de success y `record.tag = 'success'` para que los transports
+     * puedan distinguirlo (sin perder info semantics para filtering).
+     *
+     * @param args - Mensaje + datos adicionales
+     *
      * @example
      * logger.success('Base de datos conectada');
      * logger.success('Usuario creado con ID:', userId);
      * logger.success('✓ Tests pasados: 42/42');
-     * 
-     * @since 0.3.0
+     *
+     * @since 0.3.0 (refactor 5.1.0 — emits to transports + respects outputMode)
      */
-    success(...args: any[]): void {
+    async success(...args: any[]): Promise<void> {
         if (!this.shouldLog('info')) return;
 
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         const prefix = this.getEffectivePrefix();
-        const message = args.length > 0 ? String(args[0]) : '';
-        const additionalArgs = args.slice(1);
+        const timestamp = formatTimestamp();
+        const serializedArgs = args.map(arg => this.serializerRegistry.serialize(arg));
+        let message = serializedArgs.length > 0 ? String(serializedArgs[0]) : '';
+        if (this.badgeList.length > 0 && this.displaySettings.showBadges) {
+            const badgePrefix = this.badgeList.map(b => `[${b}]`).join('');
+            message = badgePrefix + ' ' + message;
+        }
+        const additionalArgs = serializedArgs.slice(1);
 
-        // Handle success as special case - use info level with success styling
+        const hookEntry = {
+            level: 'info' as LogLevel,
+            message,
+            args: serializedArgs,
+            timestamp,
+            prefix,
+            stackInfo: stackInfo ?? undefined
+        };
+
+        // Await beforeLog so redactions propagate (matches log())
+        try {
+            const processed = await this.hookManager.emit('beforeLog', hookEntry);
+            message = processed.message;
+        } catch {
+            // Hook manager has already fired onError
+        }
+
         const [format, ...styles] = createStyledOutput(
             'info',
             LEVEL_STYLES,
@@ -1107,139 +1320,134 @@ export class Logger {
             message,
             this.displaySettings.showLocation ? stackInfo : null,
             this.config.autoDetectTheme,
-            (this as any)._activePreset,
-            (this as any)._activePresetName
+            this._activePreset as LogStyles | undefined,
+            this._activePresetName
         );
-        
-        // Override with success styling
+
         const successStyle = LEVEL_STYLES.success;
-        let emoji = '✅';
-        let label = 'SUCCESS';
-        
-        if (successStyle) {
-            if (successStyle.emoji) {
-                emoji = successStyle.emoji;
-            }
-            if (successStyle.label) {
-                label = successStyle.label;
-            }
-        }
-        
+        const emoji = successStyle?.emoji ?? '✅';
+        const label = successStyle?.label ?? 'SUCCESS';
         const successFormat = format.replace(/ℹ️ INFO/, `${emoji} ${label}`);
 
         const groupIndent = '  '.repeat(this.groupDepth);
         const finalFormat = groupIndent + successFormat;
 
-        if (additionalArgs.length > 0) {
-            console.log(finalFormat, ...styles, ...additionalArgs);
-        } else {
-            console.log(finalFormat, ...styles);
-        }
+        this.writeOutput(finalFormat, 'info', styles, additionalArgs);
 
-        // Call handlers
         const metadata: LogMetadata = {
-            timestamp: formatTimestamp(),
+            timestamp,
             level: 'info',
             prefix,
-            stackInfo: stackInfo ? stackInfo : undefined,
+            stackInfo: stackInfo ?? undefined
         };
-
         this.handlers.forEach(handler => {
             try {
                 handler.handle('info', message, args, metadata);
             } catch (error) {
+                // eslint-disable-next-line no-console
                 console.error('Log handler failed:', error);
             }
         });
+
+        this.dispatchToTransports('info', message, prefix, stackInfo, { tag: 'success' });
+
+        this.hookManager.emit('afterLog', hookEntry).catch(() => {});
     }
 
     /**
-     * Registra información de trace (debugging detallado)
-     * 
-     * @param {...any} args - Datos detallados para debugging
-     * 
+     * Registra información de trace (nivel más bajo, debajo de debug).
+     * Alineado con OpenTelemetry `TRACE` severity (1-4).
+     *
+     * @param args - Datos muy verbosos (entrada/salida de funciones, valores intermedios)
+     *
      * @example
      * logger.trace('Entrando en función processData');
-     * logger.trace('Stack completo:', new Error().stack);
-     * 
-     * @since 0.3.0
+     * logger.trace('Variables intermedias:', { a, b, c });
+     *
+     * @since 0.3.0 (refactor 5.1.0 — emits as level=trace, not double debug)
      */
     trace(...args: any[]): void {
-        this.log('debug', ...args);
-        if (this.shouldLog('debug')) {
-            console.trace(...args);
-        }
+        this.log('trace', ...args);
     }
 
     /**
-     * Registra errores críticos (prioridad más alta)
-     * 
-     * @param {...any} args - Errores críticos del sistema
-     * 
+     * Registra errores críticos (prioridad más alta). Devuelve `Promise<void>` desde 5.1.0.
+     *
+     * @param args - Errores críticos del sistema
+     *
      * @example
-     * logger.critical('Sistema caído - reinicio inmediato requerido');
-     * logger.critical('Pérdida de datos detectada');
-     * logger.critical('Brecha de seguridad:', securityError);
-     * 
-     * @since 0.3.0
+     * await logger.critical('Sistema caído - reinicio inmediato requerido');
+     *
+     * @since 0.3.0 (return type changed in 5.1.0)
      */
-    critical(...args: any[]): void {
-        this.log('critical', ...args);
+    critical(...args: any[]): Promise<void> {
+        return this.log('critical', ...args);
     }
 
     // ===== ADVANCED LOGGING FEATURES =====
 
     /**
-     * Muestra datos en formato de tabla
-     * 
-     * @param {any} data - Datos a mostrar (array de objetos o matriz)
-     * @param {string[]} columns - Columnas específicas a mostrar (opcional)
-     * 
+     * Muestra datos en formato de tabla. Pasa por la pipeline completa
+     * (outputMode-respecting writeOutput + transports + hooks).
+     *
+     * @param data - Array de objetos o matriz
+     * @param columns - Columnas específicas a mostrar (opcional)
+     *
      * @example
-     * const usuarios = [
-     *   { id: 1, nombre: 'Juan', edad: 30 },
-     *   { id: 2, nombre: 'María', edad: 25 }
-     * ];
-     * logger.table(usuarios);
-     * logger.table(usuarios, ['nombre', 'edad']); // Solo estas columnas
-     * 
-     * @since 0.3.0
+     * logger.table([{ id: 1, nombre: 'Juan' }, { id: 2, nombre: 'María' }]);
+     *
+     * @since 0.3.0 (refactor 5.1.0)
      */
-    table(data: any, columns?: string[]): void {
+    table(data: unknown, columns?: string[]): void {
         if (!this.shouldLog('info')) return;
-
         const prefix = this.getEffectivePrefix();
         const tableStyle = StylePresets.accent().build();
 
-        const format = `%c📊 TABLE${prefix ? ` [${prefix}]` : ''}`;
-        console.log(format, tableStyle);
+        const headerLabel = `📊 TABLE${prefix ? ` [${prefix}]` : ''}`;
+        const format = `%c${headerLabel}`;
+        const styles = [tableStyle];
 
-        if (columns) {
-            console.table(data, columns);
-        } else {
-            console.table(data);
+        // Emit header via centralised writer
+        this.writeOutput(format, 'info', styles, []);
+
+        // console.table doesn't honour outputMode — but we still want the
+        // data to flow through to transports. Solution: serialise the data
+        // as the second argument so transports observe a structured payload.
+        const additionalArgs = [data, ...(columns ? [columns] : [])];
+        if (this.config.outputMode !== 'silent') {
+            if (columns) {
+                console.table(data, columns);
+            } else {
+                console.table(data);
+            }
         }
+
+        const message = `table:${Array.isArray(data) ? `${data.length} rows` : 'data'}`;
+        const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
+        this.dispatchToTransports('info', message, prefix, stackInfo, {
+            attributes: {
+                ...this.context,
+                'logger.visual': 'table',
+                'logger.data': JSON.stringify(data).slice(0, 4096),
+                ...(columns ? { 'logger.columns': columns.join(',') } : {})
+            }
+        });
     }
 
     /**
-     * Inicia un grupo colapsable en la consola
-     * 
-     * @param {string} label - Etiqueta del grupo
-     * @param {boolean} collapsed - Si el grupo inicia colapsado (default: false)
-     * 
+     * Inicia un grupo colapsable en la consola. Emite un marker a
+     * transports con `attributes.logger.visual = 'groupStart'` para que
+     * backends puedan reconstruir la jerarquía.
+     *
+     * @param label - Etiqueta del grupo
+     * @param collapsed - Si el grupo inicia colapsado (default: false)
+     *
      * @example
      * logger.group('Procesando usuarios');
      * logger.info('Usuario 1 procesado');
-     * logger.info('Usuario 2 procesado');
      * logger.groupEnd();
-     * 
-     * @example
-     * // Grupo colapsado por defecto
-     * logger.group('Detalles adicionales', true);
-     * logger.debug('Información detallada aquí');
-     * logger.groupEnd();
-     * 
-     * @since 0.3.0
+     *
+     * @since 0.3.0 (refactor 5.1.0)
      */
     group(label: string, collapsed: boolean = false): void {
         const groupStyle = new StyleBuilder()
@@ -1253,30 +1461,57 @@ export class Logger {
 
         const format = `%c📁 ${label}`;
 
-        if (collapsed) {
-            console.groupCollapsed(format, groupStyle);
-        } else {
-            console.group(format, groupStyle);
+        if (this.config.outputMode !== 'silent') {
+            if (collapsed) {
+                console.groupCollapsed(format, groupStyle);
+            } else {
+                console.group(format, groupStyle);
+            }
         }
 
         this.groupDepth++;
+
+        // Emit a synthetic info record marking the group boundary
+        const prefix = this.getEffectivePrefix();
+        const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
+        this.dispatchToTransports('info', `group:start:${label}`, prefix, stackInfo, {
+            attributes: {
+                ...this.context,
+                'logger.visual': 'groupStart',
+                'logger.group.label': label,
+                'logger.group.collapsed': collapsed,
+                'logger.group.depth': this.groupDepth
+            }
+        });
     }
 
     /**
-     * Finaliza el grupo actual de la consola
-     * 
+     * Finaliza el grupo actual de la consola. Emite un marker a transports
+     * simétrico al `group()` start, para que backends puedan cerrar la
+     * jerarquía correctamente.
+     *
      * @example
      * logger.group('Operaciones');
      * logger.info('Operación 1');
-     * logger.info('Operación 2');
-     * logger.groupEnd(); // Cierra el grupo
-     * 
-     * @since 0.3.0
+     * logger.groupEnd();
+     *
+     * @since 0.3.0 (refactor 5.1.0)
      */
     groupEnd(): void {
         if (this.groupDepth > 0) {
-            console.groupEnd();
             this.groupDepth--;
+            if (this.config.outputMode !== 'silent') {
+                console.groupEnd();
+            }
+            const prefix = this.getEffectivePrefix();
+            const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
+            this.dispatchToTransports('info', 'group:end', prefix, stackInfo, {
+                attributes: {
+                    ...this.context,
+                    'logger.visual': 'groupEnd',
+                    'logger.group.depth': this.groupDepth
+                }
+            });
         }
     }
 
@@ -1297,12 +1532,13 @@ export class Logger {
     time(label: string): void {
         const timer: TimerEntry = {
             label,
-            startTime: performance.now(),
+            startTime: (typeof performance !== 'undefined' ? performance : Date).now()
         };
         this.timers.set(label, timer);
 
         const timerStyle = StylePresets.warning().build();
-        console.log(`%c⏱️ Timer started: ${label}`, timerStyle);
+        const format = `%c⏱️ Timer started: ${label}`;
+        this.writeOutput(format, 'debug', [timerStyle], []);
     }
 
     /**
@@ -1325,11 +1561,25 @@ export class Logger {
             return -1;
         }
 
-        const elapsed = performance.now() - timer.startTime;
+        const now = (typeof performance !== 'undefined' ? performance : Date).now();
+        const elapsed = now - timer.startTime;
         this.timers.delete(label);
 
         const timerStyle = StylePresets.success().build();
-        console.log(`%c⏱️ Timer ended: ${label} - ${elapsed.toFixed(2)}ms`, timerStyle);
+        const format = `%c⏱️ Timer ended: ${label} - ${elapsed.toFixed(2)}ms`;
+        this.writeOutput(format, 'info', [timerStyle], []);
+
+        const prefix = this.getEffectivePrefix();
+        const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
+        this.dispatchToTransports('info', `timer:${label}`, prefix, stackInfo, {
+            tag: 'success',
+            attributes: {
+                ...this.context,
+                'logger.visual': 'timer',
+                'logger.timer.label': label,
+                'logger.timer.elapsedMs': elapsed
+            }
+        });
 
         return elapsed;
     }
@@ -1373,8 +1623,9 @@ export class Logger {
      * @since 0.3.0
      */
     logWithSVG(message: string, svgContent?: string, options: StyleOptions = {}): void {
+        if (!this.shouldLog('info')) return;
         const { width = 300, height = 60, padding = '30px 150px' } = options;
-        
+
         let svgDataUri = '';
         if (svgContent) {
             const encodedSVG = encodeURIComponent(svgContent);
@@ -1391,7 +1642,18 @@ export class Logger {
             .rounded('4px')
             .build();
 
-        console.log(`%c${message}`, svgStyle);
+        this.writeOutput(`%c${message}`, 'info', [svgStyle], []);
+
+        const prefix = this.getEffectivePrefix();
+        const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
+        this.dispatchToTransports('info', `svg:${message}`, prefix, stackInfo, {
+            attributes: {
+                ...this.context,
+                'logger.visual': 'svg',
+                'logger.svg.width': width,
+                'logger.svg.height': height
+            }
+        });
     }
 
     /**
@@ -1407,18 +1669,22 @@ export class Logger {
      * @since 0.3.0
      */
     logAnimated(message: string, duration: number = 3): void {
-        // Inject CSS animation if not already present
-        if (!document.getElementById('logger-animations')) {
-            const style = document.createElement('style');
-            style.id = 'logger-animations';
-            style.textContent = `
-                @keyframes loggerGradient {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-            `;
-            document.head.appendChild(style);
+        if (!this.shouldLog('info')) return;
+
+        // DOM-guard: animations only make sense in a real browser environment.
+        if (typeof document !== 'undefined') {
+            if (!document.getElementById('logger-animations')) {
+                const style = document.createElement('style');
+                style.id = 'logger-animations';
+                style.textContent = `
+                    @keyframes loggerGradient {
+                        0% { background-position: 0% 50%; }
+                        50% { background-position: 100% 50%; }
+                        100% { background-position: 0% 50%; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
         }
 
         const animatedStyle = new StyleBuilder()
@@ -1433,7 +1699,17 @@ export class Logger {
             .display('inline-block')
             .build();
 
-        console.log(`%c${message}`, animatedStyle);
+        this.writeOutput(`%c${message}`, 'info', [animatedStyle], []);
+
+        const prefix = this.getEffectivePrefix();
+        const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
+        this.dispatchToTransports('info', `animated:${message}`, prefix, stackInfo, {
+            attributes: {
+                ...this.context,
+                'logger.visual': 'animated',
+                'logger.animation.durationSec': duration
+            }
+        });
     }
 
     /**
@@ -1456,18 +1732,19 @@ export class Logger {
         try {
             // Use Object.groupBy if available (ES2024), otherwise fallback to reduce
             let grouped: Record<string, T[]>;
-            
-            if ((Object as any).groupBy) {
-                grouped = (Object as any).groupBy(items, groupBy);
+
+            const objectGroupBy = (Object as { groupBy?<U>(items: U[], fn: (item: U) => string): Record<string, U[]> }).groupBy;
+            if (objectGroupBy) {
+                grouped = objectGroupBy(items, groupBy) as Record<string, T[]>;
             } else {
-                grouped = items.reduce((acc, item) => {
+                grouped = items.reduce<Record<string, T[]>>((acc, item) => {
                     const key = groupBy(item);
                     if (!acc[key]) {
                         acc[key] = [];
                     }
                     acc[key].push(item);
                     return acc;
-                }, {} as Record<string, T[]>);
+                }, {});
             }
 
             Object.entries(grouped).forEach(([group, groupItems]) => {
@@ -1742,14 +2019,24 @@ export class Logger {
 }
 
 /**
- * Lazy singleton instance - se inicializa solo cuando se necesita
+ /**
+ * Lazy singleton instance — initialised on first call to {@link getDefaultLogger},
+ * not on module import. Fixes BUG-N11 (eager side-effect at import time).
+ *
  * @private
  */
 let _defaultLogger: Logger | null = null;
 
 /**
- * Obtiene o crea la instancia singleton del logger
- * @returns {Logger} Instancia singleton del logger
+ * Lazily creates the default Logger singleton.
+ *
+ * - The singleton is only built on first call, so importing the module
+ *   never executes `new Logger(...)` or `displayInitBanner()` (BUG-N11).
+ * - The default config disables `bufferSize` so the legacy `ExportLogHandler`
+ *   is not auto-constructed (BUG-N12). Tests / power users can opt back in
+ *   by setting `bufferSize` themselves.
+ *
+ * @returns The shared Logger instance
  */
 function getDefaultLogger(): Logger {
     if (!_defaultLogger) {
@@ -1758,21 +2045,133 @@ function getDefaultLogger(): Logger {
             enableColors: true,
             enableTimestamps: true,
             enableStackTrace: true,
-            bufferSize: 1000, // Enable export functionality by default
+            // bufferSize intentionally NOT set — keeps ExportLogHandler dormant
+            // unless the caller opts in (BUG-N12)
+            cliLevel: 'normal'
         });
-        
-        // Display initialization banner only once
+
+        // Display the init banner only on first actual use, not on import.
         try {
-            displayInitBanner();
-        } catch (error) {
-            // Silent fail if banner cannot be displayed
+            if (typeof window !== 'undefined' || typeof document !== 'undefined') {
+                displayInitBanner();
+            }
+        } catch {
+            // Silent fail if banner cannot be displayed (SSR, workers, etc.)
         }
     }
     return _defaultLogger;
 }
 
-// Export the lazy singleton getter as default
-export default getDefaultLogger();
+/**
+ * Resets the default singleton. Clears the cached instance so the next call
+ * to `getDefaultLogger()` rebuilds it from defaults. Useful for tests and
+ * hot reload scenarios.
+ *
+ */
+export function resetDefaultLogger(): void {
+    if (_defaultLogger) {
+        // Best-effort cleanup; the user may already have a reference and
+        // intentionally want to drain pending logs.
+        void _defaultLogger.cleanup().catch(() => {});
+    }
+    _defaultLogger = null;
+}
+
+/**
+ * Lazy default export — every property access defers to `getDefaultLogger()`.
+ * Side-effect-free at module import (BUG-N11).
+ *
+ * @example
+ * import logger from 'better-logger';
+ * logger.info('hello'); // first call here triggers singleton init
+ */
+const loggerProxy: Logger = new Proxy({} as Logger, {
+    get(_target, prop, receiver) {
+        const instance = getDefaultLogger();
+        const value = Reflect.get(instance, prop, receiver);
+        return typeof value === 'function' ? value.bind(instance) : value;
+    }
+});
+
+export default loggerProxy;
+
+// ===== Internal converters =====
+
+/**
+ * No-op {@link ExportLogHandler} returned by `Logger.getExportHandler()`
+ * after F013-delete in 5.1.0. Keeps old CLI commands from crashing while
+ * making it explicit in user code that the legacy export path is gone.
+ * @private
+ */
+const _noopExportHandler: ExportLogHandler = {
+    setBufferSize: () => {
+        /* removed in 5.1.0 */
+    },
+    getBufferStats: (): BufferStats => ({
+        size: 0,
+        maxSize: 0,
+        usage: 0,
+        levelCounts: { trace: 0, debug: 0, info: 0, warn: 0, error: 0, critical: 0 }
+    }),
+    clearBuffer: () => {
+        /* removed in 5.1.0 */
+    },
+    export: (_format: string, _filters?: ExportFilters, _options?: ExportOptions): ExportResult => ({
+        format: 'noop',
+        data: '',
+        metadata: {
+            totalLogs: 0,
+            filteredLogs: 0,
+            exportedAt: new Date().toISOString(),
+            filters: _filters,
+            options: _options
+        }
+    }),
+    copyToClipboard: async (): Promise<boolean> => false,
+    setGroupInfo: () => {
+        /* removed in 5.1.0 */
+    }
+};
+
+/**
+ * Narrow a free-form `Record<string, unknown>` context into a typed
+ * `ILogAttributes` bag. Unknown shapes fall back to JSON-encoded strings,
+ * which keeps the OTLP transport happy (every value lands in a typed slot).
+ *
+ * @param input - The user-supplied context (typically `Logger.context`).
+ * @returns A new attribute bag matching `ILogAttributes`.
+ */
+function toLogAttributes(input: Record<string, unknown>): ILogAttributes {
+    const out: Record<string, LogAttributeValue> = {};
+    for (const [key, value] of Object.entries(input)) {
+        const mapped = toAttributeValue(value);
+        if (mapped !== undefined) {
+            out[key] = mapped;
+        }
+    }
+    return out;
+}
+
+function toAttributeValue(value: unknown): LogAttributeValue | undefined {
+    if (value === null || value === undefined) return undefined;
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        return value;
+    }
+    if (Array.isArray(value)) {
+        const values: LogAttributeValue[] = [];
+        for (const item of value) {
+            const mapped = toAttributeValue(item);
+            if (mapped !== undefined) values.push(mapped);
+        }
+        return values;
+    }
+    // Plain objects → JSON string fallback (OTLP transport handles this)
+    try {
+        return JSON.stringify(value);
+    } catch {
+        return undefined;
+    }
+}
 
 /**
  * Métodos individuales exportados para conveniencia
@@ -1847,8 +2246,7 @@ export const flushTransports = () =>
 export const closeTransports = () =>
     getDefaultLogger().closeTransports();
 
-// Re-export handlers and utilities for backward compatibility
-export { FileLogHandler, RemoteLogHandler, AnalyticsLogHandler, ExportLogHandler } from './handlers/index.js';
+// Re-export utilities
 export { StyleBuilder, StylePresets as Styles } from './styling/index.js';
 
 // Re-export enterprise features

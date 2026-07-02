@@ -81,6 +81,11 @@ export const ANSI_LEVEL_STYLES: Record<LogLevel | 'success', {
     styles: number[];
     emoji: string;
 }> = {
+    trace: {
+        color: ANSI_CODES.brightBlack,
+        styles: [ANSI_CODES.dim],
+        emoji: '🔬'
+    },
     debug: {
         color: ANSI_CODES.brightBlack,
         styles: [ANSI_CODES.dim],

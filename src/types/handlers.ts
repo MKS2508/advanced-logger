@@ -23,6 +23,21 @@ export interface ILogHandler {
 }
 
 /**
+ * @deprecated Kept as a TYPE for back-compat with code that imported
+ * `ExportLogHandler` from `better-logger`. The concrete class was deleted
+ * in 5.1.0 (F013-delete). Use `addTransport({ target: new FileTransport(...) })`
+ * for log capture + export.
+ */
+export interface ExportLogHandler {
+    setBufferSize(size: number): void;
+    getBufferStats(): BufferStats;
+    clearBuffer(): void;
+    export(format: string, filters?: ExportFilters, options?: ExportOptions): ExportResult;
+    copyToClipboard(format: string, filters?: ExportFilters, options?: ExportOptions): Promise<boolean>;
+    setGroupInfo(depth: number): void;
+}
+
+/**
  * Stored log entry for export functionality
  */
 export interface LogEntry {
