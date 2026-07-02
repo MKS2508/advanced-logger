@@ -83,10 +83,10 @@ import type { CLILogLevel, ISpinnerHandle, IBoxOptions, ITableOptions } from './
 
 // Bridge imports
 import { createLogContext, type LogContext } from './context/LogContext.js';
-import { createTransportBridge, type TransportBridge } from './bridges/TransportBridge.js';
+import { createTransportBridge, type TransportBridge } from './transports/TransportBridge.js';
 import { createHookBridge, type HookBridge } from './hooks/HookBridge.js';
 import { createSerializerBridge, type SerializerBridge } from './serializers/SerializerBridge.js';
-import { createTerminalBridge, type TerminalBridge } from './bridges/TerminalBridge.js';
+import { createTerminalBridge, type TerminalBridge } from './playground/TerminalBridge.js';
 import { createStyleManager, type StyleManager } from './styles/StyleManager.js';
 
 /**

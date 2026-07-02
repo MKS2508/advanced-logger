@@ -5,7 +5,7 @@
  * @since 0.18.2-alpha.1
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createTerminalBridge, type TerminalBridge } from '../../src/bridges/TerminalBridge.js';
+import { createTerminalBridge, type TerminalBridge } from '../../src/playground/TerminalBridge.js';
 import { cleanup } from '../setup.js';
 import { Logger } from '../../src/Logger.js';
 

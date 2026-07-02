@@ -5,7 +5,7 @@
  * @since 0.18.2-alpha.1
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createTransportBridge, type TransportBridge } from '../../src/bridges/TransportBridge.js';
+import { createTransportBridge, type TransportBridge } from '../../src/transports/TransportBridge.js';
 import { cleanup } from '../setup.js';
 import type { TransportRecord } from '../../src/types/index.js';
 
