@@ -89,6 +89,7 @@ import { ServerFallback } from './cli-primitives/server-fallback.js';
 
 // Bridge imports
 import { createLogContext, type LogContext } from './bridges/LogContext.js';
+import { createTransportBridge, type TransportBridge } from './bridges/TransportBridge.js';
 
 /**
  * Estilos del tema activo actual
@@ -139,8 +140,8 @@ export class Logger {
 
     private serializerRegistry: SerializerRegistry;
     private hookManager: HookManager;
-    private transportManager?: TransportManager;
     private logContext: LogContext;
+    private transportBridge: TransportBridge;
 
     /**
      * Active smart-preset reference (set by `preset()`). Typed as `unknown`
@@ -195,6 +196,9 @@ export class Logger {
                 return new Logger({ ...this.config, ...childConfig });
             }
         });
+
+        // Initialize TransportBridge
+        this.transportBridge = createTransportBridge();
 
         // Legacy ExportLogHandler has been removed in 5.1.0 (F013-delete).
         // For log capture & export, use transports (`addTransport({ target: new FileTransport(...) })`)
@@ -505,9 +509,7 @@ export class Logger {
         }
 
         // Drain transport queue (fixed: was fire-and-forget in 5.0.x — BUG-N14)
-        if (this.transportManager) {
-            await this.transportManager.close();
-        }
+        await this.transportBridge.closeTransports();
 
         // Drop legacy handler refs so GC can collect them (BUG-N17)
         this.handlers.length = 0;
@@ -978,10 +980,7 @@ export class Logger {
      * @since 3.0.0
      */
     addTransport(target: TransportTarget): string {
-        if (!this.transportManager) {
-            this.transportManager = new TransportManager();
-        }
-        return this.transportManager.add(target);
+        return this.transportBridge.addTransport(target);
     }
 
     /**
@@ -993,7 +992,7 @@ export class Logger {
      * @since 3.0.0
      */
     removeTransport(id: string): boolean {
-        return this.transportManager?.remove(id) ?? false;
+        return this.transportBridge.removeTransport(id);
     }
 
     /**
@@ -1004,7 +1003,7 @@ export class Logger {
      * @since 3.0.0
      */
     async flushTransports(): Promise<void> {
-        await this.transportManager?.flush();
+        await this.transportBridge.flushTransports();
     }
 
     /**
@@ -1015,7 +1014,7 @@ export class Logger {
      * @since 3.0.0
      */
     async closeTransports(): Promise<void> {
-        await this.transportManager?.close();
+        await this.transportBridge.closeTransports();
     }
 
     /**
@@ -1025,7 +1024,7 @@ export class Logger {
      * @since 3.0.0
      */
     getTransportManager(): TransportManager | undefined {
-        return this.transportManager;
+        return this.transportBridge.getTransportManager();
     }
 
     // ===== CORE LOGGING METHODS =====
@@ -1060,8 +1059,6 @@ export class Logger {
         stackInfo: StackInfo | null,
         extra?: Partial<TransportRecord>
     ): void {
-        if (!this.transportManager) return;
-
         const record: TransportRecord = {
             level,
             levelValue: LOG_LEVELS[level],
@@ -1087,9 +1084,8 @@ export class Logger {
             ...extra
         };
 
-        // Fire-and-forget — never break the sync log path. Transport failures
-        // are surfaced via the manager's `console.error` channel (not silent).
-        this.transportManager.write(record).catch(() => {});
+        // Fire-and-forget via bridge — never breaks the sync log path.
+        this.transportBridge.writeRecord(record);
     }
 
     /**
