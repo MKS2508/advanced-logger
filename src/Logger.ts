@@ -91,6 +91,7 @@ import { ServerFallback } from './cli-primitives/server-fallback.js';
 import { createLogContext, type LogContext } from './bridges/LogContext.js';
 import { createTransportBridge, type TransportBridge } from './bridges/TransportBridge.js';
 import { createHookBridge, type HookBridge } from './bridges/HookBridge.js';
+import { createSerializerBridge, type SerializerBridge } from './bridges/SerializerBridge.js';
 
 /**
  * Estilos del tema activo actual
@@ -139,7 +140,7 @@ export class Logger {
         showBadges: true
     };
 
-    private serializerRegistry: SerializerRegistry;
+    private serializerBridge: SerializerBridge;
     private hookBridge: HookBridge;
     private logContext: LogContext;
     private transportBridge: TransportBridge;
@@ -186,7 +187,7 @@ export class Logger {
         };
 
         // Initialize enterprise features
-        this.serializerRegistry = new SerializerRegistry();
+        this.serializerBridge = createSerializerBridge();
         this.hookBridge = createHookBridge();
 
         // Initialize LogContext bridge
@@ -848,7 +849,7 @@ export class Logger {
         serializer: SerializerFn<T>,
         priority?: number
     ): void {
-        this.serializerRegistry.add(type, serializer, priority);
+        this.serializerBridge.addSerializer(type, serializer, priority);
     }
 
     /**
@@ -860,7 +861,7 @@ export class Logger {
      * @since 3.0.0
      */
     removeSerializer<T>(type: new (...args: any[]) => T): boolean {
-        return this.serializerRegistry.remove(type);
+        return this.serializerBridge.removeSerializer(type);
     }
 
     /**
@@ -870,7 +871,7 @@ export class Logger {
      * @since 3.0.0
      */
     getSerializerRegistry(): SerializerRegistry {
-        return this.serializerRegistry;
+        return this.serializerBridge.getSerializerRegistry();
     }
 
     // ===== HOOKS & MIDDLEWARE =====
@@ -1123,7 +1124,7 @@ export class Logger {
         const prefix = this.getEffectivePrefix();
         const timestamp = formatTimestamp();
 
-        const serializedArgs = args.map(arg => this.serializerRegistry.serialize(arg));
+        const serializedArgs = args.map(arg => this.serializerBridge.getSerializerRegistry().serialize(arg));
 
         let message = serializedArgs.length > 0 ? String(serializedArgs[0]) : '';
         if (this.badgeList.length > 0 && this.displaySettings.showBadges) {
@@ -1275,7 +1276,7 @@ export class Logger {
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         const prefix = this.getEffectivePrefix();
         const timestamp = formatTimestamp();
-        const serializedArgs = args.map(arg => this.serializerRegistry.serialize(arg));
+        const serializedArgs = args.map(arg => this.serializerBridge.getSerializerRegistry().serialize(arg));
         let message = serializedArgs.length > 0 ? String(serializedArgs[0]) : '';
         if (this.badgeList.length > 0 && this.displaySettings.showBadges) {
             const badgePrefix = this.badgeList.map(b => `[${b}]`).join('');
