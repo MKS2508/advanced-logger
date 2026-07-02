@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Logger } from '../../src/Logger.js';
 import { cleanup } from '../setup.js';
-import { StatusCommand, ResetCommand, DemoCommand } from '../../src/cli/commands/StatusCommand.js';
+import { StatusCommand, ResetCommand, DemoCommand } from '../../src/cli/commands/ExportCommand.js';
 
 describe('CLI Commands', () => {
     let logger: Logger;

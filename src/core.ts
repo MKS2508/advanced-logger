@@ -25,19 +25,17 @@ import {
 // Universal formatting and environment detection
 import {
     createPlainOutput,
-    createOutput,
     getConsoleMethod,
     createLogEntry,
     formatTablePlain,
     safeSerialize,
-    detectOptimalFormat,
     type OutputFormat
 } from './utils/formatting.js';
 
 import {
     isBrowser,
     isNode
-} from './utils/environment.js';
+} from './utils/environment-detector.js';
 
 import { createStyledOutput } from './utils/output.js';
 
@@ -165,14 +163,14 @@ export class CoreLogger {
                 );
                 console[consoleMethod](format, ...styles, ...args.slice(1));
             } catch (error) {
-                // Fallback to universal formatting if CSS fails
-                const output = createOutput(level, message, prefix, stackInfo, this.config.outputFormat);
+                // Fallback to plain formatting if CSS fails
+                const output = createPlainOutput(level, message, prefix, stackInfo);
                 console[consoleMethod](output, ...args.slice(1));
             }
         } else {
-            // Node.js or browser without colors - use universal formatting
+            // Node.js or browser without colors - use plain formatting
             const groupIndent = '  '.repeat(this.groupDepth);
-            const output = groupIndent + createOutput(level, message, prefix, stackInfo, this.config.outputFormat);
+            const output = groupIndent + createPlainOutput(level, message, prefix, stackInfo);
             console[consoleMethod](output, ...args.slice(1));
         }
 

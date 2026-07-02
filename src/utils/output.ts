@@ -7,7 +7,7 @@ import { formatTimestamp } from './timestamps.js';
 import { StyleBuilder } from '../styling/index.js';
 import { ADAPTIVE_COLORS } from '../constants.js';
 import { getEnvironment, supportsANSI } from './environment-detector.js';
-import { adaptToTerminal } from './adapter.js';
+import { formatLogLevelANSI, formatTimestampANSI, formatPrefixANSI, formatLocationANSI } from './ansi-colors.js';
 import type { LogStyles } from '../types/index.js';
 
 /**
@@ -98,7 +98,7 @@ export function createStyledOutput(
 
     // Check if we should use terminal rendering
     if (environment !== 'browser' && supportsANSI()) {
-        return createTerminalOutput(level, message, timestamp, prefix, stackInfo, presetStyles, presetName);
+        return createTerminalOutput(level, message, timestamp, prefix, stackInfo);
     }
 
     // Browser rendering (existing logic)
@@ -166,29 +166,27 @@ export function createStyledOutput(
 }
 
 /**
- * Create terminal output with ANSI colors and formatting
+ * Builds a terminal-friendly line using the ANSI helpers. Used when the
+ * runtime is not a browser but supports ANSI codes (TTY, modern terminal).
+ *
+ * Layout: `[HH:MM:SS.mmm] [LEVEL] [prefix] message (file:line)`
  */
 export function createTerminalOutput(
     level: LogLevel,
     message: string,
     timestamp?: string,
     prefix?: string,
-    stackInfo?: StackInfo | null,
-    presetStyles?: LogStyles,
-    presetName?: string
+    stackInfo?: StackInfo | null
 ): [string, ...string[]] {
+    const ts = timestamp?.slice(11, 23) ?? '';
     const location = stackInfo ? `${stackInfo.file}:${stackInfo.line}:${stackInfo.column}` : undefined;
 
-    // Use the adapter to convert styles to ANSI
-    const ansiStyle = adaptToTerminal(
-        level,
-        message,
-        timestamp,
-        prefix,
-        location,
-        presetStyles,
-        presetName
-    );
+    const parts: string[] = [];
+    parts.push(formatTimestampANSI(`[${ts}]`));
+    parts.push(formatLogLevelANSI(level));
+    if (prefix) parts.push(formatPrefixANSI(prefix));
+    parts.push(message);
+    if (location) parts.push(formatLocationANSI(`(${location})`));
 
-    return [ansiStyle.text];
+    return [parts.join(' ') + '\n'];
 }

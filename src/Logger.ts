@@ -30,12 +30,7 @@ import type {
     StackInfo,
     LogStyles,
     ILogAttributes,
-    LogAttributeValue,
-    ExportLogHandler,
-    ExportResult,
-    ExportFilters,
-    ExportOptions,
-    BufferStats
+    LogAttributeValue
 } from './types/index.js';
 
 import { LOG_LEVELS } from './types/index.js';
@@ -227,13 +222,8 @@ export class Logger {
             getLogger: () => this
         });
 
-        // Legacy ExportLogHandler has been removed in 5.1.0 (F013-delete).
-        // For log capture & export, use transports (`addTransport({ target: new FileTransport(...) })`)
-        // or the new `withContext` + `OtlpTransport` for SigNoz ingestion.
-
-        // Initialize CLI processor lazily (BUG-N13)
-        // We don't trigger the full CLI machinery here; consumers who use
-        // `logger.cli(...)` or related commands will pay for the setup at call time.
+        // Initialize CLI processor lazily.
+        // Consumers who use `logger.cli(...)` pay for setup at call time.
         this.cliProcessor = createDefaultCLI();
 
         // Set up theme change listener if auto-detection is enabled
@@ -882,20 +872,6 @@ export class Logger {
      */
     getHandlers(): ILogHandler[] {
         return [...this.handlers];
-    }
-
-    /**
-     * Removed in 5.1.0 (F013-delete). The legacy `ExportLogHandler` is gone;
-     * for log capture + export use `addTransport({ target: new FileTransport(...) })`.
-     *
-     * Returns a no-op stub that satisfies the `ExportLogHandler` interface
-     * (so existing CLI commands don't crash) but never produces output.
-     *
-     * @returns A no-op handler instance
-     * @since 0.3.0 (deprecated in 5.1.0)
-     */
-    getExportHandler(): ExportLogHandler {
-        return _noopExportHandler;
     }
 
     // ===== SERIALIZERS =====
@@ -2087,11 +2063,9 @@ let _defaultLogger: Logger | null = null;
 /**
  * Lazily creates the default Logger singleton.
  *
- * - The singleton is only built on first call, so importing the module
- *   never executes `new Logger(...)` or `displayInitBanner()` (BUG-N11).
- * - The default config disables `bufferSize` so the legacy `ExportLogHandler`
- *   is not auto-constructed (BUG-N12). Tests / power users can opt back in
- *   by setting `bufferSize` themselves.
+ * The singleton is only built on first call, so importing the module
+ * never executes `new Logger(...)` or `displayInitBanner()`. This keeps
+ * module imports side-effect free.
  *
  * @returns The shared Logger instance
  */
@@ -2102,8 +2076,6 @@ function getDefaultLogger(): Logger {
             enableColors: true,
             enableTimestamps: true,
             enableStackTrace: true,
-            // bufferSize intentionally NOT set — keeps ExportLogHandler dormant
-            // unless the caller opts in (BUG-N12)
             cliLevel: 'normal'
         });
 
@@ -2153,42 +2125,6 @@ const loggerProxy: Logger = new Proxy({} as Logger, {
 export default loggerProxy;
 
 // ===== Internal converters =====
-
-/**
- * No-op {@link ExportLogHandler} returned by `Logger.getExportHandler()`
- * after F013-delete in 5.1.0. Keeps old CLI commands from crashing while
- * making it explicit in user code that the legacy export path is gone.
- * @private
- */
-const _noopExportHandler: ExportLogHandler = {
-    setBufferSize: () => {
-        /* removed in 5.1.0 */
-    },
-    getBufferStats: (): BufferStats => ({
-        size: 0,
-        maxSize: 0,
-        usage: 0,
-        levelCounts: { trace: 0, debug: 0, info: 0, warn: 0, error: 0, critical: 0 }
-    }),
-    clearBuffer: () => {
-        /* removed in 5.1.0 */
-    },
-    export: (_format: string, _filters?: ExportFilters, _options?: ExportOptions): ExportResult => ({
-        format: 'noop',
-        data: '',
-        metadata: {
-            totalLogs: 0,
-            filteredLogs: 0,
-            exportedAt: new Date().toISOString(),
-            filters: _filters,
-            options: _options
-        }
-    }),
-    copyToClipboard: async (): Promise<boolean> => false,
-    setGroupInfo: () => {
-        /* removed in 5.1.0 */
-    }
-};
 
 /**
  * Narrow a free-form `Record<string, unknown>` context into a typed
@@ -2309,4 +2245,3 @@ export { StyleBuilder, StylePresets as Styles } from './styling/index.js';
 export { SerializerRegistry } from './serializers/index.js';
 export { HookManager } from './hooks/index.js';
 export { TransportManager, ConsoleTransport, FileTransport, HttpTransport } from './transports/index.js';
-export { StyleCache, getStyleCache } from './styling/StyleCache.js';

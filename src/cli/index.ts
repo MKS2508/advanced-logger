@@ -19,19 +19,13 @@ import { HelpCommand } from './help.js';
 import { ConfigCommand } from './commands/ConfigCommand.js';
 import { ThemesCommand, BannersCommand, BannerCommand } from './commands/ThemeCommand.js';
 import { StatusCommand, ResetCommand, DemoCommand } from './commands/ExportCommand.js';
-import {
-    HistoryCommand,
-    ClearHistoryCommand,
-    InteractiveCommand,
-    PluginsCommand
-} from './commands/HistoryCommand.js';
 
 /**
  * Create and configure default CLI processor
  */
 export function createDefaultCLI(): CommandProcessor {
     const processor = new CommandProcessor();
-    
+
     // Register all default commands
     processor.registerCommand(new HelpCommand());
     processor.registerCommand(new ConfigCommand());
@@ -42,11 +36,5 @@ export function createDefaultCLI(): CommandProcessor {
     processor.registerCommand(new ResetCommand());
     processor.registerCommand(new DemoCommand());
 
-    // Register new enhanced commands
-    processor.registerCommand(new HistoryCommand());
-    processor.registerCommand(new ClearHistoryCommand());
-    processor.registerCommand(new InteractiveCommand());
-    processor.registerCommand(new PluginsCommand());
-    
     return processor;
 }

@@ -30,22 +30,6 @@ export class StatusCommand implements ICommand {
         logger.group('⚙️ Logger Configuration');
         logger.table(statusData);
         logger.groupEnd();
-
-        // Show buffer stats if ExportLogHandler is present
-        const exportHandler = logger.getExportHandler();
-        if (exportHandler) {
-            const bufferStats = exportHandler.getBufferStats();
-            logger.group('📊 Buffer Statistics');
-            logger.table({
-                size: `${bufferStats.size}/${bufferStats.maxSize}`,
-                usage: `${bufferStats.usage.toFixed(1)}%`,
-                oldestLog: bufferStats.oldestLog ? bufferStats.oldestLog.toISOString() : 'None',
-                newestLog: bufferStats.newestLog ? bufferStats.newestLog.toISOString() : 'None',
-                errorCount: bufferStats.levelCounts.error + bufferStats.levelCounts.critical,
-                warningCount: bufferStats.levelCounts.warn
-            });
-            logger.groupEnd();
-        }
     }
 }
 

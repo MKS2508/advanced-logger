@@ -10,7 +10,6 @@ export type {
     ThemeVariant,
     DevToolsTheme,
     BannerType,
-    ExportFormat,
     OutputFormat,
     LoggerConfig,
     StackInfo,
@@ -44,12 +43,6 @@ export { LOG_LEVELS, SUCCESS_LEVEL } from './core.js';
 export type {
     LogMetadata,
     ILogHandler,
-    ExportLogHandler,
-    LogEntry,
-    ExportFilters,
-    ExportOptions,
-    ExportResult,
-    BufferStats,
 } from './handlers.js';
 
 // Serializer types
@@ -89,6 +82,3 @@ export {
     LOG_LEVEL_TO_SEVERITY_NUMBER,
     LOG_LEVEL_TO_SEVERITY_TEXT,
 } from './transports.js';
-
-// Style Cache types
-export type { StyleCacheConfig } from '../styling/StyleCache.js';

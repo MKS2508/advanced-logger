@@ -333,9 +333,10 @@ describe('subpath "./playground"', () => {
 // Subpath: ./node
 // ============================================================
 describe('subpath "./node"', () => {
-    it('exports BufferWriter', async () => {
-        const { BufferWriter } = await import('../../src/node-module.js');
-        expect(BufferWriter).not.toBeNull();
-        expect(typeof BufferWriter).toBe('function');
+    it('module is empty (no Node-only utilities yet)', async () => {
+        const mod = await import('../../src/node-module.js');
+        // node-module is reserved for future Node-only utilities (fs-backed
+        // rotation, file capture, etc.). It is intentionally empty.
+        expect(Object.keys(mod).length).toBe(0);
     });
 });

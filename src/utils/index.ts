@@ -3,9 +3,7 @@
  */
 
 export { parseStackTrace } from './stackTrace.js';
-export {
-    formatTimestamp
-} from './timestamps.js';
+export { formatTimestamp } from './timestamps.js';
 export {
     createStyledOutput,
     detectDevToolsTheme,
@@ -15,11 +13,6 @@ export {
 } from './output.js';
 export {
     createPlainOutput,
-    createOutput,
-    createANSIOutput,
-    createBuildOutput,
-    createCIOutput,
-    detectOptimalFormat,
     getConsoleMethod,
     createLogEntry,
     formatTablePlain,

@@ -18,8 +18,8 @@ import logger, {
     logWithSVG,
     logAnimated,
     cli,
-    createStyle,
-    stylePresets
+    StyleBuilder,
+    StylePresets
 } from './index.js';
 
 // Visual features demonstrations
@@ -171,7 +171,7 @@ export function demonstrateTrace() {
 }
 
 export function demonstrateCustomStyles() {
-    const customStyle = createStyle()
+    const customStyle = new StyleBuilder()
         .bg('linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)')
         .color('white')
         .padding('12px 20px')
@@ -179,11 +179,11 @@ export function demonstrateCustomStyles() {
         .shadow('0 4px 15px rgba(0,0,0,0.3)')
         .bold()
         .build();
-    
+
     console.log('%c🎨 Custom Styled Message', customStyle);
-    console.log('%c✅ Success Style', stylePresets.success);
-    console.log('%c❌ Error Style', stylePresets.error);
-    console.log('%c⚠️ Warning Style', stylePresets.warning);
+    console.log('%c✅ Success Style', StylePresets.success().build());
+    console.log('%c❌ Error Style', StylePresets.error().build());
+    console.log('%c⚠️ Warning Style', StylePresets.warning().build());
 }
 
 // Comprehensive demonstration

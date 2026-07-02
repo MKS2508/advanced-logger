@@ -18,8 +18,8 @@ import {
   showBanner,
   logWithSVG,
   logAnimated,
-  createStyle,
-  stylePresets
+  StyleBuilder,
+  StylePresets
 } from './index.js';
 
 import {
@@ -182,12 +182,12 @@ if (typeof window !== 'undefined') {
   (window as any).showBanner = showBanner;
   (window as any).logWithSVG = logWithSVG;
   (window as any).logAnimated = logAnimated;
-  (window as any).createStyle = createStyle;
-  (window as any).stylePresets = stylePresets;
-  
+  (window as any).StyleBuilder = StyleBuilder;
+  (window as any).StylePresets = StylePresets;
+
   // Display welcome info
   setTimeout(() => {
-    console.log('%c💡 Quick Start Guide', stylePresets.info);
+    console.log('%c💡 Quick Start Guide', StylePresets.info().build());
     console.log('🎨 Visual: testBanners(), testThemes(), testSVG(), testAnimations()');
     console.log('📊 Core: testTable(), testGrouping(), testTiming(), testTrace()');
     console.log('💻 CLI: cli("/help") - Try commands like "/theme neon", "/banner ascii"');
