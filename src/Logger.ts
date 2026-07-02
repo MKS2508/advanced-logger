@@ -87,6 +87,9 @@ import { renderTable } from './cli-primitives/cli-table.js';
 import { SpinnerManager, NoopSpinner } from './cli-primitives/spinner.js';
 import { ServerFallback } from './cli-primitives/server-fallback.js';
 
+// Bridge imports
+import { createLogContext, type LogContext } from './bridges/LogContext.js';
+
 /**
  * Estilos del tema activo actual
  * @private
@@ -137,19 +140,7 @@ export class Logger {
     private serializerRegistry: SerializerRegistry;
     private hookManager: HookManager;
     private transportManager?: TransportManager;
-
-    /**
-     * Per-logger structured context (requestId, userId, ...). Merged into
-     * every `TransportRecord.attributes` so transports like `OtlpTransport`
-     * can correlate logs without additional wiring.
-     */
-    private context: Record<string, unknown> = {};
-
-    /**
-     * Stack of context labels pushed by `ContextLogger.run()`. Each entry
-     * contributes to the effective scope prefix. Cleared on cleanup.
-     */
-    private contextStack: string[] = [];
+    private logContext: LogContext;
 
     /**
      * Active smart-preset reference (set by `preset()`). Typed as `unknown`
@@ -195,6 +186,15 @@ export class Logger {
         // Initialize enterprise features
         this.serializerRegistry = new SerializerRegistry();
         this.hookManager = new HookManager();
+
+        // Initialize LogContext bridge
+        this.logContext = createLogContext({
+            initialResource: this.config.resource,
+            childLoggerFactory: (childConfig: Partial<LoggerConfig>): Logger => {
+                // eslint-disable-next-line @typescript-eslint/no-use-before-define
+                return new Logger({ ...this.config, ...childConfig });
+            }
+        });
 
         // Legacy ExportLogHandler has been removed in 5.1.0 (F013-delete).
         // For log capture & export, use transports (`addTransport({ target: new FileTransport(...) })`)
@@ -386,7 +386,7 @@ export class Logger {
      * @see {@link child} for an immutable copy with the merged context
      */
     withContext(extra: Record<string, unknown>): this {
-        this.context = { ...this.context, ...extra };
+        this.logContext.withContext(extra);
         return this;
     }
 
@@ -405,9 +405,7 @@ export class Logger {
      *
      */
     child(extra: Record<string, unknown>): Logger {
-        const childLogger = new Logger({ ...this.config });
-        childLogger.context = { ...this.context, ...extra };
-        return childLogger;
+        return this.logContext.child(extra) as unknown as Logger;
     }
 
     /**
@@ -418,7 +416,7 @@ export class Logger {
      * @returns The same logger instance, now context-free
      */
     clearContext(): this {
-        this.context = {};
+        this.logContext.clearContext();
         return this;
     }
 
@@ -429,7 +427,7 @@ export class Logger {
      * @returns A read-only snapshot of the current context
      */
     getContext(): Readonly<Record<string, unknown>> {
-        return { ...this.context };
+        return this.logContext.getContext();
     }
 
     /**
@@ -445,7 +443,8 @@ export class Logger {
      *
      */
     setResource(resource: Partial<ILogResourceRef>): this {
-        this.config.resource = { ...(this.config.resource ?? {}), ...resource };
+        this.logContext.setResource(resource);
+        return this;
         return this;
     }
 
@@ -515,9 +514,8 @@ export class Logger {
         // Reset mutable runtime state
         this.timers.clear();
         this.badgeList = [];
-        this.context = {};
+        this.logContext.clearContext();
         this.groupDepth = 0;
-        this.contextStack.length = 0;
     }
 
 
@@ -1080,11 +1078,11 @@ export class Logger {
                     function: stackInfo.function
                 }
                 : undefined,
-            attributes: Object.keys(this.context).length > 0
-                ? toLogAttributes(this.context)
+            attributes: Object.keys(this.logContext._getContextRecord()).length > 0
+                ? toLogAttributes(this.logContext._getContextRecord())
                 : undefined,
-            resource: this.config.resource
-                ? { ...this.config.resource } as Partial<ITransportLogResource>
+            resource: this.logContext._getResource()
+                ? { ...this.logContext._getResource() } as Partial<ITransportLogResource>
                 : undefined,
             ...extra
         };
@@ -1418,7 +1416,7 @@ export class Logger {
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         this.dispatchToTransports('info', message, prefix, stackInfo, {
             attributes: {
-                ...this.context,
+                ...this.logContext._getContextRecord(),
                 'logger.visual': 'table',
                 'logger.data': JSON.stringify(data).slice(0, 4096),
                 ...(columns ? { 'logger.columns': columns.join(',') } : {})
@@ -1468,7 +1466,7 @@ export class Logger {
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         this.dispatchToTransports('info', `group:start:${label}`, prefix, stackInfo, {
             attributes: {
-                ...this.context,
+                ...this.logContext._getContextRecord(),
                 'logger.visual': 'groupStart',
                 'logger.group.label': label,
                 'logger.group.collapsed': collapsed,
@@ -1499,7 +1497,7 @@ export class Logger {
             const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
             this.dispatchToTransports('info', 'group:end', prefix, stackInfo, {
                 attributes: {
-                    ...this.context,
+                    ...this.logContext._getContextRecord(),
                     'logger.visual': 'groupEnd',
                     'logger.group.depth': this.groupDepth
                 }
@@ -1566,7 +1564,7 @@ export class Logger {
         this.dispatchToTransports('info', `timer:${label}`, prefix, stackInfo, {
             tag: 'success',
             attributes: {
-                ...this.context,
+                ...this.logContext._getContextRecord(),
                 'logger.visual': 'timer',
                 'logger.timer.label': label,
                 'logger.timer.elapsedMs': elapsed
@@ -1640,7 +1638,7 @@ export class Logger {
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         this.dispatchToTransports('info', `svg:${message}`, prefix, stackInfo, {
             attributes: {
-                ...this.context,
+                ...this.logContext._getContextRecord(),
                 'logger.visual': 'svg',
                 'logger.svg.width': width,
                 'logger.svg.height': height
@@ -1697,7 +1695,7 @@ export class Logger {
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         this.dispatchToTransports('info', `animated:${message}`, prefix, stackInfo, {
             attributes: {
-                ...this.context,
+                ...this.logContext._getContextRecord(),
                 'logger.visual': 'animated',
                 'logger.animation.durationSec': duration
             }
