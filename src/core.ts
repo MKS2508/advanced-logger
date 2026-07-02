@@ -36,10 +36,7 @@ import {
 
 import {
     isBrowser,
-    isNode,
-    getRuntimeEnvironment,
-    supportsColors,
-    supportsCSSColors
+    isNode
 } from './utils/environment.js';
 
 import { createStyledOutput } from './utils/output.js';
@@ -155,7 +152,7 @@ export class CoreLogger {
         const consoleMethod = getConsoleMethod(level);
 
         // Choose formatting based on environment and configuration
-        if (isBrowser && this.config.enableColors && supportsCSSColors()) {
+        if (isBrowser && this.config.enableColors) {
             // Browser with CSS styling
             try {
                 const [format, ...styles] = createStyledOutput(

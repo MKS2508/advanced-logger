@@ -30,7 +30,7 @@ export function detectDevToolsTheme(): DevToolsTheme {
         if (typeof window === 'undefined' || !window.matchMedia) {
             return 'light'; // Safe fallback for SSR or older browsers
         }
-        
+
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         return mediaQuery.matches ? 'dark' : 'light';
     } catch (error) {
@@ -163,50 +163,6 @@ export function createStyledOutput(
     }
 
     return [format, ...styles];
-}
-
-/**
- * Create a unique ID for log entries
- */
-export function generateLogId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Escape HTML entities for safe HTML output. Falls back to a hand-rolled
- * entity map when `document` is not available (Node, SSR, Web Workers).
- *
- * @since 0.3.0 (DOM guard added in 5.1.0)
- */
-export function escapeHtml(text: string): string {
-    if (typeof document !== 'undefined') {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-/**
- * Convert objects to safe string representation for logging
- */
-export function safeStringify(obj: any, _maxDepth = 3): string {
-    try {
-        return JSON.stringify(obj, (_key, value) => {
-            if (typeof value === 'function') return '[Function]';
-            if (value instanceof Error) return `[Error: ${value.message}]`;
-            if (value instanceof Date) return value.toISOString();
-            if (typeof value === 'undefined') return '[undefined]';
-            return value;
-        }, 2);
-    } catch (error) {
-        return String(obj);
-    }
 }
 
 /**

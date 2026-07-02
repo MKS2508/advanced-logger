@@ -4,16 +4,10 @@
 
 export { parseStackTrace } from './stackTrace.js';
 export {
-    formatTimestamp,
-    parseRelativeTime,
-    parseTimeInput,
-    formatDisplayTime
+    formatTimestamp
 } from './timestamps.js';
 export {
     createStyledOutput,
-    generateLogId,
-    escapeHtml,
-    safeStringify,
     detectDevToolsTheme,
     getAdaptiveColor,
     setupThemeChangeListener,
