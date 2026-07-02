@@ -6,6 +6,19 @@
 export type Environment = 'browser' | 'terminal' | 'server' | 'webworker' | 'deno' | 'unknown';
 
 /**
+ * Checks if running in Node.js environment
+ */
+export const isNode = typeof process !== 'undefined' &&
+                      process.versions &&
+                      process.versions.node;
+
+/**
+ * Checks if running in browser environment
+ */
+export const isBrowser = typeof window !== 'undefined' &&
+                          typeof document !== 'undefined';
+
+/**
  * Main environment detection function
  */
 export function getEnvironment(): Environment {
