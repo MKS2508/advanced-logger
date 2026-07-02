@@ -9,14 +9,7 @@ import { CommandProcessor } from './CommandProcessor.js';
 // Commands
 export { ConfigCommand } from './commands/ConfigCommand.js';
 export { ThemesCommand, BannersCommand, BannerCommand } from './commands/ThemeCommand.js';
-export { StatusCommand, ResetCommand, DemoCommand } from './commands/StatusCommand.js';
-export { 
-    ExportCommand, 
-    CopyCommand, 
-    BufferSizeCommand, 
-    ClearBufferCommand, 
-    BufferInfoCommand 
-} from './commands/ExportCommand.js';
+export { StatusCommand, ResetCommand, DemoCommand } from './commands/ExportCommand.js';
 
 // Help system
 export { HelpCommand } from './help.js';
@@ -25,19 +18,12 @@ export { HelpCommand } from './help.js';
 import { HelpCommand } from './help.js';
 import { ConfigCommand } from './commands/ConfigCommand.js';
 import { ThemesCommand, BannersCommand, BannerCommand } from './commands/ThemeCommand.js';
-import { StatusCommand, ResetCommand, DemoCommand } from './commands/StatusCommand.js';
-import { 
-    ExportCommand, 
-    CopyCommand, 
-    BufferSizeCommand, 
-    ClearBufferCommand, 
-    BufferInfoCommand 
-} from './commands/ExportCommand.js';
-import { 
-    HistoryCommand, 
-    ClearHistoryCommand, 
-    InteractiveCommand, 
-    PluginsCommand 
+import { StatusCommand, ResetCommand, DemoCommand } from './commands/ExportCommand.js';
+import {
+    HistoryCommand,
+    ClearHistoryCommand,
+    InteractiveCommand,
+    PluginsCommand
 } from './commands/HistoryCommand.js';
 
 /**
@@ -55,12 +41,7 @@ export function createDefaultCLI(): CommandProcessor {
     processor.registerCommand(new StatusCommand());
     processor.registerCommand(new ResetCommand());
     processor.registerCommand(new DemoCommand());
-    processor.registerCommand(new ExportCommand());
-    processor.registerCommand(new CopyCommand());
-    processor.registerCommand(new BufferSizeCommand());
-    processor.registerCommand(new ClearBufferCommand());
-    processor.registerCommand(new BufferInfoCommand());
-    
+
     // Register new enhanced commands
     processor.registerCommand(new HistoryCommand());
     processor.registerCommand(new ClearHistoryCommand());
