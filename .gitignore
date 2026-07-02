@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 /project-utils/.temp
+
+# Internal session notes (audit plans, integration drafts, etc.)
+.notes/
+
+# Claude conversation transcripts dropped at repo root on session continuation
+*-this-session-is-being-continued-from-a-previous-*.txt
