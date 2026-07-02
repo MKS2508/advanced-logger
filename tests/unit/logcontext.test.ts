@@ -14,7 +14,11 @@ describe('LogContext', () => {
 
     beforeEach(() => {
         logCtx = createLogContext({
-            childLoggerFactory: () => ({ context: {} }),
+            // F4.5.5: LogContext.child() no longer sets child.context.
+            // The parent Logger sets _parentContextRecord after child() returns.
+            // For isolated LogContext tests, the mock factory captures
+            // the parent's merged context snapshot (like Logger.child() does).
+            childLoggerFactory: () => ({ _parentContextRecord: {} }),
         });
     });
 
@@ -35,9 +39,12 @@ describe('LogContext', () => {
     });
 
     describe('child', () => {
-        it('returns a ChildLoggerShape with bindings merged', () => {
+        it('stores __parentSnapshot with the parent context at child-creation time', () => {
+            // F4.5.5: LogContext.child() captures _getContextRecord() as __parentSnapshot.
+            // The extra bindings are stored by Logger.child() as _bindings.
             const child = logCtx.child({ requestId: 'r-42' });
-            expect((child as unknown as { context: Record<string, unknown> }).context).toEqual({ requestId: 'r-42' });
+            // __parentSnapshot contains the parent's context snapshot (empty for root)
+            expect((child as unknown as Record<string, unknown>)['__parentSnapshot']).toEqual({});
         });
 
         it('is immutable — creating a child does not mutate parent context', () => {
@@ -52,15 +59,16 @@ describe('LogContext', () => {
             // Here we just verify that child contexts are independent.
             const child1 = logCtx.child({ a: 1 });
             const child2 = logCtx.child({ a: 1, b: 2 });
-            expect((child1 as unknown as { context: Record<string, unknown> }).context).toEqual({ a: 1 });
-            expect((child2 as unknown as { context: Record<string, unknown> }).context).toEqual({ a: 1, b: 2 });
+            // __parentSnapshot is the parent's context snapshot (empty for root)
+            expect((child1 as unknown as Record<string, unknown>)['__parentSnapshot']).toEqual({});
+            expect((child2 as unknown as Record<string, unknown>)['__parentSnapshot']).toEqual({});
         });
 
         it('child with empty object works', () => {
             const child1 = logCtx.child({ a: 1 });
             const child2 = logCtx.child({});
-            expect((child1 as unknown as { context: Record<string, unknown> }).context).toEqual({ a: 1 });
-            expect((child2 as unknown as { context: Record<string, unknown> }).context).toEqual({});
+            expect((child1 as unknown as Record<string, unknown>)['__parentSnapshot']).toEqual({});
+            expect((child2 as unknown as Record<string, unknown>)['__parentSnapshot']).toEqual({});
         });
     });
 
@@ -91,7 +99,8 @@ describe('LogContext', () => {
             const child = logCtx.child({ k: 1 });
             logCtx.clearContext();
             expect(logCtx.getContext()).toEqual({});
-            expect((child as unknown as { context: Record<string, unknown> }).context).toEqual({ k: 1 });
+            // __parentSnapshot is captured at child-creation time (parent's context before clear)
+            expect((child as unknown as Record<string, unknown>)['__parentSnapshot']).toEqual({});
         });
     });
 
