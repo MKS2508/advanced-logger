@@ -79,19 +79,13 @@ import { DEFAULT_CONFIG, CLI_LEVEL_MAP } from './constants.js';
 
 // CLI Primitives
 import type { CLILogLevel, ISpinnerHandle, IBoxOptions, ITableOptions } from './types/index.js';
-import { renderStep } from './cli-primitives/step.js';
-import { renderHeader } from './cli-primitives/header.js';
-import { renderDivider } from './cli-primitives/divider.js';
-import { renderBox } from './cli-primitives/box.js';
-import { renderTable } from './cli-primitives/cli-table.js';
-import { SpinnerManager, NoopSpinner } from './cli-primitives/spinner.js';
-import { ServerFallback } from './cli-primitives/server-fallback.js';
 
 // Bridge imports
 import { createLogContext, type LogContext } from './bridges/LogContext.js';
 import { createTransportBridge, type TransportBridge } from './bridges/TransportBridge.js';
 import { createHookBridge, type HookBridge } from './bridges/HookBridge.js';
 import { createSerializerBridge, type SerializerBridge } from './bridges/SerializerBridge.js';
+import { createTerminalBridge, type TerminalBridge } from './bridges/TerminalBridge.js';
 
 /**
  * Estilos del tema activo actual
@@ -145,6 +139,10 @@ export class Logger {
     private logContext: LogContext;
     private transportBridge: TransportBridge;
 
+    /** Whether CLI primitives (step, box, header, etc.) should be shown @since 5.0.0 */
+    private _showPrimitives = true;
+    private terminalBridge: TerminalBridge;
+
     /**
      * Active smart-preset reference (set by `preset()`). Typed as `unknown`
      * to keep the public surface clean; consumed by `createStyledOutput`.
@@ -160,11 +158,6 @@ export class Logger {
      * `createStyledOutput`.
      */
     private _customization?: unknown;
-
-    /** Whether CLI primitives (step, box, header, etc.) should be shown @since 5.0.0 */
-    private _showPrimitives = true;
-    /** Server-mode fallback for non-TTY environments @since 5.0.0 */
-    private _serverFallback?: ServerFallback;
 
     /**
      * Crea una nueva instancia del Logger
@@ -201,6 +194,12 @@ export class Logger {
 
         // Initialize TransportBridge
         this.transportBridge = createTransportBridge();
+
+        // Initialize TerminalBridge (lazy — uses getter to avoid circular ref)
+        this.terminalBridge = createTerminalBridge({
+            config: this.config,
+            getLogger: () => this
+        });
 
         // Legacy ExportLogHandler has been removed in 5.1.0 (F013-delete).
         // For log capture & export, use transports (`addTransport({ target: new FileTransport(...) })`)
@@ -1716,14 +1715,7 @@ export class Logger {
      * @since 5.0.0
      */
     step(current: number, total: number, message: string): void {
-        if (!this._showPrimitives) return;
-        if (!isRunningInTerminal()) {
-            this.getServerFallback().step(current, total, message);
-            return;
-        }
-        const colorCap = getColorCapability();
-        const output = renderStep(current, total, message, colorCap);
-        process.stderr.write(output + '\n');
+        this.terminalBridge.step(current, total, message);
     }
 
     /**
@@ -1738,13 +1730,7 @@ export class Logger {
      * @since 5.0.0
      */
     header(title: string, subtitle?: string): void {
-        if (!this._showPrimitives) return;
-        if (!isRunningInTerminal()) {
-            this.getServerFallback().header(title, subtitle);
-            return;
-        }
-        const output = renderHeader(title, subtitle);
-        process.stderr.write(output + '\n');
+        this.terminalBridge.header(title, subtitle);
     }
 
     /**
@@ -1756,13 +1742,7 @@ export class Logger {
      * @since 5.0.0
      */
     divider(): void {
-        if (!this._showPrimitives) return;
-        if (!isRunningInTerminal()) {
-            this.getServerFallback().divider();
-            return;
-        }
-        const output = renderDivider();
-        process.stderr.write(output + '\n');
+        this.terminalBridge.divider();
     }
 
     /**
@@ -1774,12 +1754,7 @@ export class Logger {
      * @since 5.0.0
      */
     blank(): void {
-        if (!this._showPrimitives) return;
-        if (!isRunningInTerminal()) {
-            this.getServerFallback().blank();
-            return;
-        }
-        process.stderr.write('\n');
+        this.terminalBridge.blank();
     }
 
     /**
@@ -1794,14 +1769,7 @@ export class Logger {
      * @since 5.0.0
      */
     box(content: string, options?: IBoxOptions): void {
-        if (!this._showPrimitives) return;
-        if (!isRunningInTerminal()) {
-            this.getServerFallback().box(content, options);
-            return;
-        }
-        const colorCap = getColorCapability();
-        const output = renderBox(content, options, colorCap);
-        process.stderr.write(output + '\n');
+        this.terminalBridge.box(content, options);
     }
 
     /**
@@ -1820,14 +1788,7 @@ export class Logger {
      * @since 5.0.0
      */
     cliTable(rows: Record<string, unknown>[], options?: ITableOptions): void {
-        if (!this._showPrimitives) return;
-        if (!isRunningInTerminal()) {
-            this.getServerFallback().cliTable(rows, options);
-            return;
-        }
-        const colorCap = getColorCapability();
-        const output = renderTable(rows, options, colorCap);
-        process.stderr.write(output + '\n');
+        this.terminalBridge.cliTable(rows, options);
     }
 
     /**
@@ -1846,10 +1807,7 @@ export class Logger {
      * @since 5.0.0
      */
     spinner(message: string): ISpinnerHandle {
-        if (!isRunningInTerminal() || this.config.outputMode === 'silent') {
-            return new NoopSpinner(message, this);
-        }
-        return new SpinnerManager(message, this.config, this);
+        return this.terminalBridge.spinner(message);
     }
 
     /**
@@ -1866,7 +1824,7 @@ export class Logger {
     setCLILevel(level: CLILogLevel): void {
         const mapping = CLI_LEVEL_MAP[level];
         this.setVerbosity(mapping.verbosity);
-        this._showPrimitives = mapping.showPrimitives;
+        this.terminalBridge.setShowPrimitives(mapping.showPrimitives);
         this.config.cliLevel = level;
     }
 
@@ -1877,14 +1835,6 @@ export class Logger {
      */
     get cliLevel(): CLILogLevel {
         return this.config.cliLevel ?? 'normal';
-    }
-
-    /** Lazily creates the server fallback instance @private */
-    private getServerFallback(): ServerFallback {
-        if (!this._serverFallback) {
-            this._serverFallback = new ServerFallback(this);
-        }
-        return this._serverFallback;
     }
 
     // ===== OUTPUT WRITER SYSTEM =====
