@@ -31,10 +31,13 @@ export type ChildLoggerFactory = (config: Partial<LoggerConfig>) => unknown;
 /**
  * Minimal shape of a Logger instance needed by LogContext.
  * Used to avoid circular dependencies between LogContext and Logger.
- * Any object with a `context` field satisfies this interface.
+ * The `_parentContextRecord` field is set by the parent Logger after
+ * `LogContext.child()` returns, establishing the context chain.
  */
 export interface ChildLoggerShape {
-    context: Record<string, unknown>;
+    _parentContextRecord?: Record<string, unknown>;
+    /** Legacy field — no longer the canonical context source (F4.5.5 fix). */
+    context?: Record<string, unknown>;
 }
 
 /**
@@ -47,6 +50,17 @@ export interface ILogContextOptions {
     childLoggerFactory: ChildLoggerFactory;
     /** Initial OTel resource to merge into every record. */
     initialResource?: Partial<ILogResourceRef>;
+    /**
+     * Returns the parent logger's merged context record at child-creation time.
+     * Used by _getContextRecord() to build the context chain.
+     * @internal
+     */
+    getParentContextRecord?: () => Record<string, unknown>;
+    /**
+     * The ALS instance to use for withContext scoping.
+     * @internal
+     */
+    alsInstance?: ALS;
 }
 
 /**
@@ -114,8 +128,20 @@ export interface LogContext {
 
     /** Internal context record. Exposed for TransportRecord assembly. */
     _getContextRecord(): Record<string, unknown>;
+    /**
+     * Returns the base context WITHOUT the ALS overlay.
+     * Used by Logger.child() to capture the parent context snapshot for
+     * child logger creation (F4.5.5 fix).
+     * @internal
+     */
+    _getBaseContextRecord(): Record<string, unknown>;
     /** Internal resource record. Exposed for TransportRecord assembly. */
     _getResource(): Partial<ILogResourceRef> | undefined;
+    /**
+     * Returns the current AsyncLocalStorage store, if ALS is active.
+     * @internal
+     */
+    _getAlsStore(): Record<string, unknown> | undefined;
 }
 
 // AsyncLocalStorage type (Node 14+, undefined in browser)
@@ -141,6 +167,9 @@ export function createLogContext(options: ILogContextOptions): LogContext {
         ? { ...options.initialResource }
         : undefined;
 
+    // Use provided ALS instance or fall back to module-level (browser fallback)
+    const als = options.alsInstance ?? alsInstance;
+
     return {
         getContext(): ContextSnapshot {
             return { ...context };
@@ -148,7 +177,7 @@ export function createLogContext(options: ILogContextOptions): LogContext {
 
         withContext<R>(bindings: Record<string, unknown>, fn?: () => R): R | undefined {
             // No-op without AsyncLocalStorage (browser) — warn once
-            if (!alsInstance) {
+            if (!als) {
                 if (fn) return fn();
                 return undefined;
             }
@@ -156,13 +185,13 @@ export function createLogContext(options: ILogContextOptions): LogContext {
             if (!fn) return undefined;
             // Run fn within AsyncLocalStorage scope
             const merged = { ...context, ...bindings };
-            return alsInstance.run(merged, fn);
+            return als.run(merged, fn);
         },
 
         async withContextAsync<R>(bindings: Record<string, unknown>, fn: () => Promise<R>): Promise<R> {
-            if (!alsInstance) return fn();
+            if (!als) return fn();
             const merged = { ...context, ...bindings };
-            return alsInstance.run(merged, fn);
+            return als.run(merged, fn);
         },
 
         clearContext(): typeof this {
@@ -175,23 +204,52 @@ export function createLogContext(options: ILogContextOptions): LogContext {
             return this;
         },
 
-        child(extra: Record<string, unknown>): ChildLoggerShape {
+        child(_extra: Record<string, unknown>): ChildLoggerShape {
+            // Creates the child logger via factory. Captures the current
+            // _getBaseContextRecord() snapshot (parent context WITHOUT ALS) at
+            // child-creation time. ALS is transient and should not be baked into
+            // the child's _parentContextRecord — it is applied fresh at dispatch time.
+            // Note: _extra (bindings) are stored by Logger.child() as _bindings.
+            const snapshot = this._getBaseContextRecord();
             const childLogger = options.childLoggerFactory({}) as ChildLoggerShape;
-            childLogger.context = { ...context, ...extra };
+            // Store on childLogger for Logger.child() to pick up
+            (childLogger as unknown as Record<string, unknown>)['__parentSnapshot'] = snapshot;
             return childLogger;
         },
 
         _getContextRecord(): Record<string, unknown> {
-            // Merge AsyncLocalStorage context if available (takes precedence)
-            const alsContext = alsInstance?.getStore();
-            if (alsContext) {
-                return { ...context, ...alsContext };
+            // Returns the full merged context for dispatch purposes.
+            // Base (parent snapshot + own context) plus ALS overlay if active.
+            const base = this._getBaseContextRecord();
+            const alsContext = als?.getStore();
+            if (alsContext && Object.keys(alsContext).length > 0) {
+                return { ...base, ...alsContext };
             }
-            return context;
+            return base;
+        },
+
+        _getBaseContextRecord(): Record<string, unknown> {
+            // Returns parent context chain + own context (NO ALS overlay).
+            // ALS is applied by _getContextRecord() as a live overlay.
+            let base: Record<string, unknown> = {};
+            const parentRecord = options.getParentContextRecord?.() ?? null;
+            if (parentRecord && Object.keys(parentRecord).length > 0) {
+                base = parentRecord;
+            } else if (Object.keys(context).length > 0) {
+                base = context;
+            }
+            if (Object.keys(context).length > 0) {
+                base = { ...base, ...context };
+            }
+            return base;
         },
 
         _getResource(): Partial<ILogResourceRef> | undefined {
             return resource;
+        },
+
+        _getAlsStore(): Record<string, unknown> | undefined {
+            return als?.getStore();
         }
     };
 }

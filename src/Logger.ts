@@ -165,6 +165,21 @@ export class Logger {
     private _customization?: unknown;
 
     /**
+     * This logger's own context bindings (from child() calls).
+     * Single source of truth for this logger's contribution to the context chain.
+     * @private
+     */
+    private _bindings: Record<string, unknown> = {};
+
+    /**
+     * Reference to the parent's merged context record at the time this logger
+     * was created. Together with _bindings, forms the context chain.
+     * Undefined for the root logger.
+     * @private
+     */
+    private _parentContextRecord: Record<string, unknown> | undefined;
+
+    /**
      * Crea una nueva instancia del Logger
      * 
      * @param {Partial<LoggerConfig>} config - Configuración opcional del logger
@@ -194,7 +209,10 @@ export class Logger {
             childLoggerFactory: (childConfig: Partial<LoggerConfig>): Logger => {
                 // eslint-disable-next-line @typescript-eslint/no-use-before-define
                 return new Logger({ ...this.config, ...childConfig });
-            }
+            },
+            // F4.5.5 fix: capture the parent's full merged context at child-creation
+            // time so child loggers can build the chain correctly.
+            getParentContextRecord: () => this._captureMergedContext()
         });
 
         // Initialize TransportBridge
@@ -447,7 +465,18 @@ export class Logger {
      *
      */
     child(extra: Record<string, unknown>): Logger {
-        return this.logContext.child(extra) as unknown as Logger;
+        // LogContext.child() creates the child Logger via factory and captures
+        // the parent's _getContextRecord() snapshot (parent context + ALS) in
+        // __parentSnapshot on the child. We pick that up here and assign it to
+        // _parentContextRecord, then set the child's _bindings.
+        const childLogger = this.logContext.child(extra) as unknown as Logger;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const snapshot = (childLogger as any)['__parentSnapshot'] as Record<string, unknown> | undefined;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (childLogger as any)._parentContextRecord = snapshot ?? {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (childLogger as any)._bindings = extra;
+        return childLogger;
     }
 
     /**
@@ -469,7 +498,14 @@ export class Logger {
      * @returns A read-only snapshot of the current context
      */
     getContext(): Readonly<Record<string, unknown>> {
-        return this.logContext.getContext();
+        // Return the context chain (parent snapshot + own bindings), NOT including
+        // ALS scope (which is transient). This mirrors what dispatchToTransports
+        // uses for attributes, but without ALS overlay.
+        let merged: Record<string, unknown> = this._parentContextRecord ?? {};
+        if (this._bindings && Object.keys(this._bindings).length > 0) {
+            merged = { ...merged, ...this._bindings };
+        }
+        return merged;
     }
 
     /**
@@ -1091,6 +1127,51 @@ export class Logger {
      * @param extra - Optional fields to merge into the record (e.g. `{ tag: 'success' }`)
      */
     protected _dispatchTag: string | undefined;
+
+    /**
+     * Computes the fully-merged context for this logger.
+     *
+     * The context chain is built at child-creation time: each child stores
+     * its parent's fully-merged context (at that moment) as _parentContextRecord.
+     * This means _parentContextRecord already contains all ancestors' bindings
+     * in the correct precedence order (root first, nearest child last).
+     *
+     * Merge order (later wins):
+     *   1. _parentContextRecord — parent's merged context snapshot at creation time
+     *   2. _bindings            — this logger's own bindings (child() calls)
+     *   3. ALS store            — withContext/withContextAsync scope (highest priority)
+     *
+     * @internal
+     * @returns The merged context record
+     */
+    private _getMergedContext(): Record<string, unknown> {
+        // Start with parent's snapshot (already contains all ancestors)
+        let merged: Record<string, unknown> = this._parentContextRecord ?? {};
+
+        // Layer in this logger's own bindings (nearest wins)
+        if (this._bindings && Object.keys(this._bindings).length > 0) {
+            merged = { ...merged, ...this._bindings };
+        }
+
+        // Layer in ALS scope (highest priority)
+        const alsContext = this.logContext._getAlsStore?.() ?? {};
+        if (alsContext && Object.keys(alsContext).length > 0) {
+            merged = { ...merged, ...alsContext };
+        }
+
+        return merged;
+    }
+
+    /** @internal Exposes base merged context (no ALS) to LogContext child factory closure. */
+    _captureMergedContext(): Record<string, unknown> {
+        // Return base context without ALS — ALS is transient and should not be
+        // baked into _parentContextRecord at child-creation time.
+        let merged: Record<string, unknown> = this._parentContextRecord ?? {};
+        if (this._bindings && Object.keys(this._bindings).length > 0) {
+            merged = { ...merged, ...this._bindings };
+        }
+        return merged;
+    }
 
     protected dispatchToTransports(
         level: LogLevel,
