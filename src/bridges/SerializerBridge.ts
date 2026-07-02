@@ -12,7 +12,6 @@ import { SerializerRegistry } from '../serializers/index.js';
 export interface SerializerBridge {
     /** Adds a serializer for a type. */
     addSerializer<T>(type: new (...args: unknown[]) => T, serializer: SerializerFn<T>, priority?: number): void;
-    /** Removes a serializer for a type. Returns true if removed. */
     removeSerializer<T>(type: new (...args: unknown[]) => T): boolean;
     /** Returns the underlying registry. */
     getSerializerRegistry(): SerializerRegistry;

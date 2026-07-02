@@ -844,7 +844,7 @@ export class Logger {
      * @since 3.0.0
      */
     addSerializer<T>(
-        type: new (...args: any[]) => T,
+        type: new (...args: unknown[]) => T,
         serializer: SerializerFn<T>,
         priority?: number
     ): void {
@@ -859,7 +859,7 @@ export class Logger {
      *
      * @since 3.0.0
      */
-    removeSerializer<T>(type: new (...args: any[]) => T): boolean {
+    removeSerializer<T>(type: new (...args: unknown[]) => T): boolean {
         return this.serializerBridge.removeSerializer(type);
     }
 
@@ -1116,7 +1116,7 @@ export class Logger {
      *
      * @since 0.3.0 (return type changed to `Promise<void>` in 5.1.0)
      */
-    protected async log(level: LogLevel, ...args: any[]): Promise<void> {
+    protected async log(level: LogLevel, ...args: unknown[]): Promise<void> {
         if (!this.shouldLog(level)) return;
 
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
@@ -1194,7 +1194,7 @@ export class Logger {
         this.hookBridge.getHookManager().emit('afterLog', processed).catch(() => {});
     }
 
-    logWithBindings(bindings: Bindings, level: LogLevel, ...args: any[]): Promise<void> {
+    logWithBindings(bindings: Bindings, level: LogLevel, ...args: unknown[]): Promise<void> {
         if (!this.shouldLog(level)) return Promise.resolve();
 
         let prefix = '';
@@ -1214,7 +1214,7 @@ export class Logger {
         return this.log(level, ...args);
     }
 
-    debug(...args: any[]): Promise<void> {
+    debug(...args: unknown[]): Promise<void> {
         return this.log('debug', ...args);
     }
 
@@ -1229,7 +1229,7 @@ export class Logger {
      *
      * @since 0.3.0 (return type changed in 5.1.0)
      */
-    info(...args: any[]): Promise<void> {
+    info(...args: unknown[]): Promise<void> {
         return this.log('info', ...args);
     }
 
@@ -1240,7 +1240,7 @@ export class Logger {
      *
      * @since 0.3.0 (return type changed in 5.1.0)
      */
-    warn(...args: any[]): Promise<void> {
+    warn(...args: unknown[]): Promise<void> {
         return this.log('warn', ...args);
     }
 
@@ -1251,7 +1251,7 @@ export class Logger {
      *
      * @since 0.3.0 (return type changed in 5.1.0)
      */
-    error(...args: any[]): Promise<void> {
+    error(...args: unknown[]): Promise<void> {
         return this.log('error', ...args);
     }
 
@@ -1269,7 +1269,7 @@ export class Logger {
      *
      * @since 0.3.0 (refactor 5.1.0 — emits to transports + respects outputMode)
      */
-    async success(...args: any[]): Promise<void> {
+    async success(...args: unknown[]): Promise<void> {
         if (!this.shouldLog('info')) return;
 
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
@@ -1353,7 +1353,7 @@ export class Logger {
      *
      * @since 0.3.0 (refactor 5.1.0 — emits as level=trace, not double debug)
      */
-    trace(...args: any[]): void {
+    trace(...args: unknown[]): void {
         this.log('trace', ...args);
     }
 
@@ -1367,7 +1367,7 @@ export class Logger {
      *
      * @since 0.3.0 (return type changed in 5.1.0)
      */
-    critical(...args: any[]): Promise<void> {
+    critical(...args: unknown[]): Promise<void> {
         return this.log('critical', ...args);
     }
 
@@ -1847,14 +1847,14 @@ export class Logger {
      * @param {string} message - Formatted log message
      * @param {LogLevel} level - Log level
      * @param {string[]} styles - CSS styles for browser console
-     * @param {any[]} additionalArgs - Additional arguments to log
+     * @param {unknown[]} additionalArgs - Additional arguments to log
      * @since 4.0.0
      */
     private writeOutput(
         message: string,
         level: LogLevel,
         styles: string[],
-        additionalArgs: any[]
+        additionalArgs: unknown[]
     ): void {
         const mode = this.config.outputMode ?? 'console';
 
@@ -2071,14 +2071,14 @@ function toAttributeValue(value: unknown): LogAttributeValue | undefined {
  * @description Todos los métodos están correctamente enlazados al singleton lazy
  * @since 0.3.0
  */
-export const debug = (...args: any[]) => getDefaultLogger().debug(...args);
-export const info = (...args: any[]) => getDefaultLogger().info(...args);
-export const warn = (...args: any[]) => getDefaultLogger().warn(...args);
-export const error = (...args: any[]) => getDefaultLogger().error(...args);
-export const success = (...args: any[]) => getDefaultLogger().success(...args);
-export const trace = (...args: any[]) => getDefaultLogger().trace(...args);
-export const critical = (...args: any[]) => getDefaultLogger().critical(...args);
-export const table = (data: any, columns?: string[]) => getDefaultLogger().table(data, columns);
+export const debug = (...args: unknown[]) => getDefaultLogger().debug(...args);
+export const info = (...args: unknown[]) => getDefaultLogger().info(...args);
+export const warn = (...args: unknown[]) => getDefaultLogger().warn(...args);
+export const error = (...args: unknown[]) => getDefaultLogger().error(...args);
+export const success = (...args: unknown[]) => getDefaultLogger().success(...args);
+export const trace = (...args: unknown[]) => getDefaultLogger().trace(...args);
+export const critical = (...args: unknown[]) => getDefaultLogger().critical(...args);
+export const table = (data: unknown, columns?: string[]) => getDefaultLogger().table(data, columns);
 export const group = (label: string, collapsed?: boolean) => getDefaultLogger().group(label, collapsed);
 export const groupEnd = () => getDefaultLogger().groupEnd();
 export const time = (label: string) => getDefaultLogger().time(label);
@@ -2089,9 +2089,9 @@ export const addHandler = (handler: ILogHandler) => getDefaultLogger().addHandle
 export const setTheme = (theme: ThemeVariant) => getDefaultLogger().setTheme(theme);
 export const setBannerType = (bannerType: BannerType) => getDefaultLogger().setBannerType(bannerType);
 export const showBanner = (bannerType?: BannerType) => getDefaultLogger().showBanner(bannerType);
-export const logWithSVG = (message: string, svgContent?: string, options?: StyleOptions) => 
+export const logWithSVG = (message: string, svgContent?: string, options?: StyleOptions) =>
     getDefaultLogger().logWithSVG(message, svgContent, options);
-export const logAnimated = (message: string, duration?: number) => 
+export const logAnimated = (message: string, duration?: number) =>
     getDefaultLogger().logAnimated(message, duration);
 export const cli = (command: string) => getDefaultLogger().cli(command);
 export const cleanup = () => getDefaultLogger().cleanup();
@@ -2111,15 +2111,15 @@ export const clearBadges = () => getDefaultLogger().clearBadges();
 export const component = (name: string) => getDefaultLogger().component(name);
 export const api = (name: string) => getDefaultLogger().api(name);
 export const scope = (name: string) => getDefaultLogger().scope(name);
-export const customize = (overrides: any) => getDefaultLogger().customize(overrides);
+export const customize = (overrides: Parameters<Logger['customize']>[0]) => getDefaultLogger().customize(overrides);
 
 // Enterprise features exports
 export const addSerializer = <T>(
-    type: new (...args: any[]) => T,
+    type: new (...args: unknown[]) => T,
     serializer: SerializerFn<T>,
     priority?: number
 ) => getDefaultLogger().addSerializer(type, serializer, priority);
-export const removeSerializer = <T>(type: new (...args: any[]) => T) =>
+export const removeSerializer = <T>(type: new (...args: unknown[]) => T) =>
     getDefaultLogger().removeSerializer(type);
 export const on = (event: HookEvent, callback: HookCallback, priority?: number) =>
     getDefaultLogger().on(event, callback, priority);
