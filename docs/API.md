@@ -6,913 +6,391 @@ permalink: /API/
 
 # 🔧 API Reference
 
-Complete API documentation for Better Logger with detailed method signatures, parameters, and examples.
-
-## Table of Contents
-
-- [Core Logger](#core-logger)
-- [Enterprise Features (v3.0.0)](#enterprise-features-v300)
-  - [Custom Serializers](#custom-serializers)
-  - [Hooks & Middleware](#hooks--middleware)
-  - [Transports](#transports)
-- [Style Builder](#style-builder)
-- [CLI Interface](#cli-interface)
-- [Export & Remote](#export--remote)
-- [Types & Interfaces](#types--interfaces)
-
----
-
-## 🚀 Core Logger
-
-### Logger Class
-
-The main Logger class provides all essential logging functionality.
+Referencia completa de la API pública de `@mks2508/better-logger`.
 
 ```typescript
-import { Logger } from '@mks2508/better-logger';
-
-const logger = new Logger();
+import logger, { Logger } from '@mks2508/better-logger';
 ```
 
-#### Constructor Options
+- `logger` — instancia singleton (lazy proxy, se inicializa al primer uso)
+- `Logger` — clase para instancias custom
+
+## Log levels
+
+```text
+trace(-1) < debug(0) < info(1) < warn(2) < error(3) < critical(4)
+```
 
 ```typescript
-interface LoggerOptions {
-  prefix?: string;           // Default prefix for all log messages
-  level?: LogLevel;          // Minimum log level to display
-  enableStackTrace?: boolean; // Include stack traces in logs
-  enablePerformance?: boolean; // Include performance timings
-  theme?: ThemeName;         // Visual theme for styling
-}
+export const LOG_LEVELS = { trace: -1, debug: 0, info: 1, warn: 2, error: 3, critical: 4 } as const;
+export type LogLevel = keyof typeof LOG_LEVELS;            // 'trace' | 'debug' | ... | 'critical'
+export type Verbosity = LogLevel | 'silent';
+export type LogTag = LogLevel | 'success';                 // success emite a INFO severity
 ```
 
-#### Log Levels
+Cada `TransportRecord` incluye `severityNumber` y `severityText` OTel automáticamente:
+
+| LogLevel   | severityNumber | severityText |
+|------------|----------------|--------------|
+| `trace`    | 1              | TRACE        |
+| `debug`    | 5              | DEBUG        |
+| `info`     | 9              | INFO         |
+| `warn`     | 13             | WARN         |
+| `error`    | 17             | ERROR        |
+| `critical` | 21             | FATAL        |
+
+## Logger
+
+### Constructor
 
 ```typescript
-type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'critical';
-
-// Log level hierarchy (higher numbers = higher priority)
-const LOG_LEVELS = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
-  critical: 4
-} as const;
+const logger = new Logger(config?: Partial<LoggerConfig>);
 ```
 
-### Basic Logging Methods
+`LoggerConfig` (todos opcionales): `verbosity`, `theme`, `globalPrefix`, `enableStackTrace`, `timestampFormat`, `cliLevel`, `resource`, ...
 
-#### `logger.debug(message, ...args)`
-Low-priority debugging information.
-```typescript
-logger.debug('Variable value:', { userId: 123 });
-// Output: [DEBUG] Variable value: { userId: 123 }
-```
+### Core logging
 
-#### `logger.info(message, ...args)`
-General informational messages.
-```typescript
-logger.info('User logged in', { username: 'john_doe' });
-// Output: [INFO] User logged in { username: 'john_doe' }
-```
-
-#### `logger.warn(message, ...args)`
-Warning messages for potential issues.
-```typescript
-logger.warn('API rate limit approaching', { remaining: 10 });
-// Output: [WARN] API rate limit approaching { remaining: 10 }
-```
-
-#### `logger.error(message, ...args)`
-Error messages for failures.
-```typescript
-logger.error('Database connection failed', { error: 'ECONNREFUSED' });
-// Output: [ERROR] Database connection failed { error: 'ECONNREFUSED' }
-```
-
-#### `logger.critical(message, ...args)`
-Critical system failures requiring immediate attention.
-```typescript
-logger.critical('System memory exhausted', { usage: '95%' });
-// Output: [CRITICAL] System memory exhausted { usage: '95%' }
-```
-
-### Advanced Logging Methods
-
-#### `logger.success(message, ...args)`
-Success notifications with green styling.
-```typescript
-logger.success('Payment processed successfully', { orderId: 'ORD-123' });
-// Output: [SUCCESS] Payment processed successfully { orderId: 'ORD-123' }
-```
-
-#### `logger.table(data, options?)`
-Display data in formatted table.
-```typescript
-const users = [
-  { id: 1, name: 'John', email: 'john@example.com' },
-  { id: 2, name: 'Jane', email: 'jane@example.com' }
-];
-
-logger.table(users);
-// Displays formatted table in console
-```
-
-#### `logger.group(label, callback?)`
-Group related log messages.
-```typescript
-logger.group('User Authentication', () => {
-  logger.info('Checking credentials...');
-  logger.info('Validating token...');
-  logger.success('Authentication successful');
-});
-
-// Or manual grouping
-logger.group('Database Operations');
-logger.info('Connecting to database...');
-logger.info('Running migration...');
-logger.groupEnd();
-```
-
-### Performance Timing
-
-#### `logger.time(label)`
-Start timing operation.
-```typescript
-logger.time('api-call');
-await fetchUserData();
-logger.timeEnd('api-call');
-// Output: [TIMING] api-call: 245.67ms
-```
-
-#### `logger.timeEnd(label)`
-End timing and display duration.
-
-#### `logger.timeLog(label, ...args)`
-Log intermediate timing without ending timer.
-```typescript
-logger.time('long-operation');
-await step1();
-logger.timeLog('long-operation', 'Step 1 complete');
-await step2();
-logger.timeEnd('long-operation');
-```
-
-### Scoped Loggers
-
-Create loggers with persistent prefixes for different modules.
+Todos retornan `Promise<void>` (resuelve tras dispatch a transports). Fire-and-forget funciona sin `await`.
 
 ```typescript
-const apiLogger = logger.scope('API');
-const dbLogger = logger.scope('DATABASE');
+logger.trace(...args): Promise<void>      // nivel más bajo (OTel TRACE)
+logger.debug(...args): Promise<void>
+logger.info(...args): Promise<void>
+logger.warn(...args): Promise<void>
+logger.error(...args): Promise<void>
+logger.critical(...args): Promise<void>   // OTel FATAL
+logger.success(...args): Promise<void>    // INFO severity + tag 'success'
 
-apiLogger.info('Making HTTP request');    // [API] [INFO] Making HTTP request
-dbLogger.error('Connection timeout');     // [DATABASE] [ERROR] Connection timeout
+logger.log(level: LogLevel, ...args): Promise<void>
+logger.logWithBindings(bindings: Bindings, level: LogLevel, ...args): Promise<void>
 ```
 
-### Log Handlers
+> `await` es recomendable cuando un hook `beforeLog` muta el mensaje (redacción PII, correlation IDs).
 
-Add custom handlers for log processing.
+### Configuración
 
 ```typescript
-import { FileLogHandler, RemoteLogHandler } from '@mks2508/better-logger';
+logger.setVerbosity(level: Verbosity): void
+logger.setTheme(theme: ThemeVariant): void          // 'default'|'dark'|'light'|'neon'|'minimal'|'cyberpunk'
+logger.setGlobalPrefix(prefix: string): void
+logger.setBannerType(type: BannerType): void
 
-// File logging
-logger.addHandler(new FileLogHandler('/path/to/logs.txt'));
-
-// Remote logging
-logger.addHandler(new RemoteLogHandler('https://api.logging-service.com'));
-
-// Custom handler
-logger.addHandler({
-  handle(entry) {
-    // Process log entry
-    console.log('Custom handler:', entry);
-  }
-});
+logger.getConfig(): LoggerConfig
+logger.updateConfig(updates: Partial<LoggerConfig>): void
+logger.resetConfig(): void
+logger.setResource(resource: Partial<ILogResource>): this   // service.name, version, env (OTel)
 ```
 
----
-
-## 🔄 Enterprise Features (v3.0.0)
-
-### Custom Serializers
-
-Transform objects before logging with type-based serializers.
-
-#### `logger.addSerializer(type, serializer, priority?)`
-Register a serializer for a specific type.
+### Log context (MDC)
 
 ```typescript
-// Serialize Error objects
-logger.addSerializer(Error, (err) => ({
-  name: err.name,
-  message: err.message,
-  stack: err.stack?.split('\n').slice(0, 5)
-}));
-
-// Serialize User objects (omit sensitive data)
-logger.addSerializer(User, (user) => ({
-  id: user.id,
-  email: user.email
-  // password automatically omitted
-}), 100);  // higher priority
-
-// Now objects are serialized automatically
-logger.error('Failed:', new Error('Connection timeout'));
-logger.info('User:', currentUser);
+logger.withContext(extra: Record<string, unknown>): this       // muta + chaining
+logger.child(extra: Record<string, unknown>): Logger            // copia inmutable con contexto merged
+logger.clearContext(): this
+logger.getContext(): Readonly<Record<string, unknown>>          // snapshot
 ```
 
-#### `logger.removeSerializer(type)`
-Remove a registered serializer.
+El contexto se mergea en `TransportRecord.attributes` de cada log.
+
+### Display / badges
 
 ```typescript
-logger.removeSerializer(Error);
+logger.hideTimestamp(): this / logger.showTimestamp(): this
+logger.hideLocation(): this  / logger.showLocation(): this
+logger.hideBadges(): this    / logger.showBadges(): this
+
+logger.badges(list: string[]): this
+logger.badge(name: string): this
+logger.clearBadges(): this
+
+logger.customize(overrides: { message?, timestamp?, spacing? }): void
 ```
 
-#### `logger.getSerializerRegistry()`
-Access the SerializerRegistry for advanced operations.
+### Styling
 
 ```typescript
-const registry = logger.getSerializerRegistry();
-const serialized = registry.serialize(complexObject);
+logger.preset(name: string): void                  // aplica preset completo
+logger.presets(): string[]                         // presets disponibles
+logger.showBanner(type?: BannerType): void
+logger.logWithSVG(message: string, svg?: string, options?: StyleOptions): void
+logger.logAnimated(message: string, duration?: number): void
 ```
 
-### Hooks & Middleware
-
-Intercept and modify log entries with hooks and middleware.
-
-#### `logger.on(event, callback, priority?)`
-Register a hook for an event. Returns unsubscribe function.
+### Scoped loggers
 
 ```typescript
-// Add correlation ID to all logs
-const unsubscribe = logger.on('beforeLog', (entry) => {
-  entry.correlationId = getCorrelationId();
-  return entry;  // Return modified entry
-});
-
-// Track metrics after logging
-logger.on('afterLog', (entry) => {
-  metrics.increment(`logs.${entry.level}`);
-});
-
-// Handle errors
-logger.on('onError', (entry) => {
-  alertSystem.notify(entry.message);
-});
-
-// Unsubscribe when done
-unsubscribe();
+logger.scope(name: string): ScopedLogger
+logger.component(name: string): ComponentLogger     // auto-badge COMPONENT
+logger.api(name: string): APILogger                 // auto-badge API
 ```
 
-#### `logger.once(event, callback, priority?)`
-Register a hook that fires only once.
+### Hooks & middleware
 
 ```typescript
-logger.once('beforeLog', (entry) => {
-  console.log('First log entry:', entry.message);
-});
+logger.on(event: HookEvent, cb: HookCallback, priority?: number): () => void   // unsub fn
+logger.once(event: HookEvent, cb: HookCallback, priority?: number): () => void
+logger.off(event: HookEvent, cb: HookCallback): boolean
+logger.use(middleware: MiddlewareFn, priority?: number): () => void
+logger.getHookManager(): HookManager
 ```
 
-#### `logger.off(event, callback)`
-Remove a registered hook.
+`HookEvent`: `'beforeLog' | 'afterLog' | 'onError'`. `beforeLog` es **awaited**; `afterLog` es fire-and-forget.
+
+### Serializers
 
 ```typescript
-const myHook = (entry) => { /* ... */ };
-logger.on('beforeLog', myHook);
-// Later...
-logger.off('beforeLog', myHook);
+logger.addSerializer<T>(type: new (...args) => T, fn: SerializerFn<T>, priority?: number): void
+logger.removeSerializer<T>(type: new (...args) => T): void
+logger.getSerializerRegistry(): SerializerRegistry
 ```
-
-#### `logger.use(middleware, priority?)`
-Add middleware to the processing pipeline.
-
-```typescript
-// Add request context
-logger.use((entry, next) => {
-  entry.requestId = asyncLocalStorage.getStore()?.requestId;
-  next();  // Continue to next middleware
-});
-
-// Redact sensitive data
-logger.use((entry, next) => {
-  entry.message = entry.message.replace(/password=\S+/g, 'password=***');
-  next();
-});
-
-// Middleware with priority (higher = runs first)
-logger.use((entry, next) => {
-  entry.timestamp = new Date().toISOString();
-  next();
-}, 100);
-```
-
-#### Hook Events
-
-| Event | Description | Can Modify Entry |
-|-------|-------------|------------------|
-| `beforeLog` | Before log is processed | Yes |
-| `afterLog` | After log is output | No |
-| `onError` | When an error occurs | No |
 
 ### Transports
 
-Send logs to multiple destinations with the transport system.
-
-#### `logger.addTransport(target)`
-Add a transport destination. Returns transport ID.
-
 ```typescript
-// Built-in file transport (Node.js)
-const fileId = logger.addTransport({
-  target: 'file',
-  options: { destination: '/var/log/app.log' }
-});
-
-// Built-in HTTP transport with batching
-const httpId = logger.addTransport({
-  target: 'http',
-  options: {
-    url: 'https://logs.example.com/ingest',
-    headers: { 'Authorization': 'Bearer token' },
-    batchSize: 100,      // Send in batches of 100
-    flushInterval: 5000  // Or every 5 seconds
-  },
-  level: 'warn'  // Only warn and above
-});
-
-// Built-in console transport
-logger.addTransport({
-  target: 'console'
-});
-
-// Custom transport
-logger.addTransport({
-  target: {
-    name: 'elasticsearch',
-    write: async (record) => {
-      await esClient.index({
-        index: 'logs',
-        body: record
-      });
-    },
-    flush: async () => {
-      await esClient.indices.refresh({ index: 'logs' });
-    },
-    close: async () => {
-      await esClient.close();
-    }
-  }
-});
+logger.addTransport(target: TransportTarget): string   // returns id
+logger.removeTransport(id: string): boolean
+logger.flushTransports(): Promise<void>
+logger.closeTransports(): Promise<void>
+logger.getTransportManager(): TransportManager | undefined
 ```
 
-#### `logger.removeTransport(id)`
-Remove a transport by ID.
+### Performance / visualización
 
 ```typescript
-logger.removeTransport(fileId);
+logger.time(label: string): void
+logger.timeEnd(label: string): number | undefined      // ms transcurridos
+
+logger.table(data: unknown, columns?: string[]): void
+logger.group(label: string, collapsed?: boolean): void
+logger.groupEnd(): void
 ```
 
-#### `logger.flushTransports()`
-Force flush all transport buffers.
+`time()`, `table()`, `group()` también dispatchean a transports (mismo pipeline que `log()`).
+
+### CLI primitives
 
 ```typescript
-await logger.flushTransports();
+logger.step(current: number, total: number, message: string): void
+logger.spinner(message: string): ISpinnerHandle
+logger.box(content: string, options?: IBoxOptions): void
+logger.cliTable(rows: Record<string, unknown>[], options?: ITableOptions): void
+logger.header(title: string, subtitle?: string): void
+logger.divider(): void
+logger.blank(): void
+logger.setCLILevel(level: CLILogLevel): void            // 'silent'|'quiet'|'normal'|'verbose'|'debug'
 ```
 
-#### `logger.closeTransports()`
-Close all transports (flush + cleanup).
+### Handlers (legacy bridge)
 
 ```typescript
-// Before application shutdown
-await logger.closeTransports();
+logger.addHandler(handler: ILogHandler): void
+logger.getHandlers(): ILogHandler[]
 ```
 
-#### Transport Record Structure
+> `ILogHandler` sigue disponible para compatibilidad. Para nuevos destinos usa **transports**.
+
+### Lifecycle
+
+```typescript
+logger.cleanup(): Promise<void>   // drain transports + reset timers/group/context
+```
+
+## Scoped loggers
+
+`ScopedLogger` delega al logger padre (no hereda) — ligero.
+
+```typescript
+class ScopedLogger {
+  badges(list: string[]): this
+  badge(name: string): this
+  clearBadges(): this
+  style(presetName: string): this
+  context(name: string): ContextLogger
+  time(label: string): void / timeEnd(label: string): number | undefined
+  trace/debug/info/warn/error/success/critical(...args): void
+}
+```
+
+`APILogger extends ScopedLogger`:
+
+```typescript
+api.slow(message: string, duration?: number): void        // badge SLOW
+api.rateLimit(message: string): void                       // badge RATE_LIMIT
+api.auth(message: string): void                            // badge AUTH
+api.deprecated(message: string): void                      // badge DEPRECATED
+```
+
+`ComponentLogger extends ScopedLogger`:
+
+```typescript
+comp.lifecycle(event: string, message?: string): void     // badge LIFECYCLE
+comp.stateChange(from: string, to: string, data?: unknown): void  // badge STATE
+comp.propsChange(changes: Record<string, unknown>): void  // badge PROPS
+```
+
+`ContextLogger` — bloque con prefijo jerárquico (`Scope:context`):
+
+```typescript
+const c = logger.scope('Req').context('auth');
+c.run(() => { /* prefix: Req:auth */ });
+await c.runAsync(async () => { /* ... */ });
+c.start(); /* ... */ c.end();
+```
+
+## Transports
+
+### Registro
+
+```typescript
+type TransportTarget = {
+  target: string | ITransport;     // 'console'|'file'|'http'|'otlp' | instancia
+  options?: TransportOptions;
+  level?: LogLevel;
+};
+```
+
+```typescript
+// Instancia directa (opciones tipadas)
+logger.addTransport({ target: new OtlpTransport({ endpoint, serviceName, ... }) });
+
+// String (registry built-in)
+logger.addTransport({ target: 'file', options: { destination: '/var/log/app.log' } });
+```
+
+### TransportOptions
+
+```typescript
+interface TransportOptions {
+  level?: LogLevel;
+  transform?: (record: TransportRecord) => TransportRecord | null;  // null = drop
+  batchSize?: number;
+  flushInterval?: number;
+  maxBufferSize?: number;        // hard cap, drop oldest on overflow
+  dropOldest?: boolean;
+  resource?: Partial<ILogResource>;
+}
+```
+
+### FileTransport (Node + browser)
+
+```typescript
+interface FileTransportOptions {
+  destination: string;              // path (Node) o key localStorage (browser)
+  batchSize?: number;
+  flushInterval?: number;
+  maxBufferSize?: number;
+  onError?: (entry: HookLogEntry) => void | Promise<void>;
+}
+```
+
+Node: batches vía `fs.promises.appendFile` (async). Browser: batches a `localStorage` (fallback no-op).
+
+### HttpTransport
+
+```typescript
+interface HttpTransportOptions {
+  url: string;
+  headers?: Record<string, string>;
+  batchSize?: number;
+  flushInterval?: number;
+  maxBufferSize?: number;
+  maxRetries?: number;              // default 3
+  initialBackoffMs?: number;        // default 250, dobla por intento
+  maxBackoffMs?: number;            // default 5_000
+  fetchTimeoutMs?: number;          // default 10_000
+  onError?: (entry: HookLogEntry) => void | Promise<void>;
+}
+```
+
+Retry solo en errores recuperables (red, 5xx). 4xx = drop.
+
+### OtlpTransport (SigNoz / OTLP-HTTP)
+
+```typescript
+interface OtlpTransportOptions {
+  endpoint: string;                 // base URL, POST a <endpoint>/v1/logs
+  serviceName: string;              // requerido
+  serviceVersion?: string;
+  environment?: string;
+  resourceAttributes?: Record<string, string>;
+  ingestKeyEnvVar?: string;         // process.env[ingestKeyEnvVar] → header signoz-ingestion-key
+  headers?: Record<string, string>;
+  batchSize?: number;               // default 50
+  flushInterval?: number;
+  maxBufferSize?: number;           // default 10_000
+  maxRetries?: number;
+  initialBackoffMs?: number;
+  maxBackoffMs?: number;
+  fetchTimeoutMs?: number;
+  onError?: (entry: HookLogEntry) => void | Promise<void>;
+}
+```
+
+Extiende `HttpTransport`. La ingestion key **nunca** se escribe en código ni en el record.
+
+### Custom transport
+
+```typescript
+interface ITransport {
+  readonly name: string;
+  write(record: TransportRecord): void | Promise<void>;
+  flush?(): void | Promise<void>;
+  close?(): void | Promise<void>;
+  isReady?(): boolean;
+}
+
+logger.getTransportManager()?.register('mine', MyTransport);
+```
+
+### TransportRecord
 
 ```typescript
 interface TransportRecord {
   level: LogLevel;
-  levelValue: number;  // 0-4
-  time: number;        // Unix timestamp
-  msg: string;
+  levelValue: number;
+  severityNumber: number;           // OTel 1-24
+  severityText: string;             // TRACE|DEBUG|INFO|WARN|ERROR|FATAL
+  time: number;                     // epoch ms
+  msg: string;                      // post-hook
   prefix?: string;
-  location?: {
-    file: string;
-    line: number;
-    column: number;
-    function?: string;
-  };
+  location?: { file: string; line: number; column: number; function?: string };
+  traceId?: string;                 // 32-char hex
+  spanId?: string;                  // 16-char hex
+  attributes?: ILogAttributes;      // structured (incl. log context)
+  resource?: Partial<ILogResource>;
+  tag?: LogTag;
 }
 ```
 
-#### Built-in Transports
-
-| Transport | Description | Options |
-|-----------|-------------|---------|
-| `console` | Console output | - |
-| `file` | File logging (Node.js) | `destination`, `batchSize`, `flushInterval` |
-| `http` | HTTP/HTTPS endpoint | `url`, `headers`, `batchSize`, `flushInterval` |
-
----
-
-## 🎨 Style Builder
-
-Create custom console styles programmatically.
+## Styling
 
 ```typescript
-import { createStyle, StyleBuilder } from '@mks2508/better-logger/styling';
-```
+import { StyleBuilder, StylePresets, stylePresets, createStyle } from '@mks2508/better-logger';
 
-### Creating Styles
-
-#### `createStyle()`
-Returns new StyleBuilder instance.
-
-```typescript
-const customStyle = createStyle()
-  .bg('linear-gradient(45deg, #ff6b6b, #feca57)')
+const css = createStyle()
+  .bg('linear-gradient(45deg, #667eea, #764ba2)')
   .color('white')
-  .padding('10px 20px')
+  .padding('12px 24px')
   .rounded('8px')
-  .bold()
+  .shadow('0 4px 15px rgba(0,0,0,0.2)')
   .build();
 
-console.log('%cCustom Message', customStyle);
+stylePresets.success / .error / .warning / .info / .accent
 ```
 
-### StyleBuilder Methods
+`ThemeVariant`: `'default' | 'dark' | 'light' | 'neon' | 'minimal' | 'cyberpunk'`.
 
-#### Background Methods
-```typescript
-.bg(gradient: string)                    // Background gradient
-.backgroundColor(color: string)          // Solid background color
-```
-
-#### Typography Methods
-```typescript
-.color(color: string)                    // Text color
-.font(family: string)                    // Font family
-.fontSize(size: string)                  // Font size
-.bold()                                  // Bold text
-.italic()                                // Italic text
-```
-
-#### Layout Methods
-```typescript
-.padding(padding: string)                // CSS padding
-.margin(margin: string)                  // CSS margin
-.display(display: string)                // CSS display property
-```
-
-#### Visual Effects
-```typescript
-.border(border: string)                  // CSS border
-.rounded(radius: string)                 // Border radius
-.shadow(shadow: string)                  // Box shadow
-```
-
-#### Animations
-```typescript
-.animation(animation: string)            // CSS animation
-.transition(transition: string)          // CSS transition
-```
-
-#### Custom Properties
-```typescript
-.css(property: string, value: string)    // Custom CSS property
-```
-
-### Style Presets
-
-Pre-built styles for common use cases.
+## Types exportados
 
 ```typescript
-import { stylePresets } from '@mks2508/better-logger/styling';
-
-console.log('%c✅ Success!', stylePresets.success);
-console.log('%c❌ Error!', stylePresets.error);
-console.log('%c⚠️ Warning!', stylePresets.warning);
-console.log('%cℹ️ Info', stylePresets.info);
-console.log('%c🎯 Accent', stylePresets.accent);
+LogLevel, Verbosity, LogTag, SUCCESS_LEVEL, LOG_LEVELS
+LoggerConfig, LogMetadata, StackInfo, TimerEntry, TimerResult
+HookEvent, HookCallback, HookLogEntry, MiddlewareFn, IHookManager
+SerializerFn, SerializerConfig, ISerializerRegistry
+TransportRecord, TransportOptions, TransportTarget, ITransport, IBufferedTransport, ITransportManager
+ILogResource, ILogAttributes, LogAttributeValue
+ILogHandler, IScopedLogger, IAPILogger, IComponentLogger, Bindings
+ThemeVariant, BannerType, StyleOptions, OutputFormat, OutputMode
+CLILogLevel, ISpinnerHandle, IBoxOptions, ITableOptions
 ```
-
----
-
-## 💻 CLI Interface
-
-Enhanced interactive command-line interface with plugin support, command history, and intelligent suggestions.
-
-### 🔌 Plugin System
-
-Extend CLI functionality with custom plugins:
-
-```typescript
-import { logger } from '@mks2508/better-logger';
-
-// Create a custom plugin
-const analyticsPlugin = {
-    name: 'analytics',
-    version: '1.0.0', 
-    description: 'Analytics tracking commands',
-    commands: [{
-        name: 'track',
-        description: 'Track user events',
-        usage: '/track <event> <data>',
-        category: 'analytics',
-        aliases: ['t'],
-        execute: (args, logger) => {
-            const [event, ...data] = args.split(' ');
-            logger.info(`📊 Tracking: ${event}`, data.join(' '));
-        }
-    }]
-};
-
-// Register the plugin
-logger.cliProcessor.registerPlugin(analyticsPlugin, logger);
-```
-
-### 🌐 Interactive Mode
-
-Enter interactive mode for streamlined browser console usage:
-
-```typescript
-// Enter interactive mode
-logger.executeCommand('/interactive');
-
-// Now use commands directly:
-cli('help');           // Instead of logger.executeCommand('/help')  
-cli('theme matrix');   // Change theme interactively
-cli('history 5');      // Show last 5 commands
-```
-
-### 📋 Enhanced Commands
-
-#### Core Commands
-
-##### `/help`
-Display help information and available commands.
-```typescript
-logger.executeCommand('/help');
-```
-
-##### `/config`  
-Show current logger configuration.
-```typescript
-logger.executeCommand('/config');
-// Displays: Theme: default, Level: info, Stack traces: enabled
-```
-
-##### `/history [limit]` | Aliases: `/hist`, `/h`
-View command execution history with success/failure status.
-```typescript
-logger.executeCommand('/history 10');     // Show last 10 commands
-logger.executeCommand('/hist');           // Show default (10) recent commands
-// ✅ [14:32:15] /theme matrix
-// ❌ [14:31:45] /invalid-command  
-// ✅ [14:30:22] /export csv
-```
-
-##### `/clearhistory` | Aliases: `/clrhist`
-Clear all command history.
-```typescript
-logger.executeCommand('/clearhistory');
-// 🗑️ Command history cleared
-```
-
-##### `/interactive` | Aliases: `/i`, `/repl`
-Enter interactive CLI mode for browser console.
-```typescript
-logger.executeCommand('/interactive');
-// 🔧 Interactive CLI mode activated. Type /exit to quit, /help for commands.
-// 💡 Use cli("command") to execute CLI commands in browser console.
-```
-
-##### `/plugins` | Aliases: `/plug`
-List all registered plugins and their commands.
-```typescript
-logger.executeCommand('/plugins');
-// 🔌 Loaded plugins (2):
-//   📦 analytics v1.0.0 - Analytics tracking commands
-//      Commands: track, event
-//   📦 performance v2.1.0 - Performance monitoring tools  
-//      Commands: benchmark, profile
-```
-
-#### `/theme [name]`
-Change visual theme.
-```typescript
-/theme cyberpunk
-// Switches to cyberpunk theme with purple/pink colors
-```
-
-Available themes: `default`, `dark`, `neon`, `cyberpunk`, `retro`
-
-#### `/banner [type]`
-Set banner display type.
-```typescript
-/banner animated
-// Shows animated gradient banner
-```
-
-Banner types: `simple`, `ascii`, `unicode`, `svg`, `animated`
-
-#### `/clear`
-Clear console and reset log buffer.
-
-#### `/export [format]`
-Export logs in specified format.
-```typescript
-/export json
-// Exports current logs as JSON
-```
-
-#### `/status`
-Show logger status and statistics.
-
-#### `/enumerate`
-List all available features and capabilities.
-
-### CLI Integration
-
-```typescript
-import { initializeCLI } from '@mks2508/better-logger/cli';
-
-// Initialize CLI with logger instance
-initializeCLI(logger);
-
-// CLI commands are now available in console
-// Type /help to see available commands
-```
-
----
-
-## 📤 Export & Remote
-
-Data export and remote logging capabilities.
-
-```typescript
-import { ExportLogger } from '@mks2508/better-logger/exports';
-```
-
-### ExportLogger Class
-
-Extended logger with export and remote capabilities.
-
-```typescript
-const logger = new ExportLogger({
-  bufferSize: 1000,
-  remoteBatch: {
-    size: 10,
-    interval: 5000
-  }
-});
-```
-
-#### Constructor Options
-```typescript
-interface ExportLoggerConfig {
-  bufferSize?: number;           // Log buffer size
-  bufferMode?: 'circular' | 'grow'; // Buffer behavior
-  persistBuffer?: boolean;       // Save to localStorage
-  remoteBatch?: {               // Remote batching config
-    size: number;
-    interval: number;
-    maxWait: number;
-  };
-  autoExport?: {               // Auto-export settings
-    format: ExportFormat;
-    trigger: 'size' | 'time' | 'level';
-    threshold: number;
-  };
-}
-```
-
-### Export Methods
-
-#### `exportLogs(format, options?)`
-Export logs in specified format.
-
-```typescript
-// Export as CSV
-const csvData = await logger.exportLogs('csv', {
-  filter: { level: 'error' },
-  limit: 100
-});
-
-// Export as JSON with grouping
-const jsonData = await logger.exportLogs('json', {
-  groupBy: 'level',
-  includeStackTrace: true
-});
-
-// Export as XML
-const xmlData = await logger.exportLogs('xml');
-```
-
-#### Export Options
-```typescript
-interface ExportOptions {
-  filter?: {
-    level?: LogLevel | LogLevel[];
-    from?: Date | string;
-    to?: Date | string;
-    prefix?: string | string[];
-    content?: string;
-  };
-  limit?: number;
-  groupBy?: 'level' | 'prefix' | 'date';
-  includeStackTrace?: boolean;
-  minimal?: boolean;
-}
-```
-
-### Remote Logging
-
-#### `addRemoteHandler(url, options?)`
-Add remote logging endpoint.
-
-```typescript
-// HTTP endpoint
-logger.addRemoteHandler('https://api.logs.com/collect', {
-  apiKey: 'secret-key',
-  headers: { 'Content-Type': 'application/json' },
-  retries: 3
-});
-
-// WebSocket endpoint
-logger.addRemoteHandler('wss://realtime.logs.com', {
-  reconnect: true,
-  maxReconnectAttempts: 5
-});
-```
-
-#### Remote Handler Options
-```typescript
-interface RemoteHandlerOptions {
-  apiKey?: string;
-  headers?: Record<string, string>;
-  retries?: number;
-  timeout?: number;
-  reconnect?: boolean;
-  reconnectInterval?: number;
-  maxReconnectAttempts?: number;
-  filter?: (entry: LogEntry) => boolean;
-  immediate?: boolean;
-}
-```
-
----
-
-## 📋 Types & Interfaces
-
-### Core Types
-
-```typescript
-// Log levels
-type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'critical';
-
-// Theme names
-type ThemeName = 'default' | 'dark' | 'neon' | 'cyberpunk' | 'retro';
-
-// Banner types
-type BannerType = 'simple' | 'ascii' | 'unicode' | 'svg' | 'animated';
-
-// Export formats
-type ExportFormat = 'csv' | 'json' | 'xml';
-```
-
-### Interfaces
-
-```typescript
-// Log entry structure
-interface LogEntry {
-  id: string;
-  timestamp: string;
-  level: LogLevel;
-  prefix: string;
-  message: string;
-  args: any[];
-  location?: {
-    file: string;
-    line: number;
-    column: number;
-    function: string;
-  };
-  performance?: {
-    duration: number;
-    memory: NodeJS.MemoryUsage;
-  };
-}
-
-// Log handler interface
-interface ILogHandler {
-  handle(entry: LogEntry): void | Promise<void>;
-}
-
-// Style configuration
-interface StyleConfig {
-  emoji?: string;
-  colors?: {
-    primary: string;
-    secondary: string;
-    text: string;
-  };
-  effects?: {
-    shadow: string;
-    border: string;
-  };
-}
-```
-
----
-
-## 🔄 Lifecycle Events
-
-### Event Handlers
-
-```typescript
-// Log events
-logger.on('log', (entry: LogEntry) => {
-  // Handle each log entry
-});
-
-logger.on('error', (error: Error) => {
-  // Handle logging errors
-});
-
-logger.on('export', (data: string, format: ExportFormat) => {
-  // Handle export completion
-});
-
-// Remote events
-logger.on('remote:success', (endpoint: string, count: number) => {
-  // Handle successful remote transmission
-});
-
-logger.on('remote:error', (endpoint: string, error: Error) => {
-  // Handle remote logging errors
-});
-```
-
-### Buffer Events
-
-```typescript
-logger.on('buffer:full', (size: number) => {
-  // Handle buffer capacity reached
-});
-
-logger.on('buffer:cleared', () => {
-  // Handle buffer cleared
-});
-```
-
----
-
-## 📚 Advanced Usage
-
-### Performance Monitoring
-
-```typescript
-// Automatic performance tracking
-logger.time('operation');
-await performOperation();
-const metrics = logger.timeEnd('operation'); // Returns timing data
-
-// Memory usage tracking
-logger.logMemory('checkpoint-1');
-await heavyOperation();
-logger.logMemory('checkpoint-2');
-```
-
-### Conditional Logging
-
-```typescript
-// Environment-based logging
-logger.setLevel(process.env.NODE_ENV === 'production' ? 'warn' : 'debug');
-
-// Conditional handlers
-if (process.env.ENABLE_FILE_LOGGING === 'true') {
-  logger.addHandler(new FileLogHandler('./app.log'));
-}
-```
-
-### Custom Formatters
-
-```typescript
-// Custom message formatting
-logger.setFormatter((entry: LogEntry) => {
-  return `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${entry.message}`;
-});
-
-// Custom data serialization
-logger.setSerializer((data: any) => {
-  return JSON.stringify(data, null, 2);
-});
-```
-
----
-
-For more examples and use cases, see the [examples folder](../examples/) and [live demo](https://mks2508.github.io/advanced-logger/).

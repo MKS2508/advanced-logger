@@ -1,102 +1,265 @@
 # 🚀 Better Logger
 
-**Enterprise-grade console logger with custom serializers, hooks, transports, and beautiful styling**
+**Logger avanzado para consola con estilos CSS, log context tipo MDC, transports (File / HTTP / OTLP→SigNoz), hooks, serializers y CLI integrado. Soporte dual browser/terminal.**
 
 [![NPM Version](https://img.shields.io/npm/v/@mks2508/better-logger)](https://www.npmjs.com/package/@mks2508/better-logger)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@mks2508/better-logger)](https://bundlephobia.com/package/@mks2508/better-logger)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/@mks2508/better-logger)](https://github.com/MKS2508/advanced-logger/blob/main/LICENSE)
 
-Transform your console logging experience with enterprise features like Pino/Winston: custom serializers, hooks/middleware, and transports - all with beautiful styling and professional themes.
-
 ## ✨ Features
 
-### Core Features
-- 🚀 **Simplified API** - 80% less code for basic use cases
-- 🎨 **Smart Presets** - Apply beautiful themes in one line: `logger.preset('cyberpunk')`
-- 🏷️ **Badges System** - Flexible tagging with `badges()` and `badge()`
-- 🌗 **Adaptive Themes** - Automatic light/dark mode detection
-- 🎯 **TypeScript First** - Complete type safety and IntelliSense
+### Core
+- 🎨 **Estilos CSS en consola** — gradientes, sombras, `%c` formatting, presets listos
+- 🏷️ **Badges** — etiquetado flexible con `badges()` / `badge()`
+- 🌗 **Temas adaptativos** — detección automática light/dark
+- 🎯 **TypeScript first** — tipado completo, cero `any` en la superficie pública
 
-### Enterprise Features (v3.0.0)
-- 🔄 **Custom Serializers** - Transform any object type for logging
-- 🪝 **Hooks & Middleware** - Intercept and modify logs with `on()`, `use()`
-- 📡 **Transports** - File, HTTP, and custom transport destinations
-- ⚡ **High Performance** - ~50-100x less memory with delegation pattern
-- 💾 **Style Cache** - LRU cache for computed styles
+### Niveles y verbosidad
+- 📊 **6 niveles jerárquicos** — `trace < debug < info < warn < error < critical` (+ `silent`)
+- 🔭 **`trace` alineado con OpenTelemetry** — severity number OTel (1-24) listo para SigNoz
+- 🔇 **Verbosidad filtrable** — `setVerbosity('warn')` filtra todo por debajo
 
-## 📦 Installation
+### Log context (MDC)
+- 🧩 **Contexto estructurado** — `withContext({ requestId, userId })` se mergea en cada `TransportRecord`
+- 🧬 **Loggers hijuelos** — `child({ ... })` hereda contexto sin mutar al padre
+- 🏷️ **Resource OTel** — `setResource({ 'service.name': ... })` por logger
 
-### Full Package (Recommended)
+### Transports
+- 📁 **File** — async (`fs.promises`), bounded buffer, sanitización de path, fallback a `localStorage` en browser
+- 🌐 **HTTP** — batching, retry con backoff, bounded buffer (sin OOM), status check
+- 🔭 **OTLP → SigNoz** — payload OTLP/HTTP JSON spec-compliant, ingestion key desde env var (nunca hardcodeada)
+- 🧩 **Custom** — implementa `ITransport` y registra con `addTransport()`
+
+### Hooks, serializers y más
+- 🪝 **Hooks** — `on('beforeLog', ...)` (awaited, soporta redacción PII) / `on('afterLog', ...)`
+- 🔄 **Middleware** — pipeline `use((entry, next) => ...)`
+- 🧬 **Serializers** — transforma tipos antes de loggear (`addSerializer(Error, fn)`)
+- 🖥️ **CLI integrado** — spinners, boxes, tablas, steps, headers
+
+## 📦 Instalación
+
 ```bash
 npm install @mks2508/better-logger
+# o
+bun add @mks2508/better-logger
 ```
-
-### Modular Installation  
-Choose only the functionality you need:
-
-```bash
-# Core logging only (~15KB)
-npm install @mks2508/better-logger-core
-
-# Add styling capabilities (~12KB)  
-npm install @mks2508/better-logger-styling
-
-# Add export handlers (~18KB)
-npm install @mks2508/better-logger-exports
-```
-
-> 📋 **[View Complete Packages Guide →](https://mks2508.github.io/advanced-logger/packages/)**
 
 ## 🚀 Quick Start
 
-### Basic Usage (Zero Configuration)
-```javascript
+```typescript
 import logger from '@mks2508/better-logger';
 
-// Works perfectly out-of-the-box with adaptive themes
 logger.info('Application started');
 logger.success('Database connected');
 logger.warn('High memory usage');
 logger.error('Connection failed');
+logger.critical('Disk full');
+logger.trace('verbose internals');  // filtrado por defecto (verbosity=debug)
 ```
 
-### One-Line Styling
-```javascript
-// Apply beautiful presets instantly
-logger.preset('cyberpunk');     // Neon colors, glowing effects
-logger.preset('glassmorphism'); // Modern blur effects
-logger.preset('minimal');       // Clean and simple
-logger.preset('debug');         // Detailed development mode
-```
-
-### Toggle Features
-```javascript
-// Control visibility with simple methods
-logger.hideTimestamp();
-logger.showLocation();
-logger.hideBadges();
-```
-
-### Component & API Logging
-```javascript
-// Scoped loggers with auto-badges (sync, lightweight)
-const auth = logger.component('UserAuth');
-auth.info('Login attempt');     // [COMPONENT] [UserAuth] Login attempt
-auth.success('User verified');  // [COMPONENT] [UserAuth] User verified
-
-// API loggers with multiple badges
-const api = logger.api('GraphQL');
-api.badges(['SLOW', 'CACHE']).warn('Query timeout');
-```
-
-## 🔄 Enterprise Features (v3.0.0)
-
-### Custom Serializers
-Transform complex objects before logging:
+### Importar métodos sueltos
 
 ```typescript
-// Register serializers for custom types
+import { info, error, success, trace } from '@mks2508/better-logger';
+info('Proceso iniciado');
+success('✓ Completado');
+```
+
+## 📊 Niveles de log
+
+```text
+trace(-1) < debug(0) < info(1) < warn(2) < error(3) < critical(4)
+```
+
+`trace` es el nivel más bajo, alineado con la banda TRACE de OpenTelemetry (severity 1-4). Cada `TransportRecord` incluye `severityNumber` y `severityText` OTel automáticamente.
+
+```typescript
+import { LOG_LEVELS } from '@mks2508/better-logger';
+
+logger.setVerbosity('debug');   // muestra trace + debug + ...
+logger.setVerbosity('warn');    // solo warn, error, critical
+logger.setVerbosity('silent');  // nada
+```
+
+`success()` emite a **INFO severity** (con styling de success y `tag: 'success'` en el record, para que transports distingan success de info genérico).
+
+## 🧩 Log Context (MDC)
+
+Contexto estructurado que se adjunta a **cada** log emitido y se mergea en `TransportRecord.attributes`:
+
+```typescript
+// Mutar el logger (chaining)
+logger.withContext({ requestId: 'req_123', userId: 'u_42' });
+logger.info('processing');  // → attributes: { requestId, userId }
+
+// Limpiar
+logger.clearContext();
+
+// Snapshot read-only
+const ctx = logger.getContext();
+```
+
+### Loggers hijuelos (inmutables)
+
+`child()` devuelve un logger nuevo con contexto merged, **sin tocar al padre** — ideal para request-scoped logging:
+
+```typescript
+const requestLogger = logger.child({ requestId: getRequestId() });
+requestLogger.info('auth ok');     // lleva requestId
+logger.info('unrelated');          // NO lleva requestId (padre intacto)
+```
+
+### Resource OTel
+
+```typescript
+logger.setResource({
+  'service.name': 'my-app',
+  'service.version': '1.2.3',
+  'deployment.environment': 'production'
+});
+```
+
+## 📡 Transports
+
+Los transports reciben cada `TransportRecord` y lo mandan a un destino. Se registran con `addTransport()`:
+
+```typescript
+import logger, { FileTransport, HttpTransport, OtlpTransport } from '@mks2508/better-logger';
+```
+
+### File (Node.js)
+
+```typescript
+logger.addTransport({
+  target: new FileTransport({
+    destination: '/var/log/app.log',
+    batchSize: 100,
+    flushInterval: 5000,
+    maxBufferSize: 10_000  // hard cap, drop oldest on overflow
+  }),
+  level: 'info'
+});
+```
+
+- Escritura **async** con `fs.promises` (no bloquea el event loop)
+- **Bounded buffer** — si se llena, dropea el record más viejo (avisa vía `onError`)
+- Sanitización de `destination` (sin path traversal)
+- En **browser**: fallback silencioso a `localStorage`
+
+### HTTP
+
+```typescript
+logger.addTransport({
+  target: new HttpTransport({
+    url: 'https://logs.example.com/ingest',
+    batchSize: 50,
+    flushInterval: 5000,
+    maxBufferSize: 10_000,
+    maxRetries: 3,
+    headers: { 'Authorization': `Bearer ${process.env.LOG_TOKEN}` }
+  }),
+  level: 'warn'
+});
+```
+
+- Batching + flush periódico
+- **Retry con backoff exponencial** (bounded)
+- **Status check** — solo re-bufferea en errores recuperables (5xx, red), descarta en 4xx
+- Bounded buffer (sin OOM en outages largos)
+
+### OTLP → SigNoz (o cualquier backend OTLP/HTTP)
+
+```typescript
+logger.addTransport({
+  target: new OtlpTransport({
+    endpoint: 'https://otelcollector.example.com:4318',
+    serviceName: 'my-app',           // requerido (service.name)
+    serviceVersion: '1.2.3',
+    environment: 'production',
+    ingestKeyEnvVar: 'SIGNOZ_KEY',   // lee process.env.SIGNOZ_KEY — NUNCA hardcodear
+    batchSize: 50,
+    flushInterval: 5000
+  })
+});
+
+logger.info('Hola desde better-logger → SigNoz');
+// → POST <endpoint>/v1/logs con payload OTLP/HTTP JSON
+// → visible en SigNoz Logs UI
+```
+
+El transport POSTea a `<endpoint>/v1/logs` con el body `LogsData` spec-compliant (`resourceLogs` → `scopeLogs` → `logRecords`). La ingestion key se lee de la **env var** indicada en `ingestKeyEnvVar` al construir el transport — no se escribe en código ni en el record.
+
+> 🔐 **Seguridad:** la key vive en tu gestor de secrets (Bitwarden / Coolify env) y se inyecta vía `process.env`. El transport no la loguea ni la serializa.
+
+### Registry de strings
+
+Para los 4 built-ins puedes usar el nombre en vez de la instancia:
+
+```typescript
+logger.addTransport({ target: 'file', options: { destination: '/var/log/app.log' } });
+logger.addTransport({ target: 'console' });
+```
+
+Para Otlp conviene la **instancia directa** (opciones tipadas: `endpoint`, `serviceName`, `ingestKeyEnvVar`).
+
+### Custom transport
+
+```typescript
+import type { ITransport, TransportRecord } from '@mks2508/better-logger';
+
+const elastic: ITransport = {
+  name: 'elasticsearch',
+  async write(record: TransportRecord) {
+    await fetch('https://es.example.com/logs/_doc', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(record)
+    });
+  },
+  async flush() { /* ... */ },
+  async close() { /* ... */ }
+};
+
+logger.addTransport({ target: elastic });
+```
+
+### Flush y shutdown
+
+```typescript
+await logger.flushTransports();   // fuerza el envío del buffer
+await logger.closeTransports();   // cierra todos (drain)
+```
+
+En shutdown limpio: `await logger.cleanup()` hace drain de transports + reset de estado.
+
+## 🪝 Hooks & Middleware
+
+```typescript
+// beforeLog es AWAITED — las mutaciones se reflejan en el mensaje emitido
+logger.on('beforeLog', (entry) => {
+  entry.message = entry.message.replace(/password=\S+/g, 'password=***');
+  return entry;
+});
+
+// afterLog es fire-and-forget (no cambia el mensaje ya en pantalla)
+logger.on('afterLog', (entry) => {
+  metrics.increment(`logs.${entry.level}`);
+});
+
+// Correlation ID en cada log
+logger.use((entry, next) => {
+  entry.correlationId = getCorrelationId();
+  next();
+});
+```
+
+`on()` / `once()` / `off()` / `use()` devuelven una función de unsub.
+
+## 🧬 Serializers
+
+Transforma tipos antes de serializarlos al log:
+
+```typescript
 logger.addSerializer(Error, (err) => ({
   name: err.name,
   message: err.message,
@@ -105,210 +268,66 @@ logger.addSerializer(Error, (err) => ({
 
 logger.addSerializer(User, (user) => ({
   id: user.id,
-  email: user.email  // password automatically omitted
+  email: user.email   // password omitido
 }));
 
-// Now errors and users are serialized automatically
-logger.error('Failed:', new Error('Connection timeout'));
-logger.info('User login:', currentUser);
+logger.error('Failed:', new Error('timeout'));  // Error serializado custom
 ```
 
-### Hooks & Middleware
-Intercept and modify logs:
+## 🏷️ Scoped Loggers
 
 ```typescript
-// Add correlation ID to all logs
-logger.on('beforeLog', (entry) => {
-  entry.correlationId = getCorrelationId();
-  return entry;
-});
+// Scope simple
+const auth = logger.scope('Auth');
+auth.info('validating token');
 
-// Track metrics after logging
-logger.on('afterLog', (entry) => {
-  metrics.increment(`logs.${entry.level}`);
-});
+// Component (auto-badge COMPONENT)
+const db = logger.component('Database');
+db.lifecycle('connect', 'pool ready');
 
-// Middleware pipeline
-logger.use((entry, next) => {
-  entry.requestId = asyncLocalStorage.getStore()?.requestId;
-  next();
-});
-
-// Redact sensitive data
-logger.use((entry, next) => {
-  entry.message = entry.message.replace(/password=\S+/g, 'password=***');
-  next();
-});
+// API (auto-badge API, +métodos slow/rateLimit/auth/deprecated)
+const api = logger.api('GraphQL');
+api.slow('query timeout', 1200);
+api.deprecated('use v2 endpoint');
 ```
 
-### Transports
-Send logs to multiple destinations:
+### Context logger (bloques anidados)
 
 ```typescript
-// File transport (Node.js)
-logger.addTransport({
-  target: 'file',
-  options: { destination: '/var/log/app.log' }
-});
+const request = logger.scope('Request');
 
-// HTTP transport with batching
-logger.addTransport({
-  target: 'http',
-  options: {
-    url: 'https://logs.example.com/ingest',
-    batchSize: 100,
-    flushInterval: 5000
-  },
-  level: 'warn'  // Only warn and above
-});
-
-// Custom transport
-logger.addTransport({
-  target: {
-    name: 'elasticsearch',
-    write: async (record) => {
-      await esClient.index({ index: 'logs', body: record });
-    }
-  }
-});
-
-// Flush and close when shutting down
-await logger.flushTransports();
-await logger.closeTransports();
-```
-
-### Badges System
-Flexible tagging for logs:
-
-```typescript
-// Multiple badges
-logger.badges(['v3', 'stable']).info('Release published');
-
-// Chain badges
-logger.badge('DEBUG').badge('AUTH').info('Token validated');
-
-// Clear badges
-logger.clearBadges().info('Clean log');
-```
-
-### Simple Customization
-```javascript
-// Minimal configuration for specific needs
-logger.customize({
-  message: { color: '#007bff', size: '15px' },
-  timestamp: { show: false },
-  spacing: 'compact'
+await request.context('auth').runAsync(async () => {
+  // prefix efectivo: "Request:auth"
+  request.info('checking credentials');
+  await request.context('db').runAsync(async () => {
+    // prefix: "Request:auth:db"
+    request.info('querying user');
+  });
 });
 ```
 
-### Advanced Styling (Power Users)
-```typescript
-import { Logger } from '@mks2508/better-logger';
-
-const logger = new Logger({ prefix: 'APP' });
-
-// Beautiful styled logging
-logger.info('Application started', { version: '1.0.0' });
-logger.success('Database connected successfully');
-logger.warn('Memory usage high', { usage: '85%' });
-logger.error('API request failed', { status: 500 });
-
-// Performance timing
-logger.time('operation');
-await performOperation();
-logger.timeEnd('operation'); // Shows duration with beautiful styling
-```
-
-## 🔧 Enhanced CLI Interface
-
-New in v0.1.0-rc.1! Interactive CLI with plugin support and command history:
+## 🎨 Styling
 
 ```typescript
-import { Logger } from '@mks2508/better-logger';
+// Presets
+logger.preset('cyberpunk');     // neón, glow
+logger.preset('glassmorphism'); // blur moderno
+logger.preset('minimal');
+logger.preset('debug');
 
-const logger = new Logger();
+// Toggles
+logger.hideTimestamp().showLocation().hideBadges();
 
-// Enter interactive mode
-logger.executeCommand('/interactive');
-
-// Use enhanced CLI in browser console:
-cli('help');             // Show all commands
-cli('theme cyberpunk');  // Change theme
-cli('history 5');        // View command history  
-cli('plugins');          // List loaded plugins
-
-// Create custom plugins
-const myPlugin = {
-  name: 'analytics',
-  commands: [{ 
-    name: 'track', 
-    execute: (args, logger) => logger.info(`Tracking: ${args}`) 
-  }]
-};
-logger.cliProcessor.registerPlugin(myPlugin);
+// Tema
+logger.setTheme('dark');   // 'default' | 'dark' | 'light' | 'neon' | 'minimal' | 'cyberpunk'
 ```
 
-## 🔧 Modular Usage
-
-Import only what you need for optimal bundle sizes:
+### Estilos custom (StyleBuilder)
 
 ```typescript
-// Core logging only (6KB) - Essential features
-import { Logger } from '@mks2508/better-logger/core';
+import { createStyle } from '@mks2508/better-logger';
 
-// Styling features (26KB) - Themes, SVG, animations
-import { setTheme, logAnimated } from '@mks2508/better-logger/styling';
-
-// Export capabilities (12KB) - Data export, remote logging
-import { ExportLogger } from '@mks2508/better-logger/exports';
-```
-
-## 📊 Bundle Analysis
-
-| Module | Size | Gzipped | Best For |
-|--------|------|---------|----------|
-| **Core** | 6KB | 2KB | Essential logging, Node.js apps |
-| **Styling** | 26KB | 5KB | Frontend apps, visual debugging |
-| **Exports** | 12KB | 3KB | Production logging, analytics |
-| **Full** | 64KB | 13KB | Complete feature set |
-
-## 📚 Documentation & Learning
-
-### 📖 Complete Documentation
-- **[📋 API Reference](docs/API.md)** - Complete method documentation
-- **[🚀 Core Module](docs/CORE.md)** - Essential logging features
-- **[🎨 Styling Module](docs/STYLING.md)** - Themes and visual customization  
-- **[📤 Exports Module](docs/EXPORTS.md)** - Data export and remote logging
-
-### 🎮 Interactive Learning
-- **[🌟 Live Demo](https://mks2508.github.io/advanced-logger/)** - Try all features in your browser
-- **[📁 Examples](examples/)** - 4 comprehensive tutorials with runnable code
-
-### 🏃 Quick Examples
-```bash
-cd examples && npm install
-npm run basic        # Learn fundamentals
-npm run performance  # Master timing operations
-npm run styling      # Explore visual features
-npm run export       # Data management
-```
-
-## 🎨 Visual Showcase
-
-### Professional Themes
-```typescript
-import { setTheme } from '@mks2508/better-logger/styling';
-
-setTheme('cyberpunk');  // Purple/pink futuristic
-setTheme('neon');       // Bright electric colors
-setTheme('dark');       // Dark mode optimized
-```
-
-### Custom Styling
-```typescript
-import { createStyle } from '@mks2508/better-logger/styling';
-
-const customStyle = createStyle()
+const style = createStyle()
   .bg('linear-gradient(45deg, #667eea, #764ba2)')
   .color('white')
   .padding('12px 24px')
@@ -316,61 +335,55 @@ const customStyle = createStyle()
   .shadow('0 4px 15px rgba(102, 126, 234, 0.4)')
   .build();
 
-console.log('%c🚀 Beautiful Custom Style!', customStyle);
+console.log('%c🚀 Hello', style);
 ```
 
-## ⚡ Advanced Features
+## 🖥️ CLI Primitives
 
-### CLI Interface
+Spinners, boxes, tablas, steps y headers para CLIs Node.js:
+
 ```typescript
-import { initializeCLI } from '@mks2508/better-logger/cli';
-initializeCLI(logger);
+logger.header('Deploy', 'production');
+logger.step(2, 5, 'building');
+logger.spinner('uploading...');
 
-// Available in browser console:
-// /help /theme /export /clear /status
+logger.box('Build complete', { border: 'round' });
+logger.cliTable([
+  { service: 'api', status: 'ok' },
+  { service: 'db', status: 'ok' }
+]);
 ```
 
-### Performance Monitoring
-```typescript
-logger.time('api-request');
-const result = await fetch('/api/data');
-logger.timeEnd('api-request'); // Automatic duration display
-```
+## 🔧 Configuración avanzada
 
-### Data Export
 ```typescript
-import { ExportLogger } from '@mks2508/better-logger/exports';
+import { Logger } from '@mks2508/better-logger';
 
-const logger = new ExportLogger();
-const csvData = await logger.exportLogs('csv', {
-  filter: { level: 'error' },
-  limit: 100
+const logger = new Logger({
+  prefix: 'APP',
+  verbosity: 'debug',
+  enableStackTrace: true,
+  theme: 'dark',
+  timestampFormat: 'iso'
 });
+
+logger.updateConfig({ verbosity: 'warn' });
+logger.resetConfig();
 ```
 
-## 🌐 Compatibility
+## 🌐 Compatibilidad
 
-- ✅ **All Modern Browsers** - Full feature support
-- ✅ **Node.js** - Core features with graceful fallbacks  
-- ✅ **TypeScript** - Complete type definitions
-- ✅ **ESM & CommonJS** - Both module systems supported
+- ✅ **Browsers modernos** — soporte completo (CSS, DevTools, localStorage fallback)
+- ✅ **Node.js** — core + transports (File async, HTTP, OTLP)
+- ✅ **TypeScript** — definiciones completas
+- ✅ **ESM & CommonJS** — ambos exports
 
-## 🔗 Resources
+## 🔗 Recursos
 
-- 📦 **[NPM Package](https://www.npmjs.com/package/@mks2508/better-logger)**
-- 🎮 **[Interactive Demo](https://mks2508.github.io/advanced-logger/)**
-- 📚 **[Documentation](docs/)**
-- 🧩 **[Examples](examples/)**
-- 🐛 **[Issues & Support](https://github.com/MKS2508/advanced-logger/issues)**
+- 📦 **[NPM](https://www.npmjs.com/package/@mks2508/better-logger)**
+- 📚 **[Documentación](docs/)** — [API](docs/API.md) · [Core](docs/CORE.md) · [Exports](docs/EXPORTS.md) · [Styling](docs/STYLING.md)
+- 🐛 **[Issues](https://github.com/MKS2508/advanced-logger/issues)**
 
-## 🤝 Contributing
+## 📄 Licencia
 
-Contributions welcome! See our [Contributing Guide](CONTRIBUTING.md) for details.
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-**Made with ❤️ by [MKS2508](https://github.com/MKS2508)**
+MIT — ver [LICENSE](LICENSE).
