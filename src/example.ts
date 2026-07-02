@@ -3,7 +3,6 @@
  */
 
 import logger, {
-    Logger,
     debug,
     info,
     warn,
@@ -20,10 +19,7 @@ import logger, {
     logAnimated,
     cli,
     createStyle,
-    stylePresets,
-    FileTransport,
-    HttpTransport,
-    OtlpTransport
+    stylePresets
 } from './index.js';
 
 // Visual features demonstrations
