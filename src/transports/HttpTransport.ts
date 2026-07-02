@@ -49,7 +49,6 @@ const DEFAULT_FETCH_TIMEOUT = 10_000;
  * Extending this class is the recommended way to ship a new transport:
  * see {@link OtlpTransport}.
  *
- * @since 0.3.0 (rewritten in 5.1.0)
  */
 export class HttpTransport implements IBufferedTransport {
     readonly name: string = 'http';

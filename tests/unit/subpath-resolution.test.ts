@@ -3,7 +3,7 @@
  * Verifies that all 10 subpath entries export their promised symbols
  * and that the exports are not undefined or null.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect } from 'vitest';
 

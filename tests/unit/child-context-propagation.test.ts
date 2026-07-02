@@ -7,7 +7,7 @@
  * instance, but dispatchToTransports() reads from this.logContext._getContextRecord()
  * which returns LogContext's internal context (empty for a fresh child Logger).
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Logger } from '../../src/Logger.js';

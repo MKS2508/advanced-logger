@@ -3,7 +3,7 @@
  * timeUnixNano conversion, resource attributes, attributes flattening,
  * ingestKey from OTEL_INGEST_KEY env var.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { OtlpTransport } from '../../src/transports/OtlpTransport.js';

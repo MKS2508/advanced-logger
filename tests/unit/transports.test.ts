@@ -3,7 +3,7 @@
  * Verifies: async write, batch trigger, drop-oldest overflow, localStorage fallback,
  * status-based dispatch, payload shape.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ConsoleTransport } from '../../src/transports/ConsoleTransport.js';

@@ -2,7 +2,7 @@
  * TransportBridge unit tests — add/remove/get transports, flush, close,
  * writeRecord fire-and-forget, re-entry guard, unhandled rejection handling.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTransportBridge, type TransportBridge } from '../../src/transports/TransportBridge.js';

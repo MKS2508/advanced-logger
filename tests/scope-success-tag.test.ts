@@ -6,7 +6,7 @@
  * dispatchToTransports without passing tag:'success', so the TransportRecord
  * has no tag field.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Logger } from '../src/Logger.js';

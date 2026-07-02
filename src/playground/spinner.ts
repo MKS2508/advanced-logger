@@ -1,6 +1,5 @@
 /**
  * @fileoverview Built-in spinner implementation for CLI primitives
- * @since 5.0.0
  */
 
 import type { ISpinnerHandle, LoggerConfig } from '../types/core.js';
@@ -18,7 +17,6 @@ const FRAME_INTERVAL = 80;
  * Writes to stderr to avoid polluting piped stdout.
  *
  * @implements {ISpinnerHandle}
- * @since 5.0.0
  */
 export class SpinnerManager implements ISpinnerHandle {
     private message: string;
@@ -100,7 +98,6 @@ export class SpinnerManager implements ISpinnerHandle {
  * Logs start/succeed/fail as plain log messages.
  *
  * @implements {ISpinnerHandle}
- * @since 5.0.0
  */
 export class NoopSpinner implements ISpinnerHandle {
     private message: string;

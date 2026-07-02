@@ -1,6 +1,5 @@
 /**
  * @fileoverview ANSI color utilities for terminal environments
- * @since 1.0.0
  */
 
 import type { LogLevel } from '../types/index.js';

@@ -47,7 +47,6 @@ export interface FileTransportOptions extends TransportOptions {
  *   - BUG-N5: dynamic `import('node:fs/promises')` instead of CJS `require('fs')`.
  *   - BUG-N6: browser case uses `localStorage` with try/catch (was silent no-op).
  *
- * @since 0.3.0 (rewritten in 5.1.0)
  */
 export class FileTransport implements IBufferedTransport {
     readonly name = 'file';

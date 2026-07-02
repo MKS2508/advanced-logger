@@ -3,7 +3,7 @@
  * Verifies: safe execution with no transports, reset clears config,
  * demo runs without throwing.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Logger } from '../../src/Logger.js';

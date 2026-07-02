@@ -2,7 +2,7 @@
  * Errors + lifecycle F2 fix regression tests — HookManager re-entry,
  * write() unhandled rejection, cleanup, beforeLog mutations, beforeLog throwing.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Logger } from '../../src/Logger.js';

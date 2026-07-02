@@ -1,7 +1,5 @@
 /**
  * @fileoverview Logger avanzado con arquitectura modular y API simplificada
- * @version 0.3.0
- * @since 2024
  * 
  * Sistema de logging profesional con estilos CSS avanzados, temas adaptativos,
  * badges automáticos, contextos temporales y exportación de datos.
@@ -114,7 +112,6 @@ let LEVEL_STYLES = THEME_PRESETS.default;
  * auth.info('Usuario intentando login');
  * auth.success('Login exitoso');
  * 
- * @since 0.3.0
  */
 export class Logger {
     private config: LoggerConfig;
@@ -139,7 +136,7 @@ export class Logger {
     private _successTagDispatched = false;
     private styleManager: StyleManager;
 
-    /** Whether CLI primitives (step, box, header, etc.) should be shown @since 5.0.0 */
+    /** Whether CLI primitives (step, box, header, etc.) should be shown*/
     private _showPrimitives = true;
     private terminalBridge: TerminalBridge;
 
@@ -266,7 +263,6 @@ export class Logger {
      * console.log('Verbosidad actual:', config.verbosity);
      * console.log('Tema actual:', config.theme);
      * 
-     * @since 0.3.0
      */
     getConfig(): LoggerConfig {
         return { ...this.config };
@@ -284,7 +280,6 @@ export class Logger {
      *   theme: 'cyberpunk'
      * });
      * 
-     * @since 0.3.0
      */
     updateConfig(updates: Partial<LoggerConfig>): void {
         const previousAutoDetect = this.config.autoDetectTheme;
@@ -310,7 +305,6 @@ export class Logger {
      * logger.setGlobalPrefix('MiApp');
      * logger.info('Iniciado'); // [MiApp] Iniciado
      * 
-     * @since 0.3.0
      */
     setGlobalPrefix(prefix: string): void {
         this.config.globalPrefix = prefix;
@@ -326,7 +320,6 @@ export class Logger {
      * logger.setVerbosity('debug'); // Muestra todos los niveles
      * logger.setVerbosity('silent'); // No muestra nada
      * 
-     * @since 0.3.0
      */
     setVerbosity(level: Verbosity): void {
         this.config.verbosity = level;
@@ -342,7 +335,6 @@ export class Logger {
      * logger.setTheme('minimal');   // Tema minimalista
      * logger.setTheme('cyberpunk'); // Tema cyberpunk con efectos
      * 
-     * @since 0.3.0
      */
     setTheme(theme: ThemeVariant): void {
         // First check if it's a smart preset
@@ -383,7 +375,6 @@ export class Logger {
      * logger.setBannerType('unicode');  // Banner con caracteres Unicode
      * logger.setBannerType('animated'); // Banner con animación
      * 
-     * @since 0.3.0
      */
     setBannerType(bannerType: BannerType): void {
         this.config.bannerType = bannerType;
@@ -523,7 +514,6 @@ export class Logger {
      * logger.resetConfig();
      * // Todo vuelve a la configuración inicial
      * 
-     * @since 0.3.0
      */
     resetConfig(): void {
         // Clean up theme listener
@@ -550,7 +540,6 @@ export class Logger {
      * // Antes de cerrar la aplicación
      * logger.cleanup();
      * 
-     * @since 0.3.0
      */
     /**
      * Tears down every resource held by this Logger. Safe to call multiple
@@ -560,7 +549,6 @@ export class Logger {
      * @example
      * await logger.cleanup(); // before process exit / hot reload
      *
-     * @since 0.3.0 (rewritten in 5.1.0 to await transports fully)
      */
     async cleanup(): Promise<void> {
         if (this.themeChangeListener) {
@@ -601,7 +589,6 @@ export class Logger {
      * logger.preset('debug');         // Modo desarrollo detallado
      * logger.preset('production');    // Optimizado para producción
      * 
-     * @since 0.3.0
      */
     preset(name: string): void {
         if (!hasPreset(name)) {
@@ -635,7 +622,6 @@ export class Logger {
      * const disponibles = logger.presets();
      * console.log(disponibles); // ['default', 'cyberpunk', 'glassmorphism', ...]
      * 
-     * @since 0.3.0
      */
     presets(): string[] {
         return getAvailablePresets();
@@ -650,7 +636,6 @@ export class Logger {
      * logger.hideTimestamp();
      * logger.info('Sin marca de tiempo'); // Sin timestamp visible
      * 
-     * @since 0.3.0
      */
     hideTimestamp(): this {
         this.displaySettings.showTimestamp = false;
@@ -664,7 +649,6 @@ export class Logger {
      * logger.showTimestamp();
      * logger.info('Con marca de tiempo'); // [2024-01-15 10:30:45] Con marca de tiempo
      * 
-     * @since 0.3.0
      */
     showTimestamp(): this {
         this.displaySettings.showTimestamp = true;
@@ -678,7 +662,6 @@ export class Logger {
      * logger.hideLocation();
      * logger.debug('Sin ubicación'); // Sin mostrar archivo:línea
      * 
-     * @since 0.3.0
      */
     hideLocation(): this {
         this.displaySettings.showLocation = false;
@@ -692,7 +675,6 @@ export class Logger {
      * logger.showLocation();
      * logger.debug('Con ubicación'); // app.js:42 Con ubicación
      * 
-     * @since 0.3.0
      */
     showLocation(): this {
         this.displaySettings.showLocation = true;
@@ -707,7 +689,6 @@ export class Logger {
      * const api = logger.api('REST');
      * api.info('Sin badges'); // Sin mostrar [API] [REST]
      * 
-     * @since 0.3.0
      */
     hideBadges(): this {
         this.displaySettings.showBadges = false;
@@ -722,7 +703,6 @@ export class Logger {
      * const api = logger.api('GraphQL');
      * api.info('Con badges'); // [API] [GraphQL] Con badges
      *
-     * @since 0.3.0
      */
     showBadges(): this {
         this.displaySettings.showBadges = true;
@@ -739,7 +719,6 @@ export class Logger {
      * logger.badges(['v3', 'stable']).info('Release publicado');
      * logger.badges(['API', 'v2']).warn('Endpoint deprecado');
      *
-     * @since 3.0.0
      */
     badges(badges: string[]): this {
         this.badgeList = [...badges];
@@ -755,7 +734,6 @@ export class Logger {
      * @example
      * logger.badge('DEBUG').badge('AUTH').info('Token validado');
      *
-     * @since 3.0.0
      */
     badge(badge: string): this {
         if (!this.badgeList.includes(badge)) {
@@ -772,7 +750,6 @@ export class Logger {
      * @example
      * logger.clearBadges().info('Sin badges');
      *
-     * @since 3.0.0
      */
     clearBadges(): this {
         this.badgeList = [];
@@ -813,7 +790,6 @@ export class Logger {
      *   spacing: 'compact'
      * });
      * 
-     * @since 0.3.0
      */
     customize(overrides: {
         message?: { color?: string; font?: string; size?: string };
@@ -858,7 +834,6 @@ export class Logger {
      * // Para escribir a archivo, usa `addTransport` con un `FileTransport`
      * logger.addTransport({ target: new FileTransport({ destination: 'app.log' }) });
      *
-     * @since 0.3.0
      */
     addHandler(handler: ILogHandler): void {
         this.handlers.push(handler);
@@ -868,7 +843,6 @@ export class Logger {
      * Obtiene todos los handlers registrados
      * 
      * @returns {ILogHandler[]} Array de handlers activos
-     * @since 0.3.0
      */
     getHandlers(): ILogHandler[] {
         return [...this.handlers];
@@ -890,7 +864,6 @@ export class Logger {
      *   stack: err.stack?.split('\n').slice(0, 5)
      * }));
      *
-     * @since 3.0.0
      */
     addSerializer<T>(
         type: new (...args: unknown[]) => T,
@@ -906,7 +879,6 @@ export class Logger {
      * @param type - Constructor del tipo a remover
      * @returns true si se eliminó
      *
-     * @since 3.0.0
      */
     removeSerializer<T>(type: new (...args: unknown[]) => T): boolean {
         return this.serializerBridge.removeSerializer(type);
@@ -916,7 +888,6 @@ export class Logger {
      * Obtiene el registry de serializadores
      *
      * @returns SerializerRegistry
-     * @since 3.0.0
      */
     getSerializerRegistry(): SerializerRegistry {
         return this.serializerBridge.getSerializerRegistry();
@@ -938,7 +909,6 @@ export class Logger {
      *   return entry;
      * });
      *
-     * @since 3.0.0
      */
     on(event: HookEvent, callback: HookCallback, priority?: number): () => void {
         return this.hookBridge.on(event, callback, priority);
@@ -952,7 +922,6 @@ export class Logger {
      * @param priority - Prioridad (mayor = primero)
      * @returns Función para desregistrar
      *
-     * @since 3.0.0
      */
     once(event: HookEvent, callback: HookCallback, priority?: number): () => void {
         return this.hookBridge.once(event, callback, priority);
@@ -965,7 +934,6 @@ export class Logger {
      * @param callback - Callback a remover
      * @returns true si se eliminó
      *
-     * @since 3.0.0
      */
     off(event: HookEvent, callback: HookCallback): boolean {
         return this.hookBridge.off(event, callback);
@@ -984,7 +952,6 @@ export class Logger {
      *   next();
      * });
      *
-     * @since 3.0.0
      */
     use(middleware: MiddlewareFn, priority?: number): () => void {
         return this.hookBridge.use(middleware, priority);
@@ -994,7 +961,6 @@ export class Logger {
      * Obtiene el HookManager
      *
      * @returns HookManager
-     * @since 3.0.0
      */
     getHookManager(): HookManager {
         return this.hookBridge.getHookManager();
@@ -1027,7 +993,6 @@ export class Logger {
      *   level: 'warn'
      * });
      *
-     * @since 3.0.0
      */
     addTransport(target: TransportTarget): string {
         return this.transportBridge.addTransport(target);
@@ -1039,7 +1004,6 @@ export class Logger {
      * @param id - ID del transport a remover
      * @returns true si se eliminó
      *
-     * @since 3.0.0
      */
     removeTransport(id: string): boolean {
         return this.transportBridge.removeTransport(id);
@@ -1050,7 +1014,6 @@ export class Logger {
      *
      * @returns Promise que resuelve cuando todos los buffers están vaciados
      *
-     * @since 3.0.0
      */
     async flushTransports(): Promise<void> {
         await this.transportBridge.flushTransports();
@@ -1061,7 +1024,6 @@ export class Logger {
      *
      * @returns Promise que resuelve cuando todos están cerrados
      *
-     * @since 3.0.0
      */
     async closeTransports(): Promise<void> {
         await this.transportBridge.closeTransports();
@@ -1071,7 +1033,6 @@ export class Logger {
      * Obtiene el TransportManager
      *
      * @returns TransportManager o undefined si no hay transports
-     * @since 3.0.0
      */
     getTransportManager(): TransportManager | undefined {
         return this.transportBridge.getTransportManager();
@@ -1210,7 +1171,6 @@ export class Logger {
      * @param args - Argumentos a loggear
      * @returns Promise that resolves once the record has been dispatched
      *
-     * @since 0.3.0 (return type changed to `Promise<void>` in 5.1.0)
      */
     /**
      * Protected logging method. Awaits the `beforeLog` hook pipeline
@@ -1229,8 +1189,6 @@ export class Logger {
      *              `TransportRecord.tag` (e.g. `'success'` for success records).
      * @returns Promise that resolves once the record has been dispatched
      *
-     * @since 0.3.0 (return type changed to `Promise<void>` in 5.1.0)
-     * @since 0.18.2-alpha.1 (tag parameter added for N2 fix)
      */
     protected async log(level: LogLevel, ...args: unknown[]): Promise<void> {
         if (!this.shouldLog(level)) return;
@@ -1364,7 +1322,6 @@ export class Logger {
      * logger.info('Servidor iniciado en puerto 3000');
      * await logger.info('Procesando', totalItems, 'elementos'); // espera hooks
      *
-     * @since 0.3.0 (return type changed in 5.1.0)
      */
     info(...args: unknown[]): Promise<void> {
         return this.log('info', ...args);
@@ -1375,7 +1332,6 @@ export class Logger {
      *
      * @param args - Mensajes de advertencia
      *
-     * @since 0.3.0 (return type changed in 5.1.0)
      */
     warn(...args: unknown[]): Promise<void> {
         return this.log('warn', ...args);
@@ -1386,7 +1342,6 @@ export class Logger {
      *
      * @param args - Mensaje de error y stack traces
      *
-     * @since 0.3.0 (return type changed in 5.1.0)
      */
     error(...args: unknown[]): Promise<void> {
         return this.log('error', ...args);
@@ -1404,7 +1359,6 @@ export class Logger {
      * logger.success('Usuario creado con ID:', userId);
      * logger.success('✓ Tests pasados: 42/42');
      *
-     * @since 0.3.0 (refactor 5.1.0 — emits to transports + respects outputMode)
      */
     async success(...args: unknown[]): Promise<void> {
         if (!this.shouldLog('info')) return;
@@ -1491,7 +1445,6 @@ export class Logger {
      * logger.trace('Entrando en función processData');
      * logger.trace('Variables intermedias:', { a, b, c });
      *
-     * @since 0.3.0 (refactor 5.1.0 — emits as level=trace, not double debug)
      */
     trace(...args: unknown[]): void {
         this.log('trace', ...args);
@@ -1505,7 +1458,6 @@ export class Logger {
      * @example
      * await logger.critical('Sistema caído - reinicio inmediato requerido');
      *
-     * @since 0.3.0 (return type changed in 5.1.0)
      */
     critical(...args: unknown[]): Promise<void> {
         return this.log('critical', ...args);
@@ -1523,7 +1475,6 @@ export class Logger {
      * @example
      * logger.table([{ id: 1, nombre: 'Juan' }, { id: 2, nombre: 'María' }]);
      *
-     * @since 0.3.0 (refactor 5.1.0)
      */
     table(data: unknown, columns?: string[]): void {
         if (!this.shouldLog('info')) return;
@@ -1574,7 +1525,6 @@ export class Logger {
      * logger.info('Usuario 1 procesado');
      * logger.groupEnd();
      *
-     * @since 0.3.0 (refactor 5.1.0)
      */
     group(label: string, collapsed: boolean = false): void {
         const groupStyle = new StyleBuilder()
@@ -1622,7 +1572,6 @@ export class Logger {
      * logger.info('Operación 1');
      * logger.groupEnd();
      *
-     * @since 0.3.0 (refactor 5.1.0)
      */
     groupEnd(): void {
         if (this.groupDepth > 0) {
@@ -1654,7 +1603,6 @@ export class Logger {
      * // ... operación costosa ...
      * logger.timeEnd('proceso-datos'); // ⏱️ Timer ended: proceso-datos - 1523.45ms
      * 
-     * @since 0.3.0
      */
     time(label: string): void {
         const timer: TimerEntry = {
@@ -1679,7 +1627,6 @@ export class Logger {
      * await consultarBaseDatos();
      * const elapsed = logger.timeEnd('consulta-db'); // ⏱️ Timer ended: consulta-db - 234.56ms
      *
-     * @since 0.3.0
      */
     timeEnd(label: string): number {
         const timer = this.timers.get(label);
@@ -1724,7 +1671,6 @@ export class Logger {
      * logger.showBanner('svg');      // Banner con gráfico SVG
      * logger.showBanner();           // Usa el tipo configurado
      * 
-     * @since 0.3.0
      */
     showBanner(bannerType?: BannerType): void {
         const effectiveBannerType = bannerType ? bannerType : this.config.bannerType;
@@ -1747,7 +1693,6 @@ export class Logger {
      * const customSVG = '<svg>...</svg>';
      * logger.logWithSVG('Logo', customSVG, { width: 400, height: 100 });
      * 
-     * @since 0.3.0
      */
     logWithSVG(message: string, svgContent?: string, options: StyleOptions = {}): void {
         if (!this.shouldLog('info')) return;
@@ -1793,7 +1738,6 @@ export class Logger {
      * logger.logAnimated('🌈 Animación en progreso');
      * logger.logAnimated('Cargando...', 5); // Animación de 5 segundos
      * 
-     * @since 0.3.0
      */
     logAnimated(message: string, duration: number = 3): void {
         if (!this.shouldLog('info')) return;
@@ -1852,7 +1796,6 @@ export class Logger {
      * logger.step(1, 5, 'Analyzing repository...');
      * logger.step(2, 5, 'Generating commit message...');
      *
-     * @since 5.0.0
      */
     step(current: number, total: number, message: string): void {
         this.terminalBridge.step(current, total, message);
@@ -1867,7 +1810,6 @@ export class Logger {
      * @example
      * logger.header('Commit Wizard', 'v2.0.0');
      *
-     * @since 5.0.0
      */
     header(title: string, subtitle?: string): void {
         this.terminalBridge.header(title, subtitle);
@@ -1879,7 +1821,6 @@ export class Logger {
      * @example
      * logger.divider();
      *
-     * @since 5.0.0
      */
     divider(): void {
         this.terminalBridge.divider();
@@ -1891,7 +1832,6 @@ export class Logger {
      * @example
      * logger.blank();
      *
-     * @since 5.0.0
      */
     blank(): void {
         this.terminalBridge.blank();
@@ -1906,7 +1846,6 @@ export class Logger {
      * @example
      * logger.box('3 commits generated\nProvider: Groq', { title: 'Done', borderColor: '#00ff00' });
      *
-     * @since 5.0.0
      */
     box(content: string, options?: IBoxOptions): void {
         this.terminalBridge.box(content, options);
@@ -1925,7 +1864,6 @@ export class Logger {
      *   { provider: 'Gemini', status: 'Configured', model: 'gemini-2.5-flash' },
      * ]);
      *
-     * @since 5.0.0
      */
     cliTable(rows: Record<string, unknown>[], options?: ITableOptions): void {
         this.terminalBridge.cliTable(rows, options);
@@ -1944,7 +1882,6 @@ export class Logger {
      * await analyzeRepo();
      * s.succeed('Analysis complete (1.2s)');
      *
-     * @since 5.0.0
      */
     spinner(message: string): ISpinnerHandle {
         return this.terminalBridge.spinner(message);
@@ -1959,7 +1896,6 @@ export class Logger {
      * logger.setCLILevel('quiet');   // Only errors, no CLI primitives
      * logger.setCLILevel('verbose'); // Debug logs + all CLI primitives
      *
-     * @since 5.0.0
      */
     setCLILevel(level: CLILogLevel): void {
         const mapping = CLI_LEVEL_MAP[level];
@@ -1971,7 +1907,6 @@ export class Logger {
     /**
      * Returns the current CLI log level
      * @returns {CLILogLevel} Current CLI log level
-     * @since 5.0.0
      */
     get cliLevel(): CLILogLevel {
         return this.config.cliLevel ?? 'normal';
@@ -1988,7 +1923,6 @@ export class Logger {
      * @param {LogLevel} level - Log level
      * @param {string[]} styles - CSS styles for browser console
      * @param {unknown[]} additionalArgs - Additional arguments to log
-     * @since 4.0.0
      */
     private writeOutput(
         message: string,
@@ -2039,7 +1973,6 @@ export class Logger {
      * await logger.cli('status');           // Muestra estado del logger
      * await logger.cli('help');             // Muestra ayuda de comandos
      * 
-     * @since 0.3.0
      */
     async cli(command: string): Promise<void> {
         if (!this.cliProcessor) {
@@ -2169,7 +2102,6 @@ function toAttributeValue(value: unknown): LogAttributeValue | undefined {
 /**
  * Métodos individuales exportados para conveniencia
  * @description Todos los métodos están correctamente enlazados al singleton lazy
- * @since 0.3.0
  */
 export const debug = (...args: unknown[]) => getDefaultLogger().debug(...args);
 export const info = (...args: unknown[]) => getDefaultLogger().info(...args);

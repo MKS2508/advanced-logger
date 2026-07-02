@@ -1,6 +1,5 @@
 /**
  * @fileoverview Box renderer for CLI primitives
- * @since 5.0.0
  */
 
 import type { IBoxOptions } from '../types/core.js';

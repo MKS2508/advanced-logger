@@ -8,7 +8,6 @@
  *   SIGNOZ_KEY=<REDACTED> \
  *   bunx vitest run tests/smoke-otlp.test.ts
  *
- * @since 5.1.0
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { OtlpTransport } from '../src/transports/OtlpTransport.js';

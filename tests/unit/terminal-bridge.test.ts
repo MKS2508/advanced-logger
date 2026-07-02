@@ -2,7 +2,7 @@
  * TerminalBridge unit tests — step, header, divider, blank, box, cliTable,
  * spinner, setCLILevel, isInTerminal.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTerminalBridge, type TerminalBridge } from '../../src/playground/TerminalBridge.js';

@@ -2,7 +2,7 @@
  * HookBridge unit tests — on/once/off/use, beforeLog awaited (F2 fix),
  * beforeLog mutations respected (F2 fix), HookManager re-entry guard.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createHookBridge, type HookBridge } from '../../src/hooks/HookBridge.js';

@@ -5,7 +5,6 @@ import type { LogLevel, StackInfo } from './core.js';
  * of this object to override individual fields; the manager merges the
  * result back into the entry chain.
  *
- * @since 0.3.0
  */
 export interface HookLogEntry {
     level: LogLevel;
@@ -30,18 +29,17 @@ export interface HookLogEntry {
     extra?: Record<string, unknown>;
 }
 
-/** The three hook events the manager dispatches. @since 0.3.0 */
+/** The three hook events the manager dispatches.*/
 export type HookEvent = 'beforeLog' | 'afterLog' | 'onError';
 
 /**
  * Hook callback signature. Async hooks are awaited in priority order;
  * a returned partial object overrides the entry's fields for downstream
  * hooks and the eventual log call.
- * @since 0.3.0
  */
 export type HookCallback = (entry: HookLogEntry) => void | Partial<HookLogEntry> | Promise<void | Partial<HookLogEntry>>;
 
-/** Koa-style middleware used by `HookManager.use()`. @since 0.3.0 */
+/** Koa-style middleware used by `HookManager.use()`.*/
 export type MiddlewareFn = (
     entry: HookLogEntry,
     next: () => void | Promise<void>

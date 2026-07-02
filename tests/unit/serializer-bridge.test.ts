@@ -2,7 +2,7 @@
  * SerializerBridge unit tests — addSerializer, removeSerializer,
  * priority ordering, typed registration, empty registry passthrough.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createSerializerBridge, type SerializerBridge } from '../../src/serializers/SerializerBridge.js';

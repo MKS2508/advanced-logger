@@ -2,7 +2,7 @@
  * Logger.ts orchestrator unit tests — all log methods route through bridges,
  * scoped loggers, method names match public API.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Logger } from '../../src/Logger.js';

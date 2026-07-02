@@ -1,6 +1,5 @@
 /**
  * @fileoverview Core Logger Module - Minimal logging without advanced features
- * @version 0.0.1
  * 
  * This module provides the essential logging functionality without visual enhancements,
  * SVG support, or advanced styling. Perfect for lightweight applications or server-side usage.

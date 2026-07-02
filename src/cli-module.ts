@@ -1,8 +1,6 @@
 /**
  * @fileoverview CLI-only entry point for @mks2508/better-logger/cli
  * Exports only CLI primitives for minimal bundle size in CLI tools.
- * @version 5.0.0
- * @since 5.0.0
  */
 
 export { renderStep } from './playground/step.js';

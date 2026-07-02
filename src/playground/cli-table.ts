@@ -1,6 +1,5 @@
 /**
  * @fileoverview CLI table renderer for CLI primitives
- * @since 5.0.0
  */
 
 import type { ITableOptions } from '../types/core.js';

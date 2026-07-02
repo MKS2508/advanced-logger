@@ -95,7 +95,6 @@ export const THEME_BANNERS: Record<ThemeVariant, { simple: string; style: string
  * Feature detection for banner capabilities. Returns `'simple'` immediately
  * if neither `navigator` nor `document` exist (Node, SSR, workers).
  *
- * @since 0.3.0 (DOM guards added in 5.1.0)
  */
 export function detectBannerCapabilities(): BannerType {
     if (typeof navigator === 'undefined' || typeof document === 'undefined') {
@@ -133,7 +132,6 @@ export function detectBannerCapabilities(): BannerType {
  * Display initialization banner with advanced styling. No-op in Node,
  * SSR, or Web Workers (DOM-guard at the top).
  *
- * @since 0.3.0 (DOM guards added in 5.1.0)
  */
 export function displayInitBanner(bannerType?: BannerType): void {
     if (typeof document === 'undefined') return;

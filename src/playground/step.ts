@@ -1,6 +1,5 @@
 /**
  * @fileoverview Step progress renderer for CLI primitives
- * @since 5.0.0
  */
 
 import { getANSIForeground, ANSI, type ColorCapability } from '../terminal/color-converter.js';

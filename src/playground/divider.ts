@@ -1,6 +1,5 @@
 /**
  * @fileoverview Divider renderer for CLI primitives
- * @since 5.0.0
  */
 
 import { ANSI } from '../terminal/color-converter.js';

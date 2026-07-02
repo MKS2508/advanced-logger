@@ -1,7 +1,5 @@
 /**
  * @fileoverview Definiciones de tipos principales para Better Logger
- * @version 0.3.0
- * @since 2024
  */
 
 /**
@@ -132,7 +130,6 @@ export type OutputMode = 'console' | 'silent' | 'custom';
  * Custom output writer interface for redirecting log output
  *
  * @interface OutputWriter
- * @since 4.0.0
  *
  * @description
  * Allows redirecting log output to custom destinations like:
@@ -163,7 +160,6 @@ export interface OutputWriter {
  * Interfaz de configuración para instancias del logger
  * 
  * @interface LoggerConfig
- * @since 0.3.0
  * 
  * @example
  * const config: LoggerConfig = {
@@ -202,11 +198,11 @@ export interface LoggerConfig {
     bufferSize?: number;
     autoDetectTheme?: boolean;
     outputFormat?: OutputFormat;
-    /** Output mode: 'console' (default), 'silent', or 'custom' @since 4.0.0 */
+    /** Output mode: 'console' (default), 'silent', or 'custom'*/
     outputMode?: OutputMode;
-    /** Custom writer when outputMode is 'custom' @since 4.0.0 */
+    /** Custom writer when outputMode is 'custom'*/
     outputWriter?: OutputWriter;
-    /** CLI verbosity level for controlling primitive output @since 5.0.0 */
+    /** CLI verbosity level for controlling primitive output*/
     cliLevel?: CLILogLevel;
     /**
      * Default OTel resource attached to every record that doesn't override it.
@@ -319,7 +315,6 @@ export interface LogPartConfig {
  * 
  * @interface LogStyles
  * @description Agrupa todas las opciones de estilo en una sola configuración
- * @since 0.3.0
  */
 export interface LogStyles {
     layout?: LogLayout;
@@ -404,13 +399,11 @@ export interface LogOptions {
 
 /**
  * CLI verbosity levels for controlling primitive output
- * @since 5.0.0
  */
 export type CLILogLevel = 'silent' | 'quiet' | 'normal' | 'verbose' | 'debug';
 
 /**
  * Handle returned by logger.spinner() for controlling spinner lifecycle
- * @since 5.0.0
  */
 export interface ISpinnerHandle {
     /** Start the spinner animation */
@@ -427,7 +420,6 @@ export interface ISpinnerHandle {
 
 /**
  * Options for logger.box() output
- * @since 5.0.0
  */
 export interface IBoxOptions {
     /** Title displayed in the top border */
@@ -442,7 +434,6 @@ export interface IBoxOptions {
 
 /**
  * Options for logger.cliTable() output
- * @since 5.0.0
  */
 export interface ITableOptions {
     /** Column names to display (overrides auto-detection) */

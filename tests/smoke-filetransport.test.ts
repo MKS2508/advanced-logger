@@ -2,7 +2,6 @@
  * FileTransport smoke test — verifies the Node path-traversal sanitiser,
  * browser localStorage path, and async flush (no event-loop blocking).
  *
- * @since 5.1.0
  */
 import { describe, it, expect } from 'vitest';
 import { FileTransport } from '../src/transports/FileTransport.js';

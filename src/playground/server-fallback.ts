@@ -1,6 +1,5 @@
 /**
  * @fileoverview Server/JSON fallback for CLI primitives in non-TTY environments
- * @since 5.0.0
  */
 
 import type { IBoxOptions, ITableOptions } from '../types/core.js';
@@ -10,7 +9,6 @@ import type { Logger } from '../Logger.js';
  * Server-mode fallback: outputs CLI primitives as plain logger calls
  * when not running in an interactive terminal.
  *
- * @since 5.0.0
  */
 export class ServerFallback {
     private logger: Logger;

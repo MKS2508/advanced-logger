@@ -3,7 +3,7 @@
  * Tests: child immutability, child isolation, withContext ALS-scoped callbacks,
  * browser fallback, getContext, setResource, clearContext.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLogContext, type LogContext } from '../../src/context/LogContext.js';

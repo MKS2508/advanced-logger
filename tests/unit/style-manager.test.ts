@@ -2,7 +2,7 @@
  * StyleManager unit tests — setTheme, preset, presets, customize,
  * resetStyles, getStyles, themes case-insensitive.
  *
- * @since 0.18.2-alpha.1
+ *
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createStyleManager, type StyleManager } from '../../src/styles/StyleManager.js';
