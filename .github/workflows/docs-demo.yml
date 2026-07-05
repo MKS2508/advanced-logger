@@ -72,8 +72,11 @@ jobs:
           source: ./docs
           destination: ./_site/docs
 
+      - name: "🔍 Inspect _site/docs ownership"
+        run: stat _site/docs && whoami && id
+
       - name: "🔓 Ensure _site/docs is writable"
-        run: chmod -R u+w _site/docs && chmod -R u+rwX _site/docs
+        run: sudo chmod -R u+w _site/docs 2>&1 || chmod -R u+w _site/docs
 
       - name: "📄 Serve raw .md pages + generate llms.txt"
         run: bun scripts/build-md-serve.ts
