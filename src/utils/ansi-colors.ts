@@ -1,12 +1,12 @@
 /**
- * @fileoverview ANSI color utilities for terminal environments
+ * @fileoverview Utilidades de colores ANSI para entornos de terminal
  */
 
 import type { LogLevel } from '../types/index.js';
 import { supportsANSI } from './environment-detector.js';
 
 /**
- * ANSI color codes for terminal styling
+ * Códigos de color ANSI para estilos en terminal
  */
 export const ANSI_CODES = {
     // Colors
@@ -72,7 +72,7 @@ export const ANSI_CODES = {
 } as const;
 
 /**
- * ANSI color presets for different log levels
+ * Presets de colores ANSI para los distintos niveles de log
  */
 export const ANSI_LEVEL_STYLES: Record<LogLevel | 'success', {
     color: number;
@@ -122,7 +122,7 @@ export const ANSI_LEVEL_STYLES: Record<LogLevel | 'success', {
 };
 
 /**
- * Creates an ANSI escape sequence
+ * Crea una secuencia de escape ANSI
  */
 function ansi(code: number | number[]): string {
     const codes = Array.isArray(code) ? code : [code];
@@ -130,7 +130,7 @@ function ansi(code: number | number[]): string {
 }
 
 /**
- * Applies ANSI styling to text
+ * Aplica estilos ANSI al texto
  */
 export function ansiStyle(text: string, codes: number[]): string {
     if (!supportsANSI()) return text;
@@ -138,14 +138,14 @@ export function ansiStyle(text: string, codes: number[]): string {
 }
 
 /**
- * Applies color to text
+ * Aplica color al texto
  */
 export function ansiColor(text: string, color: number): string {
     return ansiStyle(text, [color]);
 }
 
 /**
- * Applies background color to text
+ * Aplica color de fondo al texto
  */
 export function ansiBackground(text: string, bg: number, color?: number): string {
     if (color) {
@@ -155,39 +155,39 @@ export function ansiBackground(text: string, bg: number, color?: number): string
 }
 
 /**
- * Makes text bold
+ * Pone el texto en bold
  */
 export function ansiBold(text: string): string {
     return ansiStyle(text, [ANSI_CODES.bold]);
 }
 
 /**
- * Makes text dim
+ * Aplica dim al texto
  */
 export function ansiDim(text: string): string {
     return ansiStyle(text, [ANSI_CODES.dim]);
 }
 
 /**
- * Underlines text
+ * Subraya el texto
  */
 export function ansiUnderline(text: string): string {
     return ansiStyle(text, [ANSI_CODES.underline]);
 }
 
 /**
- * Specialized formatters for different contexts
+ * Formatters especializados para distintos contextos
  */
 
 /**
- * Format timestamp for terminal
+ * Formatea el timestamp para terminal
  */
 export function formatTimestampANSI(timestamp: string): string {
     return ansiColor(timestamp, ANSI_CODES.brightBlack);
 }
 
 /**
- * Format log level for terminal
+ * Formatea el nivel de log para terminal
  */
 export function formatLogLevelANSI(level: LogLevel, useEmojis: boolean = true): string {
     const style = ANSI_LEVEL_STYLES[level];
@@ -207,7 +207,7 @@ export function formatLogLevelANSI(level: LogLevel, useEmojis: boolean = true): 
 }
 
 /**
- * Format success message for terminal
+ * Formatea el mensaje de success para terminal
  */
 export function formatSuccessANSI(message: string, useEmojis: boolean = true): string {
     const style = ANSI_LEVEL_STYLES.success;
@@ -222,7 +222,7 @@ export function formatSuccessANSI(message: string, useEmojis: boolean = true): s
 }
 
 /**
- * Format prefix for terminal
+ * Formatea el prefix para terminal
  */
 export function formatPrefixANSI(prefix: string): string {
     if (!supportsANSI()) {
@@ -233,7 +233,7 @@ export function formatPrefixANSI(prefix: string): string {
 }
 
 /**
- * Format file location for terminal
+ * Formatea la ubicación del archivo para terminal
  */
 export function formatLocationANSI(location: string): string {
     if (!supportsANSI()) {

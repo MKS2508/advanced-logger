@@ -1,5 +1,7 @@
 /**
- * @fileoverview Help system for Advanced Logger CLI
+ * @fileoverview Help system del CLI del logger. Expone {@link HelpCommand},
+ * que renderiza un panel ASCII con la lista completa de comandos, opciones de
+ * configuración, filtros de export y ejemplos de uso.
  */
 
 import type { ICommand } from './CommandProcessor.js';
@@ -7,13 +9,39 @@ import type { Logger } from '../Logger.js';
 import { StyleBuilder } from '../styling/index.js';
 
 /**
- * Help command - show comprehensive CLI help
+ * Comando `/help`: renderiza en consola el panel de ayuda del CLI con todos
+ * los comandos disponibles, opciones de configuración, filtros de export y
+ * ejemplos. El panel usa un gradient claro con {@link StyleBuilder} y los
+ * quick tips se agrupan vía `logger.group`.
+ *
+ * Registrado por defecto por {@link createDefaultCLI}.
+ *
+ * @example
+ * ```ts
+ * const cli = createDefaultCLI();
+ * await cli.processCommand('/help', logger);
+ * // Imprime el panel ASCII con gradient + grupo "Quick Tips".
+ * ```
+ *
+ * @see {@link ICommand}
+ * @see {@link createDefaultCLI}
  */
 export class HelpCommand implements ICommand {
     name = 'help';
     description = 'Show CLI help and available commands';
     usage = '/help [command]';
 
+    /**
+     * Renderiza el panel de ayuda completo. Actualmente ignora `_args`: el
+     * `usage` declara `/help [command]` (sub-comando opcional) pero la
+     * implementación siempre muestra el panel global.
+     *
+     * @param {string} _args - Argumentos opcionales (reservado para ayuda por
+     *   sub-comando; sin uso actual).
+     * @param {Logger} logger - Logger activo; se usa solo para `group`/`info`
+     *   de los quick tips.
+     * @returns {void}
+     */
     execute(_args: string, logger: Logger): void {
         const helpStyle = new StyleBuilder()
             .bg('linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)')

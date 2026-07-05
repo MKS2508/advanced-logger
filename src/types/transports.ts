@@ -1,10 +1,10 @@
 import type { LogLevel, LogTag, StackInfo } from './core.js';
 
 /**
- * Map a `LogLevel` to the OpenTelemetry numeric severity (1-24) used by
- * SigNoz / any OTLP/HTTP backend. Spec-compliant banded values:
- *   TRACE=1-4, DEBUG=5-8, INFO=9-12, WARN=13-16, ERROR=17-20, FATAL=21-24
- * We use the canonical mid-band value per level.
+ * Mapea un `LogLevel` a la severidad numérica de OpenTelemetry (1-24) usada
+ * por SigNoz / cualquier backend OTLP/HTTP. Valores por banda conformes a la
+ * spec: TRACE=1-4, DEBUG=5-8, INFO=9-12, WARN=13-16, ERROR=17-20, FATAL=21-24.
+ * Se usa el valor canónico del medio de cada banda.
  *
  * @see https://opentelemetry.io/docs/specs/otel/logs/data-model/#severity-fields
  */
@@ -18,7 +18,7 @@ export const LOG_LEVEL_TO_SEVERITY_NUMBER: Record<LogLevel, number> = {
 } as const;
 
 /**
- * Map a `LogLevel` to its OpenTelemetry severity name (uppercase, OTel spec).
+ * Mapea un `LogLevel` a su nombre de severidad OpenTelemetry (mayúsculas, spec OTel).
  */
 export const LOG_LEVEL_TO_SEVERITY_TEXT: Record<LogLevel, string> = {
     trace: 'TRACE',
@@ -30,8 +30,8 @@ export const LOG_LEVEL_TO_SEVERITY_TEXT: Record<LogLevel, string> = {
 } as const;
 
 /**
- * OTel resource attributes attached once per batch (service.name, version, env, ...).
- * Values are string-coerced by the transport layer.
+ * Atributos de recurso OTel adjuntados una vez por batch (service.name, version,
+ * env, ...). Los valores son string-coerced por la capa de transport.
  */
 export interface ILogResource {
     'service.name': string;
@@ -41,72 +41,78 @@ export interface ILogResource {
 }
 
 /**
- * Structured attribute bag (OpenTelemetry-compatible). Every key maps to
- * a typed value; the transport layer decides how to serialise it.
+ * Valor admitido en un {@link ILogAttributes}: unión recursiva de primitivos
+ * serializables (string, number, boolean, null), arrays y structs anidados.
+ * Compatible con el modelo de attribute value de OpenTelemetry.
  */
 export type LogAttributeValue = string | number | boolean | null | LogAttributeValue[] | { [k: string]: LogAttributeValue };
+
+/**
+ * Bag estructurado de atributos (compatible con OpenTelemetry). Cada clave
+ * mapea a un valor tipado; la capa de transport decide cómo serializarlo.
+ */
 export interface ILogAttributes {
     [key: string]: LogAttributeValue;
 }
 
 /**
- * The payload sent to every transport on each `log()` call. Fields are
- * deliberately explicit (no `[key: string]: any` safety hatch) so transport
- * implementations like `OtlpTransport` can map 1:1 to OTLP `logRecords`.
+ * Payload enviado a cada transport en cada llamada a `log()`. Los campos son
+ * deliberadamente explícitos (sin escape hatch `[key: string]: any`) para que
+ * implementaciones como `OtlpTransport` puedan mapear 1:1 a `logRecords` OTLP.
  */
 export interface TransportRecord {
-    /** Canonical log level (trace/debug/info/warn/error/critical). */
+    /** Nivel canónico (trace/debug/info/warn/error/critical). */
     level: LogLevel;
-    /** Numeric severity, copied from `LOG_LEVELS[level]`. */
+    /** Severidad numérica, copiada de `LOG_LEVELS[level]`. */
     levelValue: number;
-    /** OTel numeric severity (1-24). Set automatically by Logger. */
+    /** Severidad numérica OTel (1-24). La asigna automáticamente el Logger. */
     severityNumber: number;
-    /** OTel severity name (TRACE/DEBUG/INFO/WARN/ERROR/FATAL). */
+    /** Nombre de severidad OTel (TRACE/DEBUG/INFO/WARN/ERROR/FATAL). */
     severityText: string;
-    /** Epoch milliseconds at log time. */
+    /** Epoch milliseconds en el momento del log. */
     time: number;
-    /** Final, post-hook message text. */
+    /** Texto final del mensaje, ya procesado por los hooks. */
     msg: string;
-    /** Optional logical scope (e.g. "Auth", "API:Users"). */
+    /** Scope lógico opcional (p.ej. "Auth", "API:Users"). */
     prefix?: string;
-    /** Caller location, only when `enableStackTrace` is true. */
+    /** Ubicación del caller, solo cuando `enableStackTrace` es true. */
     location?: {
         file: string;
         line: number;
         column: number;
         function?: string;
     };
-    /** 32-char hex trace id (OTel), when correlated with an active span. */
+    /** Trace id hex de 32 chars (OTel), cuando hay correlación con un span activo. */
     traceId?: string;
-    /** 16-char hex span id (OTel), when correlated with an active span. */
+    /** Span id hex de 16 chars (OTel), cuando hay correlación con un span activo. */
     spanId?: string;
-    /** Structured attributes (requestId, userId, custom tags). */
+    /** Atributos estructurados (requestId, userId, tags custom). */
     attributes?: ILogAttributes;
-    /** Per-log resource (overrides Transport-level resource). */
+    /** Recurso a nivel de log (sobreescribe el resource del transport). */
     resource?: Partial<ILogResource>;
-    /** Special "success" tag — set by `Logger.success()`. */
+    /** Tag especial "success" — lo setea `Logger.success()`. */
     tag?: LogTag;
 }
 
 /**
- * Options accepted by any transport at registration time.
+ * Opciones aceptadas por cualquier transport al registrarse.
  */
 export interface TransportOptions {
     level?: LogLevel;
-    /** Transform the record before it's serialised. Return null to drop. */
+    /** Transforma el record antes de serializarlo. Devolver null descarta el record. */
     transform?: (record: TransportRecord) => TransportRecord | null;
-    /** Flush once the buffer reaches this many records. */
+    /** Flush cuando el buffer alcanza esta cantidad de records. */
     batchSize?: number;
-    /** Flush periodically at this interval (ms). */
+    /** Flush periódico a este intervalo (ms). */
     flushInterval?: number;
-    /** Hard cap on buffered records. Older entries are dropped on overflow. */
+    /** Tope duro de records en buffer. Los más antiguos se descartan al desbordar. */
     maxBufferSize?: number;
 }
 
 /**
- * A transport registration. `target` can be:
- *   - An `ITransport` instance (legacy / inline).
- *   - A string registered in `TransportManager`'s built-in registry
+ * Registro de un transport. `target` puede ser:
+ *   - Una instancia de `ITransport` (legacy / inline).
+ *   - Un string registrado en el registry built-in de `TransportManager`
  *     (`'console' | 'file' | 'http' | 'otlp'`).
  */
 export interface TransportTarget {
@@ -116,7 +122,7 @@ export interface TransportTarget {
 }
 
 /**
- * Minimal contract every transport must satisfy.
+ * Contrato mínimo que todo transport debe satisfacer.
  */
 export interface ITransport {
     readonly name: string;
@@ -127,8 +133,8 @@ export interface ITransport {
 }
 
 /**
- * Buffered transport contract. Concrete transports like `HttpTransport`,
- * `FileTransport` and `OtlpTransport` extend this.
+ * Contrato de transport con buffer. Transports concretos como `HttpTransport`,
+ * `FileTransport` y `OtlpTransport` extienden esta interfaz.
  */
 export interface IBufferedTransport extends ITransport {
     readonly bufferSize: number;
@@ -137,7 +143,7 @@ export interface IBufferedTransport extends ITransport {
 }
 
 /**
- * Transport registry / dispatch contract.
+ * Contrato del registry / dispatch de transports.
  */
 export interface ITransportManager {
     add(target: TransportTarget): string;

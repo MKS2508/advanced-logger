@@ -1,47 +1,47 @@
 /**
- * Environment Detector - Robust environment detection for logger
- * Detects browser, terminal, server, and other runtime environments
+ * Detector de entorno — Detección robusta del entorno para el logger
+ * Detecta entornos browser, terminal, server y otros runtime
  */
 
 export type Environment = 'browser' | 'terminal' | 'server' | 'webworker' | 'deno' | 'unknown';
 
 /**
- * Checks if running in Node.js environment
+ * Comprueba si se ejecuta en entorno Node.js
  */
 export const isNode = typeof process !== 'undefined' &&
                       process.versions &&
                       process.versions.node;
 
 /**
- * Checks if running in browser environment
+ * Comprueba si se ejecuta en entorno browser
  */
 export const isBrowser = typeof window !== 'undefined' &&
                           typeof document !== 'undefined';
 
 /**
- * Main environment detection function
+ * Función principal de detección de entorno
  */
 export function getEnvironment(): Environment {
-    // Check for Deno first
+    // Comprueba Deno primero
     if (typeof globalThis !== 'undefined' && (globalThis as any).Deno) {
         return 'deno';
     }
 
-    // Check for WebWorker
+    // Comprueba WebWorker
     if (typeof window === 'undefined' && typeof self !== 'undefined' && typeof (self as any).importScripts === 'function') {
         return 'webworker';
     }
 
-    // Check for Node.js (server environment)
+    // Comprueba Node.js (entorno server)
     if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-        // Determine if it's running in a terminal or as a server
+        // Determina si corre en una terminal o como server
         if (isRunningInTerminal()) {
             return 'terminal';
         }
         return 'server';
     }
 
-    // Check for browser
+    // Comprueba browser
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         return 'browser';
     }
@@ -50,10 +50,10 @@ export function getEnvironment(): Environment {
 }
 
 /**
- * Check if running in an interactive terminal
+ * Comprueba si se ejecuta en una terminal interactiva
  */
 export function isRunningInTerminal(): boolean {
-    // Check for common terminal indicators
+    // Comprueba indicadores comunes de terminal
     if (typeof process === 'undefined') return false;
 
     const isTTY = process.stdout && process.stdout.isTTY;
@@ -64,7 +64,7 @@ export function isRunningInTerminal(): boolean {
         process.env.TERM_SESSION_ID
     );
 
-    // Check if we're running in common terminal programs
+    // Comprueba si corre dentro de programas de terminal comunes
     const terminalPrograms = [
         'vscode',
         'hyper',
@@ -88,7 +88,7 @@ export function isRunningInTerminal(): boolean {
 }
 
 /**
- * Check if environment supports ANSI colors
+ * Comprueba si el entorno soporta colores ANSI
  */
 export function supportsANSI(): boolean {
     const env = getEnvironment();
@@ -101,12 +101,12 @@ export function supportsANSI(): boolean {
 }
 
 /**
- * Check if server environment supports ANSI colors
+ * Comprueba si el entorno server soporta colores ANSI
  */
 function checkServerANSISupport(): boolean {
     if (typeof process === 'undefined') return false;
 
-    // Check common environment variables that indicate ANSI support
+    // Comprueba variables de entorno comunes que indican soporte ANSI
     const supportsANSI = process.env && (
         process.env.COLORTERM ||
         process.env.FORCE_COLOR ||
@@ -118,20 +118,20 @@ function checkServerANSISupport(): boolean {
 }
 
 /**
- * Get environment-specific color capability
+ * Obtiene la capacidad de color específica del entorno
  */
 export function getColorCapability(): 'full' | 'basic' | 'none' {
     const env = getEnvironment();
 
     if (env === 'browser') {
-        return 'full'; // CSS colors
+        return 'full'; // Colores CSS
     }
 
     if (!supportsANSI()) {
         return 'none';
     }
 
-    // Check for 256-color or truecolor support
+    // Comprueba soporte de 256 colores o truecolor
     if (typeof process !== 'undefined' && process.env) {
         const hasTrueColor = process.env.COLORTERM === 'truecolor' || process.env.COLORTERM === '24bit';
         const has256Colors = process.env.TERM && process.env.TERM.includes('256');
@@ -141,11 +141,11 @@ export function getColorCapability(): 'full' | 'basic' | 'none' {
         }
     }
 
-    return 'basic'; // Basic 16 colors
+    return 'basic'; // 16 colores básicos
 }
 
 /**
- * Get terminal width in columns
+ * Obtiene el ancho de la terminal en columnas
  */
 export function getTerminalWidth(): number {
     if (typeof process !== 'undefined' && process.stdout?.columns) {
@@ -155,7 +155,7 @@ export function getTerminalWidth(): number {
 }
 
 /**
- * Get terminal height in rows
+ * Obtiene el alto de la terminal en filas
  */
 export function getTerminalHeight(): number {
     if (typeof process !== 'undefined' && process.stdout?.rows) {
@@ -165,7 +165,7 @@ export function getTerminalHeight(): number {
 }
 
 /**
- * Environment information for debugging
+ * Información del entorno para debugging
  */
 export function getEnvironmentInfo() {
     return {

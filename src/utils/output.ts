@@ -1,5 +1,5 @@
 /**
- * @fileoverview Styled output creation utilities for Advanced Logger
+ * @fileoverview Utilidades para crear output estilizado para Advanced Logger
  */
 
 import type { LogLevel, StackInfo, DevToolsTheme, AdaptiveColors } from '../types/index.js';
@@ -11,7 +11,7 @@ import { formatLogLevelANSI, formatTimestampANSI, formatPrefixANSI, formatLocati
 import type { LogStyles } from '../types/index.js';
 
 /**
- * Style configuration for each log level
+ * Configuración de estilo para cada nivel de log
  */
 export interface LevelStyleConfig {
     emoji: string;
@@ -23,24 +23,24 @@ export interface LevelStyleConfig {
 }
 
 /**
- * Detects the current DevTools theme preference
+ * Detecta la preferencia de theme actual de DevTools
  */
 export function detectDevToolsTheme(): DevToolsTheme {
     try {
         if (typeof window === 'undefined' || !window.matchMedia) {
-            return 'light'; // Safe fallback for SSR or older browsers
+            return 'light'; // Fallback seguro para SSR o browsers antiguos
         }
 
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         return mediaQuery.matches ? 'dark' : 'light';
     } catch (error) {
         console.warn('Failed to detect DevTools theme:', error);
-        return 'light'; // Fallback to light theme
+        return 'light'; // Fallback al theme light
     }
 }
 
 /**
- * Gets adaptive color based on current DevTools theme
+ * Obtiene el color adaptativo según el theme actual de DevTools
  */
 export function getAdaptiveColor(colors: AdaptiveColors, theme?: DevToolsTheme): string {
     const currentTheme = theme ?? detectDevToolsTheme();
@@ -48,7 +48,7 @@ export function getAdaptiveColor(colors: AdaptiveColors, theme?: DevToolsTheme):
 }
 
 /**
- * Sets up theme change listener for dynamic updates
+ * Registra un listener de cambios de theme para actualizaciones dinámicas
  */
 export function setupThemeChangeListener(callback: (theme: DevToolsTheme) => void): (() => void) | null {
     try {
@@ -61,7 +61,7 @@ export function setupThemeChangeListener(callback: (theme: DevToolsTheme) => voi
             callback(e.matches ? 'dark' : 'light');
         };
 
-        // Use newer addEventListener if available, fallback to addListener
+        // Usa addEventListener si está disponible, fallback a addListener
         if (mediaQuery.addEventListener) {
             mediaQuery.addEventListener('change', handler);
             return () => mediaQuery.removeEventListener('change', handler);
@@ -79,8 +79,8 @@ export function setupThemeChangeListener(callback: (theme: DevToolsTheme) => voi
 
 
 /**
- * Creates styled console output with multiple %c formatters
- * Automatically adapts to browser or terminal environment
+ * Crea output estilizado para consola con múltiples formatters `%c`
+ * Se adapta automáticamente al entorno (browser o terminal)
  */
 export function createStyledOutput(
     level: LogLevel,
@@ -96,15 +96,15 @@ export function createStyledOutput(
     const timestamp = formatTimestamp();
     const environment = getEnvironment();
 
-    // Check if we should use terminal rendering
+    // Comprueba si se debe usar rendering en terminal
     if (environment !== 'browser' && supportsANSI()) {
         return createTerminalOutput(level, message, timestamp, prefix, stackInfo);
     }
 
-    // Browser rendering (existing logic)
+    // Rendering en browser (lógica existente)
     const currentTheme = autoDetectTheme ? detectDevToolsTheme() : 'light';
 
-    // Base styles with adaptive colors
+    // Estilos base con colores adaptativos
     const timestampStyle = new StyleBuilder()
         .color(getAdaptiveColor(ADAPTIVE_COLORS.timestamp, currentTheme))
         .size('11px')
@@ -145,7 +145,7 @@ export function createStyledOutput(
         .font('Monaco, Consolas, monospace')
         .build();
 
-    // Build format string and styles
+    // Construye el format string y los estilos
     let format = `%c${timestamp.slice(11, 23)} %c${levelConfig.emoji} ${levelConfig.label}`;
     const styles = [timestampStyle, levelStyle];
 
@@ -166,8 +166,8 @@ export function createStyledOutput(
 }
 
 /**
- * Builds a terminal-friendly line using the ANSI helpers. Used when the
- * runtime is not a browser but supports ANSI codes (TTY, modern terminal).
+ * Construye una línea apta para terminal usando los helpers ANSI. Se usa
+ * cuando el runtime no es browser pero soporta códigos ANSI (TTY, terminal moderna).
  *
  * Layout: `[HH:MM:SS.mmm] [LEVEL] [prefix] message (file:line)`
  */

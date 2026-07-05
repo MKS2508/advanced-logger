@@ -1,5 +1,5 @@
 title: "Better Logger Documentation"
-description: "State-of-the-art console logger with advanced CSS styling, SVG support, animations, and CLI interface"
+description: "Logger avanzado para consola con estilos CSS, MDC, transports (File/HTTP/OTLP→SigNoz), hooks, serializers y CLI integrado"
 theme: minima
 url: "https://mks2508.github.io"
 baseurl: "/advanced-logger/docs"
@@ -8,6 +8,7 @@ markdown: kramdown
 highlighter: rouge
 kramdown:
   syntax_highlighter: rouge
+  input: GFM
 
 plugins:
   - jekyll-feed
@@ -24,13 +25,39 @@ exclude:
   - vendor/ruby/
 
 header_pages:
-  - API.md
-  - DEVELOPMENT.md
+  - index.md
+  - transports.md
+  - context.md
+  - hooks.md
+  - serializers.md
+  - styles.md
+  - cli.md
+  - playground.md
+  - core.md
+  - migration-v0.18.md
 
 navigation:
+  - title: Inicio
+    url: /advanced-logger/docs/
+  - title: Transports
+    url: /advanced-logger/docs/transports/
+  - title: Context (MDC)
+    url: /advanced-logger/docs/context/
+  - title: Hooks
+    url: /advanced-logger/docs/hooks/
+  - title: Serializers
+    url: /advanced-logger/docs/serializers/
+  - title: Styling
+    url: /advanced-logger/docs/styles/
+  - title: CLI
+    url: /advanced-logger/docs/cli/
+  - title: Playground
+    url: /advanced-logger/docs/playground/
+  - title: Core
+    url: /advanced-logger/docs/core/
+  - title: Migración 0.18
+    url: /advanced-logger/docs/migration/
   - title: API Reference
-    url: /advanced-logger/docs/API
-  - title: Development Guide
-    url: /advanced-logger/docs/DEVELOPMENT
+    url: /advanced-logger/docs/api/
   - title: Live Demo
     url: /advanced-logger/

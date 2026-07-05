@@ -1,144 +1,228 @@
 /**
- * @fileoverview LogContext bridge — MDC (Mapped Diagnostic Context) management.
- * Encapsulates per-logger structured context, child logger creation, and
- * OTel resource merging.
+ * @fileoverview Bridge de LogContext — gestión de MDC (Mapped Diagnostic Context).
  *
- * F4 MDC API reset:
- * - `withContext(bindings, fn?)` — if fn provided, run within AsyncLocalStorage.
- *   Without fn: no-op (backwards compat shim for the old setter shape).
- * - `withContextAsync(bindings, fn)` — async callback variant.
- * - `child(bindings)` remains immutable (canonical MDC pattern).
- * - Feature-detect AsyncLocalStorage; browser fallback is a no-op.
+ * Encapsula el contexto estructurado por logger, la creación de child loggers y
+ * el merge de resource OTel en cada record emitido.
+ *
+ * Modelo de API:
+ * - `withContext(bindings, fn?)` — si se pasa `fn`, lo ejecuta dentro de un
+ *   scope de AsyncLocalStorage mergeando `bindings`. Sin `fn`: no-op (shim de
+ *   backwards compat para la vieja forma de setter).
+ * - `withContextAsync(bindings, fn)` — variante async callback.
+ * - `child(bindings)` — inmutable (patrón canónico de MDC).
+ * - Feature-detect de AsyncLocalStorage; en browser sin ALS es no-op.
  */
 
 import type { ILogResourceRef } from '../types/index.js';
 import type { LoggerConfig } from '../types/index.js';
 
 /**
- * Snapshot of the bound context. Returned by {@link LogContext.getContext}.
+ * Snapshot del contexto bound. Lo retorna {@link LogContext.getContext}.
+ *
+ * Es `Readonly` para marcar contractually que el objeto devuelto es una shallow
+ * copy: mutarlo no afecta a los records que emitan futuras llamadas de log.
  */
 export type ContextSnapshot = Readonly<Record<string, unknown>>;
 
 /**
- * Factory function type for creating child Logger instances.
- * Passed to LogContext so `child()` can instantiate new loggers without
- * introducing a circular import. Returns unknown — the actual Logger class
- * is used by the caller and the returned instance has its `context` field
- * written to by LogContext.
+ * Tipo de la factory function para crear instancias child de Logger.
+ *
+ * Se inyecta en LogContext para que `child()` pueda instanciar nuevos loggers
+ * sin introducir un import circular entre `Logger.ts` y `LogContext.ts`.
+ * Retorna `unknown` — la clase Logger concreta la maneja el caller, y la
+ * instancia devuelta tiene su campo `context` escrito por LogContext tras la
+ * creación.
  */
 export type ChildLoggerFactory = (config: Partial<LoggerConfig>) => unknown;
 
 /**
- * Minimal shape of a Logger instance needed by LogContext.
- * Used to avoid circular dependencies between LogContext and Logger.
- * The `_parentContextRecord` field is set by the parent Logger after
- * `LogContext.child()` returns, establishing the context chain.
+ * Shape mínima de una instancia de Logger que LogContext necesita ver.
+ *
+ * Evita dependencias circulares entre LogContext y Logger. El campo
+ * `_parentContextRecord` lo setea el Logger padre después de que
+ * `LogContext.child()` retorna, estableciendo la cadena de contextos.
  */
 export interface ChildLoggerShape {
     _parentContextRecord?: Record<string, unknown>;
-    /** Legacy field — no longer the canonical context source (F4.5.5 fix). */
+    /** Campo legacy — ya no es la fuente canónica del contexto. */
     context?: Record<string, unknown>;
 }
 
 /**
- * Options passed to {@link createLogContext}.
+ * Options que se pasan a {@link createLogContext}.
  */
 export interface ILogContextOptions {
-    /** Initial context key-value pairs. */
+    /** Pares key-value iniciales del contexto. */
     initialContext?: Record<string, unknown>;
-    /** Factory for creating child logger instances. */
+    /** Factory para crear instancias child de logger. */
     childLoggerFactory: ChildLoggerFactory;
-    /** Initial OTel resource to merge into every record. */
+    /** Resource OTel inicial a mergear en cada record emitido. */
     initialResource?: Partial<ILogResourceRef>;
     /**
-     * Returns the parent logger's merged context record at child-creation time.
-     * Used by _getContextRecord() to build the context chain.
+     * Retorna el record de contexto mergeado del logger padre en el momento
+     * de creación del child. Lo usa `_getContextRecord()` para construir la
+     * cadena de contextos.
      * @internal
      */
     getParentContextRecord?: () => Record<string, unknown>;
     /**
-     * The ALS instance to use for withContext scoping.
+     * Instancia de AsyncLocalStorage a usar para el scoping de `withContext`.
      * @internal
      */
     alsInstance?: ALS;
 }
 
 /**
- * Result returned by {@link createLogContext}.
+ * Contrato que retorna {@link createLogContext}.
+ *
+ * Fachada de MDC (Mapped Diagnostic Context) por logger. Combina tres fuentes
+ * de contexto:
+ * - **base inmutable** vía `child()` (snapshot capturado al crear el child),
+ * - **scope transitorio** vía `withContext()` / `withContextAsync()` sobre
+ *   AsyncLocalStorage,
+ * - **resource OTel** mergeado en cada record.
+ *
+ * En entornos browser sin `AsyncLocalStorage`, las variantes `withContext*`
+ * degradan a no-op: ejecutan `fn` sin scoping (o lo skipan si no hay `fn`).
+ * `child()` sigue operativo en browser porque no depende de ALS.
  */
 export interface LogContext {
     /**
-     * Current bound context snapshot (shallow copy — mutation does NOT affect
-     * what subsequent log calls emit).
+     * Snapshot actual del contexto bound.
+     *
+     * @returns Copia inmutable (shallow) del contexto; mutarla no afecta a los
+     * records que emitan futuras llamadas de log.
+     *
+     * @example
+     * const ctx = logContext.getContext();
+     * console.log(ctx.requestId); // 'abc-123'
      */
     getContext(): ContextSnapshot;
 
     /**
-     * Runs `fn` within an AsyncLocalStorage scope where `bindings` are
-     * merged into the context for all log calls inside `fn`.
+     * Ejecuta `fn` dentro de un scope de AsyncLocalStorage donde `bindings`
+     * se mergean al contexto para todas las llamadas de log dentro de `fn`.
      *
-     * If `fn` is not provided (the old setter shape), this is a no-op
-     * for backwards compatibility. Prefer `child()` for persistent binding
-     * or `withContextAsync()` for async callbacks.
+     * Si no se pasa `fn` (la vieja forma de setter), es no-op por backwards
+     * compatibility. Para binding persistente prefiere `child()`; para
+     * callbacks async usa `withContextAsync()`.
      *
-     * @param bindings - Key-value pairs to attach for the duration of `fn`
-     * @param fn - Optional synchronous function to run with the scoped bindings
-     * @returns The return value of `fn`, or undefined if no fn provided
+     * **Browser fallback**: sin ALS, ejecuta `fn` directamente sin scoping
+     * (los bindings NO se mergean). Si tampoco hay `fn`, retorna `undefined`.
+     *
+     * @param bindings - Pares key-value a attachar durante la ejecución de `fn`
+     * @param fn - Función sincrónica opcional a ejecutar bajo el scope ALS
+     * @returns El valor de retorno de `fn`, o `undefined` si no se pasa `fn`
+     *
+     * @example
+     * logContext.withContext({ requestId: 'abc-123' }, () => {
+     *   logger.info('procesando'); // el record lleva requestId=abc-123
+     * });
+     * // fuera de fn: requestId ya no está presente en próximos logs
+     *
+     * @see {@link LogContext.withContextAsync} para callbacks async
+     * @see {@link LogContext.child} para binding persistente inmutable (sin ALS)
      */
     withContext<R>(bindings: Record<string, unknown>, fn?: () => R): R | undefined;
 
     /**
-     * Async variant of `withContext`. Runs `fn` within an AsyncLocalStorage
-     * scope so bindings are available to all async log calls inside `fn`.
+     * Variante async de {@link withContext}. Ejecuta `fn` dentro de un scope
+     * de AsyncLocalStorage para que los bindings queden disponibles a todas las
+     * llamadas de log async dentro de `fn` (incluso tras `await`).
      *
-     * @param bindings - Key-value pairs to attach for the duration of `fn`
-     * @param fn - Async function to run with the scoped bindings
-     * @returns The return value of `fn`
+     * **Browser fallback**: sin ALS, ejecuta `fn` directamente sin scoping.
+     *
+     * @param bindings - Pares key-value a attachar durante la ejecución de `fn`
+     * @param fn - Función async a ejecutar bajo el scope ALS
+     * @returns El Promise retornado por `fn`
+     *
+     * @example
+     * await logContext.withContextAsync({ traceId }, async () => {
+     *   const user = await fetchUser();
+     *   logger.info('user cargado', { id: user.id });
+     *   // el record lleva el traceId aunque el log ocurra tras un await
+     * });
      */
     withContextAsync<R>(bindings: Record<string, unknown>, fn: () => Promise<R>): Promise<R>;
 
     /**
-     * Drops every key from the bound context. After this call, emitted
-     * records no longer carry `attributes` until {@link withContext} or
-     * {@link child} re-establishes one.
+     * Droppea todas las keys del contexto bound. Tras esta llamada, los
+     * records emitidos ya no llevan `attributes` hasta que
+     * {@link withContext} o {@link child} restablezcan uno.
      *
-     * @returns The same LogContext instance, now context-free
+     * @returns La misma instancia de LogContext, ahora sin contexto
+     *
+     * @example
+     * logContext.clearContext();
+     * logger.info('limpio'); // sin attributes
      */
     clearContext(): this;
 
     /**
-     * Updates the default OTel resource (service.name, version, env).
-     * Persisted into every emitted record's `resource` field unless the
-     * record itself overrides it.
+     * Actualiza el resource OTel por defecto (service.name, version,
+     * deployment.environment, ...).
      *
-     * @param resource - Partial OTel resource to merge into the current one
-     * @returns The same LogContext instance, for chaining
+     * Se persiste en el campo `resource` de cada record emitido, salvo que el
+     * propio record lo overridee.
+     *
+     * @param resource - Resource OTel parcial a mergear con el actual
+     * @returns La misma instancia de LogContext, para encadenar calls
+     *
+     * @example
+     * logContext.setResource({ serviceName: 'api-gateway', environment: 'prod' });
      */
     setResource(resource: Partial<ILogResourceRef>): this;
 
     /**
-     * Returns an immutable copy of this logger with the extra context bound.
-     * Future calls on the child emit with the merged context, without
-     * mutating the parent — the canonical MDC pattern.
+     * Devuelve una copia inmutable de este logger con el contexto extra bound.
      *
-     * @param extra - Key-value pairs to attach (requestId, userId, ...)
-     * @returns A new Logger with merged context
+     * Las llamadas futuras sobre el child emiten con el contexto mergeado, sin
+     * mutar al padre — patrón canónico de MDC.
+     *
+     * A diferencia de {@link withContext}, **no involucra AsyncLocalStorage**:
+     * el binding es persistente y queda capturado en el snapshot del child al
+     * crearse. Por eso `child()` es operativo también en browser sin ALS.
+     *
+     * Los bindings transitorios de ALS activos en el momento de `child()` NO
+     * se bakean en el child — solo se captura el contexto base. ALS se aplica
+     * fresco en cada dispatch vía `_getContextRecord()`.
+     *
+     * @param extra - Pares key-value a attachar (requestId, userId, ...)
+     * @returns Un nuevo Logger con el contexto mergeado
+     *
+     * @example
+     * const requestLog = logContext.child({ requestId: 'abc-123' });
+     * requestLog.info('inicio');   // siempre lleva requestId=abc-123
+     * requestLog.info('fin');
+     * // el logger padre no se ve afectado por estos bindings
+     *
+     * @see {@link LogContext.withContext} para scoping transitorio (ALS)
      */
     child(extra: Record<string, unknown>): ChildLoggerShape;
 
-    /** Internal context record. Exposed for TransportRecord assembly. */
+    /**
+     * Record de contexto interno. Expuesto para el ensamblado de TransportRecord
+     * (base + overlay ALS si hay store activo).
+     * @internal
+     */
     _getContextRecord(): Record<string, unknown>;
     /**
-     * Returns the base context WITHOUT the ALS overlay.
-     * Used by Logger.child() to capture the parent context snapshot for
-     * child logger creation (F4.5.5 fix).
+     * Retorna el contexto base SIN el overlay de ALS.
+     *
+     * Lo usa `Logger.child()` para capturar el snapshot del contexto padre al
+     * crear un child logger, garantizando que el binding ALS transitorio no
+     * se bakeé en el child.
      * @internal
      */
     _getBaseContextRecord(): Record<string, unknown>;
-    /** Internal resource record. Exposed for TransportRecord assembly. */
+    /**
+     * Record de resource interno. Expuesto para el ensamblado de TransportRecord.
+     * @internal
+     */
     _getResource(): Partial<ILogResourceRef> | undefined;
     /**
-     * Returns the current AsyncLocalStorage store, if ALS is active.
+     * Retorna el store actual de AsyncLocalStorage, si ALS está activo en el
+     * call stack corriente.
      * @internal
      */
     _getAlsStore(): Record<string, unknown> | undefined;
@@ -156,10 +240,25 @@ const hasALS = typeof AsyncLocalStorage !== 'undefined';
 const alsInstance: ALS | undefined = hasALS ? new AsyncLocalStorage() : undefined;
 
 /**
- * Creates a LogContext instance.
+ * Factory que crea una instancia de {@link LogContext}.
  *
- * @param options - Configuration options
- * @returns A LogContext instance
+ * @param options - Configuración (ver {@link ILogContextOptions})
+ * @returns Una instancia de LogContext lista para usar
+ *
+ * @example
+ * const logContext = createLogContext({
+ *   childLoggerFactory: (cfg) => new Logger(cfg),
+ *   initialContext: { service: 'orders-api' },
+ *   initialResource: { serviceName: 'orders-api', environment: 'prod' }
+ * });
+ *
+ * // Child inmutable con contexto persistente
+ * const requestLog = logContext.child({ requestId: 'abc-123' });
+ *
+ * // Scope transitorio vía ALS (Node; en browser sin ALS es no-op)
+ * logContext.withContext({ traceId: 't-9' }, () => {
+ *   requestLog.info('procesando orden');
+ * });
  */
 export function createLogContext(options: ILogContextOptions): LogContext {
     let context: Record<string, unknown> = { ...options.initialContext };

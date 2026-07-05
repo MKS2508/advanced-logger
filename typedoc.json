@@ -1,0 +1,29 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/index.ts",
+    "src/core.ts",
+    "src/cli-module.ts",
+    "src/transports-module.ts",
+    "src/context-module.ts",
+    "src/hooks-module.ts",
+    "src/serializers-module.ts",
+    "src/styles-module.ts",
+    "src/playground-module.ts"
+  ],
+  "plugin": ["typedoc-plugin-markdown", "typedoc-plugin-frontmatter"],
+  "out": "docs/api",
+  "readme": "none",
+  "githubPages": false,
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "logLevel": "Error",
+  "categorizeByGroup": true,
+  "sort": ["source-order"],
+  "frontmatterGlobals": {
+    "layout": "default"
+  },
+  "tsconfig": "tsconfig.json"
+}

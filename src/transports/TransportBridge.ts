@@ -1,41 +1,47 @@
 /**
- * @fileoverview TransportBridge — TransportManager facade.
- * Encapsulates transport lifecycle: add, remove, flush, close.
+ * @fileoverview TransportBridge — facade de TransportManager.
+ * Encapsula el lifecycle de transports: add, remove, flush, close.
+ *
+ * @internal
  */
 
 import type { TransportTarget } from '../types/index.js';
 import { TransportManager } from '../transports/index.js';
 
 /**
- * Result of adding a transport.
+ * Resultado de añadir un transport.
  */
 export interface AddTransportResult {
-    /** Unique transport ID. */
+    /** ID único del transport. */
     id: string;
-    /** The TransportManager instance (created on first add). */
+    /** La instancia de TransportManager (creada al primer add). */
     manager: TransportManager;
 }
 
 /**
- * Bridge for transport lifecycle management.
+ * Bridge para la gestión del lifecycle de transports.
+ *
+ * @internal
  */
 export interface TransportBridge {
-    /** Adds a transport and returns its ID. */
+    /** Añade un transport y devuelve su ID. */
     addTransport(target: TransportTarget): string;
-    /** Removes a transport by ID. Returns true if removed. */
+    /** Elimina un transport por ID. Devuelve `true` si se eliminó. */
     removeTransport(id: string): boolean;
-    /** Forces flush of all transport buffers. */
+    /** Fuerza el flush de todos los buffers de transports. */
     flushTransports(): Promise<void>;
-    /** Closes all transports gracefully. */
+    /** Cierra todos los transports de forma graceful. */
     closeTransports(): Promise<void>;
-    /** Returns the underlying manager (or undefined if never used). */
+    /** Devuelve el manager subyacente (o `undefined` si nunca se usó). */
     getTransportManager(): TransportManager | undefined;
-    /** Writes a transport record (fire-and-forget). No-op if manager not initialized. */
+    /** Escribe un transport record (fire-and-forget). No-op si el manager no está inicializado. */
     writeRecord(record: Parameters<TransportManager['write']>[0]): void;
 }
 
 /**
- * Creates a TransportBridge instance.
+ * Crea una instancia de {@link TransportBridge}.
+ *
+ * @internal
  */
 export function createTransportBridge(): TransportBridge {
     let transportManager: TransportManager | undefined;
@@ -66,7 +72,7 @@ export function createTransportBridge(): TransportBridge {
 
         writeRecord(record): void {
             if (!transportManager) return;
-            // Fire-and-forget — never break the sync log path.
+            // Fire-and-forget — nunca rompe el sync log path.
             transportManager.write(record).catch(() => {});
         }
     };

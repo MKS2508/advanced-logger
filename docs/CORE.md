@@ -1,161 +1,212 @@
-# 📦 Core Module
+---
+layout: default
+title: Core Logger
+permalink: /core/
+---
 
-**Logging esencial: niveles, verbosidad, log context (MDC) y scoped loggers.**
+# 🧱 Core Logger
 
-```typescript
-import logger, { LOG_LEVELS, LogLevel, Verbosity } from '@mks2508/better-logger';
-```
+## Qué es
 
-## Niveles de log
+`CoreLogger` es la versión minimal del Logger (~360 líneas): solo emisión a `console` + handlers custom. Sin transports, hooks, serializers, themes, badges, banners, SVG, CLI primitives ni scoped loggers avanzados.
 
-```text
-trace(-1) < debug(0) < info(1) < warn(2) < error(3) < critical(4)
-```
+Pensado para **server-side**, CLIs ligeros y bundles donde no necesitas el arsenal visual ni de pipelining del `Logger` default. Auto-detecta entorno (browser con CSS / Node con formato plano) y ya está.
 
-- **`trace`** — el nivel más bajo. Traza muy verbosa, alineado con OTel TRACE (severity 1-4). Filtrado por defecto (verbosity=`debug` no lo muestra; usa `setVerbosity('trace')`).
-- **`debug`** — información de depuración detallada.
-- **`info`** — mensajes informativos generales.
-- **`warn`** — advertencias no bloqueantes.
-- **`error`** — errores que afectan funcionalidad.
-- **`critical`** — errores críticos (mapea a OTel FATAL).
+Se importa desde el **subpath `./core`** del package:
 
 ```typescript
-logger.trace('entering hot loop');
-logger.debug('cache miss', { key });
-logger.info('server started on :3000');
-logger.warn('memory at 85%');
-logger.error('request failed', err);
-logger.critical('disk full, aborting');
+import { CoreLogger } from '@mks2508/better-logger/core';
 ```
 
-`success()` emite a **INFO severity** con `tag: 'success'` (para que transports distingan success de info genérico) y styling propio.
+El módulo exporta además un **singleton** `coreLogger` (default export) y métodos sueltos (`info`, `warn`, `error`, ...) para uso drop-in.
 
-## Verbosidad
+## Cuándo usar CoreLogger vs Logger default
 
-Filtra qué niveles se muestran. Todo lo **< verbosity** se omite (incluido el dispatch a transports).
+| Caso de uso                                           | Recomendación        |
+| ----------------------------------------------------- | -------------------- |
+| Script Node puro, CLI ligera, worker sin I/O externo  | `CoreLogger`         |
+| Server-side sin necesidad de OTel / File / HTTP       | `CoreLogger`         |
+| Lambda / edge function con bundle size crítico         | `CoreLogger`         |
+| App con transports (File, HTTP, OTLP→SigNoz)          | `Logger` (default)   |
+| Necesitas hooks (`beforeLog` para PII redaction)      | `Logger` (default)   |
+| Serializers por tipo (`Error`, clases de dominio)     | `Logger` (default)   |
+| Badges, banners, presets, themes, SVG, CLI primitives | `Logger` (default)   |
+| Log context MDC (`withContext` / `child`)             | `Logger` (default)   |
 
-```typescript
-logger.setVerbosity('trace');    // todo
-logger.setVerbosity('debug');    // debug y superiores (NO trace)
-logger.setVerbosity('info');     // info+ (por defecto)
-logger.setVerbosity('warn');     // warn, error, critical
-logger.setVerbosity('silent');   // nada
-```
+Regla práctica: si solo quieres "loggear a consola con buen formato y algún handler custom", `CoreLogger` basta. En cuanto necesites enviar records a otro destino o transformarlos en pipeline, salta al `Logger` default.
 
-```typescript
-import { LOG_LEVELS } from '@mks2508/better-logger';
-if (LOG_LEVELS[level] >= LOG_LEVELS.warn) { /* ... */ }
-```
+## Diferencia clave
 
-## Log context (MDC)
+| Feature                              | `Logger` (default) | `CoreLogger` |
+| ------------------------------------ | :----------------: | :----------: |
+| Emisión a `console` con formato      | ✅                 | ✅           |
+| `addHandler(ILogHandler)`            | ✅                 | ✅           |
+| `scope(prefix)`                      | ✅                 | ✅           |
+| `table` / `group` / `groupEnd`       | ✅                 | ✅           |
+| `time` / `timeEnd`                   | ✅                 | ✅           |
+| Niveles `debug`/`info`/`warn`/`error`/`critical`/`trace` | ✅     | ✅           |
+| **Transports** (File / HTTP / OTLP)  | ✅                 | ❌           |
+| **Hooks** (`on`/`once`/`off`/`use`)  | ✅                 | ❌           |
+| **Serializers** por tipo             | ✅                 | ❌           |
+| **Log context MDC** (`withContext` / `child`) | ✅        | ❌           |
+| **Resource OTel** (`setResource`)    | ✅                 | ❌           |
+| **Themes / presets / banners / SVG** | ✅                 | ❌           |
+| **Badges** (`badges()` / `badge()`)  | ✅                 | ❌           |
+| **Scoped loggers** (`component`/`api`/`lifecycle`) | ✅     | ❌           |
+| **CLI primitives** (`spinner`/`box`/`step`/`header`/`cliTable`) | ✅ | ❌   |
+| **StyleBuilder** (`$` proxy)         | ✅                 | ❌           |
 
-Contexto estructurado adjunto a **cada** log emitido. Se mergea en `TransportRecord.attributes`, así que llega a todos los transports (incluido OTLP→SigNoz).
+> Nota: `CoreLogger` no expone `withContext` ni `child`. Para contexto estructurado (MDC) usa el `Logger` default. Recordatorio: en el `Logger` default, `withContext({ bindings })` **sin callback** es NO-OP post-refactor — la forma correcta es `logger.withContext({ requestId }, () => { ... })` (callback, scoped AsyncLocalStorage) o `logger.child({ requestId })` (inmutable, persistente).
 
-```typescript
-// Mutar el logger con chaining
-logger
-  .withContext({ requestId: 'req_123' })
-  .withContext({ userId: 'u_42' });
+## Uso
 
-logger.info('processing');   // → attributes: { requestId: 'req_123', userId: 'u_42' }
-
-logger.clearContext();
-logger.getContext();         // snapshot read-only
-```
-
-### Loggers hijuelos (inmutables)
-
-`child()` devuelve un logger nuevo con el contexto merged, **sin mutar al padre** — ideal para request-scoped logging sin fugas entre requests:
-
-```typescript
-function handleRequest(req) {
-  const log = logger.child({ requestId: req.id });
-  log.info('start');
-  // ... log lleva requestId en cada línea
-  // logger (padre) NO se ve afectado
-}
-```
-
-### Resource OTel
+### Instancia propia
 
 ```typescript
-logger.setResource({
-  'service.name': 'my-app',
-  'service.version': '1.2.3',
-  'deployment.environment': process.env.NODE_ENV
-});
-```
+import { CoreLogger } from '@mks2508/better-logger/core';
 
-## Scoped loggers
-
-Prefijo lógico + badges automáticos para namespacing limpio:
-
-```typescript
-const auth = logger.scope('Auth');
-auth.info('validating token');      // [Auth] validating token
-auth.success('token valid');
-
-const db = logger.component('Database');
-db.lifecycle('connect', 'pool ready');   // [COMPONENT] [Database] connect: pool ready
-
-const api = logger.api('GraphQL');
-api.slow('query timeout', 1200);         // [API] [GraphQL] [SLOW] query timeout (1200ms)
-api.deprecated('use v2');                 // [API] [GraphQL] [DEPRECATED] use v2
-```
-
-### Context logger (bloques anidados)
-
-Prefijo jerárquico acumulativo:
-
-```typescript
-const req = logger.scope('Request');
-
-await req.context('auth').runAsync(async () => {
-  req.info('checking credentials');        // [Request:auth]
-  await req.context('db').runAsync(async () => {
-    req.info('querying user');             // [Request:auth:db]
-  });
-});
-```
-
-## Performance / timing
-
-```typescript
-logger.time('api-request');
-const data = await fetch('/api/data').then(r => r.json());
-const ms = logger.timeEnd('api-request');  // muestra duración, retorna ms
-
-logger.table([{ service: 'api', status: 'ok' }, { service: 'db', status: 'ok' }]);
-
-logger.group('Checkout flow');
-logger.info('step 1');
-logger.info('step 2');
-logger.groupEnd();
-```
-
-`time()`, `table()` y `group()` dispatchean al mismo pipeline de transports que `log()`.
-
-## Configuración
-
-```typescript
-import { Logger } from '@mks2508/better-logger';
-
-const log = new Logger({
-  verbosity: 'debug',
-  globalPrefix: 'APP',
-  enableStackTrace: true,
-  theme: 'dark',
-  timestampFormat: 'iso'
+const core = new CoreLogger({
+  verbosity: 'info',          // 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'critical' | 'silent'
+  enableColors: false,        // default: true en browser, false en Node
+  enableTimestamps: true,
+  enableStackTrace: false,
+  globalPrefix: 'auth-svc',
+  outputFormat: 'auto'        // 'auto' | 'plain' | 'ansi' | 'build' | 'ci'
 });
 
-log.updateConfig({ verbosity: 'warn' });
-log.resetConfig();
+core.info('usuario autenticado');
+core.error('falló la conexión', new Error('ETIMEDOUT'));
 ```
 
-## Lifecycle
+### Singleton y métodos sueltos
+
+El módulo exporta un singleton (`coreLogger`) y funciones con binding correcto, listas para uso drop-in:
 
 ```typescript
-await logger.cleanup();   // drain transports + reset timers/group depth/context
+import core, { info, warn, setVerbosity } from '@mks2508/better-logger/core';
+
+setVerbosity('warn');   // filtra trace/debug/info
+info('no se verá');
+warn('este sí');
+
+core.table([{ k: 'a', v: 1 }, { k: 'b', v: 2 }]);
 ```
 
-Llamar en shutdown limpio para no perder logs en buffer.
+### Scope
+
+`scope()` devuelve una **nueva instancia** de `CoreLogger` con el prefijo combinado (hereda config y handlers del padre):
+
+```typescript
+const auth = core.scope('Auth');
+const db = auth.scope('DB');   // prefijo efectivo: "auth-svc:Auth:DB"
+db.error('pool exhausted');
+// → [auth-svc:Auth:DB] pool exhausted
+```
+
+> `scope()` en `CoreLogger` es **prefix-only** (no adjunta contexto MDC). Si necesitas bindings estructurados en cada `TransportRecord`, usa `Logger` default con `child({ requestId })`.
+
+### Timers y grouping
+
+```typescript
+core.time('query');
+// ... trabajo ...
+core.timeEnd('query');   // → Timer ended: query - 12.34ms
+
+core.group('bootstrap', true);   // collapsed=true en browser
+core.info('cargando config');
+core.info('conectando a DB');
+core.groupEnd();
+```
+
+## API
+
+### Constructor
+
+```typescript
+new CoreLogger(config?: Partial<LoggerConfig>)
+```
+
+`LoggerConfig` es la misma interface que usa el `Logger` default; `CoreLogger` solo lee el subset que aplica (no hay tema ni banner aquí). Defaults razonables vía `DEFAULT_CONFIG`.
+
+### Niveles
+
+```typescript
+core.trace(...args)     // mapping interno a debug + console.trace()
+core.debug(...args)
+core.info(...args)
+core.warn(...args)
+core.error(...args)
+core.critical(...args)
+```
+
+Jerarquía: `trace < debug < info < warn < error < critical` (+ `silent`). `setVerbosity('warn')` filtra todo por debajo de `warn`.
+
+### Utilidades de consola
+
+| Método                                 | Descripción                                          |
+| -------------------------------------- | ---------------------------------------------------- |
+| `table(data, columns?)`                | `console.table` en browser, ASCII table en Node      |
+| `group(label, collapsed=false)`        | Abre grupo (nativo browser / `┌─` en Node)           |
+| `groupEnd()`                           | Cierra el grupo actual                               |
+| `time(label)`                          | Inicia timer con `performance.now()` / `hrtime`       |
+| `timeEnd(label)`                       | Detiene timer y emite elapsed en ms                  |
+
+### Configuración en runtime
+
+| Método                              | Descripción                                          |
+| ----------------------------------- | ---------------------------------------------------- |
+| `setGlobalPrefix(prefix)`           | Cambia el prefijo global                             |
+| `setVerbosity(level)`               | Cambia el nivel de verbosity                         |
+| `scope(prefix): CoreLogger`         | Devuelve logger con prefijo combinado                |
+| `addHandler(handler: ILogHandler)`  | Registra handler custom                              |
+| `getConfig(): LoggerConfig`         | Snapshot read-only de la config actual               |
+
+### Singleton y exports del módulo `./core`
+
+```typescript
+// default export: instancia singleton
+import coreLogger from '@mks2508/better-logger/core';
+
+// métodos sueltos (binding al singleton)
+import {
+  debug, info, warn, error, critical, trace,
+  table, group, groupEnd, time, timeEnd,
+  setGlobalPrefix, scope, setVerbosity, addHandler
+} from '@mks2508/better-logger/core';
+
+// tipos
+import type {
+  LogLevel, Verbosity, LoggerConfig, ILogHandler, LogMetadata
+} from '@mks2508/better-logger/core';
+```
+
+## Handler custom (legacy)
+
+`CoreLogger` no implementa el sistema de `Transport` ni el pipeline de `Hook`/`Middleware`. Para extensibilidad expone el **handler legacy** basado en la interfaz `ILogHandler`:
+
+```typescript
+import type { ILogHandler } from '@mks2508/better-logger/core';
+
+const metricsHandler: ILogHandler = {
+  handle(level, message, args, metadata) {
+    // level: LogLevel
+    // message: string (primer arg stringificado)
+    // args: unknown[] (args crudos del llamado original)
+    // metadata: { timestamp, level, prefix?, stackInfo?, group? }
+    statsd.increment(`logs.${level}`, { prefix: metadata.prefix });
+  }
+};
+
+core.addHandler(metricsHandler);
+```
+
+Los handlers se invocan **siempre después** de la emisión a `console`, de forma sincrónica. Si un handler lanza, el error se captura y se loguea vía `console.error` — no rompe el flujo ni causa recursión.
+
+> Para destinos asíncronos con batching, retry, backoff o flush controlado, usa el `Logger` default con `addTransport({ target: new FileTransport(...) | new HttpTransport(...) | new OtlpTransport(...) })`. `CoreLogger` no ofrece esos mecanismos.
+
+## Referencia API
+
+- Clase: [`CoreLogger` — docs/api/core/classes/CoreLogger.md](/docs/api/core/classes/CoreLogger.md/)
+- Interfaces: [`LoggerConfig`](/docs/api/core/interfaces/LoggerConfig.md/), [`ILogHandler`](/docs/api/core/interfaces/ILogHandler.md/), [`LogMetadata`](/docs/api/core/interfaces/LogMetadata.md/)
+- Tipos: [`LogLevel`](/docs/api/core/type-aliases/LogLevel.md/), [`Verbosity`](/docs/api/core/type-aliases/Verbosity.md/)
+- Subpath package: `@mks2508/better-logger/core`

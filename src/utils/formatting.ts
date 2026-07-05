@@ -1,16 +1,16 @@
 /**
- * @fileoverview Formatting utilities for Universal Logger
+ * @fileoverview Utilidades de formatting para Universal Logger
  */
 
 import type { LogLevel, StackInfo } from '../types/index.js';
 import { formatTimestamp } from './timestamps.js';
 
-// Re-export the type for convenience
+// Re-export del tipo por conveniencia
 export type { OutputFormat } from '../types/index.js';
 
 /**
- * Creates plain text output for any environment
- * No colors, no styling - maximum compatibility
+ * Crea output en texto plano para cualquier entorno
+ * Sin colores ni estilos — máxima compatibilidad
  */
 export function createPlainOutput(
     level: LogLevel,
@@ -37,8 +37,8 @@ export function createPlainOutput(
 }
 
 /**
- * Gets the appropriate log method for the level
- * Uses different console methods for better semantics
+ * Obtiene el método de console adecuado para el nivel
+ * Usa distintos métodos de console para mejor semántica
  */
 export function getConsoleMethod(level: LogLevel): 'log' | 'info' | 'warn' | 'error' {
     switch (level) {
@@ -57,7 +57,7 @@ export function getConsoleMethod(level: LogLevel): 'log' | 'info' | 'warn' | 'er
 }
 
 /**
- * Create a simple log entry object for handlers
+ * Crea un objeto simple de log entry para los handlers
  */
 export function createLogEntry(
     level: LogLevel,
@@ -71,7 +71,7 @@ export function createLogEntry(
         level: level.toUpperCase(),
         prefix,
         message,
-        args: args.slice(1), // Exclude the first message argument
+        args: args.slice(1), // Excluye el primer argumento (el mensaje)
         location: stackInfo ? {
             file: stackInfo.file,
             line: stackInfo.line,
@@ -83,19 +83,19 @@ export function createLogEntry(
 }
 
 /**
- * Format data for table display in plain text
+ * Formatea datos para visualización en tabla como texto plano
  */
 export function formatTablePlain(data: any, columns?: string[]): string {
     try {
         if (Array.isArray(data)) {
             if (data.length === 0) return '[Empty Array]';
 
-            // Simple array formatting
+            // Formateo simple de array
             if (typeof data[0] !== 'object') {
                 return data.map((item, i) => `${i}: ${item}`).join('\n');
             }
 
-            // Object array formatting
+            // Formateo de array de objetos
             const keys = columns || Object.keys(data[0] || {});
             const header = keys.join('\t');
             const rows = data.map(item =>
@@ -106,7 +106,7 @@ export function formatTablePlain(data: any, columns?: string[]): string {
         }
 
         if (typeof data === 'object' && data !== null) {
-            // Simple object formatting
+            // Formateo simple de objeto
             return Object.entries(data)
                 .map(([key, value]) => `${key}: ${value}`)
                 .join('\n');
@@ -114,12 +114,12 @@ export function formatTablePlain(data: any, columns?: string[]): string {
 
         return String(data);
     } catch (error) {
-        return `[Error formatting table: ${error}]`;
+        return `[Error al formatear la tabla: ${error}]`;
     }
 }
 
 /**
- * Safe object serialization for logging
+ * Serialización segura de objetos para logging
  */
 export function safeSerialize(obj: any, maxDepth: number = 3, currentDepth: number = 0): any {
     if (currentDepth >= maxDepth) {

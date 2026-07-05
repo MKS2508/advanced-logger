@@ -1,11 +1,11 @@
 /**
- * @fileoverview Core Logger Module - Minimal logging without advanced features
- * 
- * This module provides the essential logging functionality without visual enhancements,
- * SVG support, or advanced styling. Perfect for lightweight applications or server-side usage.
+ * @fileoverview Módulo Core Logger — logging minimal sin features avanzadas
+ *
+ * Provee la funcionalidad esencial de logging sin mejoras visuales,
+ * soporte SVG ni styling avanzado. Adecuado para apps ligeras o uso server-side.
  */
 
-// Core types
+// Tipos core
 import type {
     LogLevel,
     Verbosity,
@@ -15,13 +15,13 @@ import type {
     TimerEntry
 } from './types/index.js';
 
-// Core utilities
+// Utilidades core
 import {
     parseStackTrace,
     formatTimestamp
 } from './utils/index.js';
 
-// Universal formatting and environment detection
+// Formato universal y detección de entorno
 import {
     createPlainOutput,
     getConsoleMethod,
@@ -38,17 +38,17 @@ import {
 
 import { createStyledOutput } from './utils/output.js';
 
-// Constants
+// Constantes
 import { DEFAULT_CONFIG, LEVEL_STYLES } from './constants.js';
 import { LOG_LEVELS } from './types/core.js';
 
 /**
- * Minimal Logger class with core functionality only
- * 
+ * Logger minimal con solo la funcionalidad core.
+ *
  * @example
  * ```typescript
  * import { CoreLogger } from '@mks2508/better-logger/core';
- * 
+ *
  * const logger = new CoreLogger();
  * logger.info('Hello world');
  * logger.error('Something went wrong', error);
@@ -62,14 +62,14 @@ export class CoreLogger {
     private groupDepth: number = 0;
 
     /**
-     * Creates a new CoreLogger instance
-     * @param config - Optional configuration
+     * Crea una nueva instancia de CoreLogger.
+     * @param config - Configuración opcional.
      */
     constructor(config: Partial<LoggerConfig> = {}) {
         this.config = {
             ...DEFAULT_CONFIG,
             ...config,
-            // Auto-configure based on environment
+            // Auto-configurar según entorno
             enableColors: config.enableColors ?? (isBrowser ? true : false),
             enableTimestamps: config.enableTimestamps ?? true,
             enableStackTrace: config.enableStackTrace ?? false,
@@ -78,31 +78,35 @@ export class CoreLogger {
         };
     }
 
-    // ===== CONFIGURATION METHODS =====
+    // ===== MÉTODOS DE CONFIGURACIÓN =====
 
     /**
-     * Get current configuration
+     * Obtiene la configuración actual.
      */
     getConfig(): LoggerConfig {
         return { ...this.config };
     }
 
     /**
-     * Sets the global prefix for all log messages
+     * Define el prefijo global para todos los mensajes de log.
+     * @param prefix - Prefijo a aplicar a todos los mensajes.
      */
     setGlobalPrefix(prefix: string): void {
         this.config.globalPrefix = prefix;
     }
 
     /**
-     * Sets the verbosity level for filtering log output
+     * Define el nivel de verbosity para filtrar la salida de log.
+     * @param level - Nivel de verbosity.
      */
     setVerbosity(level: Verbosity): void {
         this.config.verbosity = level;
     }
 
     /**
-     * Creates a scoped logger with a specific prefix
+     * Crea un logger con scope y un prefijo específico.
+     * @param prefix - Prefijo del scope.
+     * @returns Nueva instancia de CoreLogger con el prefijo asignado.
      */
     scope(prefix: string): CoreLogger {
         const scopedLogger = new CoreLogger(this.config);
@@ -112,16 +116,19 @@ export class CoreLogger {
     }
 
     /**
-     * Adds a custom log handler for extensibility
+     * Añade un handler personalizado para extensibilidad.
+     * @param handler - Handler que implementa la interfaz ILogHandler.
      */
     addHandler(handler: ILogHandler): void {
         this.handlers.push(handler);
     }
 
-    // ===== CORE LOGGING METHODS =====
+    // ===== MÉTODOS CORE DE LOGGING =====
 
     /**
-     * Checks if a log level should be output based on current verbosity
+     * Comprueba si un nivel debe emitirse según el verbosity actual.
+     * @param level - Nivel a evaluar.
+     * @returns `true` si el nivel debe emitirse.
      */
     private shouldLog(level: LogLevel): boolean {
         if (this.config.verbosity === 'silent') return false;
@@ -130,7 +137,8 @@ export class CoreLogger {
     }
 
     /**
-     * Gets the effective prefix (global + scoped)
+     * Obtiene el prefijo efectivo (global + scope).
+     * @returns Prefijo combinado o `undefined` si no hay ninguno.
      */
     private getEffectivePrefix(): string | undefined {
         const parts = [this.config.globalPrefix, this.scopedPrefix].filter(Boolean);
@@ -138,7 +146,9 @@ export class CoreLogger {
     }
 
     /**
-     * Core logging method with universal formatting
+     * Método principal de log con formato universal.
+     * @param level - Nivel del mensaje.
+     * @param args - Argumentos del mensaje.
      */
     private log(level: LogLevel, ...args: unknown[]): void {
         if (!this.shouldLog(level)) return;
@@ -148,9 +158,9 @@ export class CoreLogger {
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         const consoleMethod = getConsoleMethod(level);
 
-        // Choose formatting based on environment and configuration
+        // Elegir formato según entorno y configuración
         if (isBrowser && this.config.enableColors) {
-            // Browser with CSS styling
+            // Browser con styling CSS
             try {
                 const [format, ...styles] = createStyledOutput(
                     level,
@@ -162,18 +172,18 @@ export class CoreLogger {
                 );
                 console[consoleMethod](format, ...styles, ...args.slice(1));
             } catch (error) {
-                // Fallback to plain formatting if CSS fails
+                // Fallback a formato plano si falla el CSS
                 const output = createPlainOutput(level, message, prefix, stackInfo);
                 console[consoleMethod](output, ...args.slice(1));
             }
         } else {
-            // Node.js or browser without colors - use plain formatting
+            // Node.js o browser sin colores: formato plano
             const groupIndent = '  '.repeat(this.groupDepth);
             const output = groupIndent + createPlainOutput(level, message, prefix, stackInfo);
             console[consoleMethod](output, ...args.slice(1));
         }
 
-        // Call custom handlers with structured metadata
+        // Llama a los handlers con metadata estructurada
         const logEntry = createLogEntry(level, message, args, prefix, stackInfo);
         const metadata: LogMetadata = {
             timestamp: logEntry.timestamp,
@@ -192,42 +202,48 @@ export class CoreLogger {
     }
 
     /**
-     * Logs debug information (lowest priority)
+     * Emite mensajes de debug (prioridad más baja).
+     * @param args - Argumentos del mensaje.
      */
     debug(...args: unknown[]): void {
         this.log('debug', ...args);
     }
 
     /**
-     * Logs informational messages
+     * Emite mensajes informativos.
+     * @param args - Argumentos del mensaje.
      */
     info(...args: unknown[]): void {
         this.log('info', ...args);
     }
 
     /**
-     * Logs warning messages
+     * Emite mensajes de advertencia.
+     * @param args - Argumentos del mensaje.
      */
     warn(...args: unknown[]): void {
         this.log('warn', ...args);
     }
 
     /**
-     * Logs error messages
+     * Emite mensajes de error.
+     * @param args - Argumentos del mensaje.
      */
     error(...args: unknown[]): void {
         this.log('error', ...args);
     }
 
     /**
-     * Logs critical errors (highest priority)
+     * Emite errores críticos (prioridad más alta).
+     * @param args - Argumentos del mensaje.
      */
     critical(...args: unknown[]): void {
         this.log('critical', ...args);
     }
 
     /**
-     * Logs trace information (detailed debugging)
+     * Emite información de trace (debugging detallado).
+     * @param args - Argumentos del mensaje.
      */
     trace(...args: unknown[]): void {
         this.log('debug', ...args);
@@ -236,10 +252,12 @@ export class CoreLogger {
         }
     }
 
-    // ===== BASIC ADVANCED FEATURES =====
+    // ===== FEATURES AVANZADAS BÁSICAS =====
 
     /**
-     * Displays data in a table format
+     * Muestra datos en formato tabla.
+     * @param data - Datos a mostrar.
+     * @param columns - Columnas opcionales a incluir.
      */
     table(data: any, columns?: string[]): void {
         if (!this.shouldLog('info')) return;
@@ -248,7 +266,7 @@ export class CoreLogger {
         const tableHeader = `[TABLE]${prefix ? ` [${prefix}]` : ''}:`;
         
         if (isBrowser && typeof console.table === 'function') {
-            // Browser has native table support
+            // Browser con soporte nativo de table
             console.log(tableHeader);
             if (columns) {
                 console.table(data, columns);
@@ -256,7 +274,7 @@ export class CoreLogger {
                 console.table(data);
             }
         } else {
-            // Node.js or fallback - use plain text formatting
+            // Node.js o fallback: formato de texto plano
             console.log(tableHeader);
             const tableText = formatTablePlain(data, columns);
             console.log(tableText);
@@ -264,21 +282,23 @@ export class CoreLogger {
     }
 
     /**
-     * Starts a collapsible group in the console
+     * Inicia un grupo colapsable en la console.
+     * @param label - Etiqueta del grupo.
+     * @param collapsed - Si el grupo inicia colapsado.
      */
     group(label: string, collapsed: boolean = false): void {
         const prefix = this.getEffectivePrefix();
         const fullLabel = `${prefix ? `[${prefix}] ` : ''}${label}`;
         
         if (isBrowser && console.group && console.groupCollapsed) {
-            // Browser supports native grouping
+            // Browser soporta grouping nativo
             if (collapsed) {
                 console.groupCollapsed(fullLabel);
             } else {
                 console.group(fullLabel);
             }
         } else {
-            // Node.js fallback - just log the group label
+            // Fallback Node.js: solo emite el label del grupo
             const groupStart = '┌─ ' + fullLabel;
             console.log(groupStart);
         }
@@ -287,14 +307,14 @@ export class CoreLogger {
     }
 
     /**
-     * Ends the current console group
+     * Cierra el grupo actual de la console.
      */
     groupEnd(): void {
         if (this.groupDepth > 0) {
             if (isBrowser && console.groupEnd) {
                 console.groupEnd();
             } else {
-                // Node.js fallback - log group end
+                // Fallback Node.js: emite el cierre del grupo
                 const groupEnd = '└─ (end group)';
                 console.log(groupEnd);
             }
@@ -303,7 +323,8 @@ export class CoreLogger {
     }
 
     /**
-     * Starts a timer with the given label
+     * Inicia un timer con el label indicado.
+     * @param label - Identificador del timer.
      */
     time(label: string): void {
         const startTime = this.getPerformanceNow();
@@ -320,7 +341,8 @@ export class CoreLogger {
     }
 
     /**
-     * Ends a timer and logs the elapsed time
+     * Detiene un timer y emite el tiempo transcurrido.
+     * @param label - Identificador del timer previamente iniciado.
      */
     timeEnd(label: string): void {
         const timer = this.timers.get(label);
@@ -339,7 +361,8 @@ export class CoreLogger {
     }
 
     /**
-     * Gets performance.now() or fallback for older environments
+     * Obtiene `performance.now()` o un fallback para entornos antiguos.
+     * @returns Timestamp en milisegundos.
      */
     private getPerformanceNow(): number {
         if (typeof performance !== 'undefined' && performance.now) {
@@ -352,16 +375,16 @@ export class CoreLogger {
             return seconds * 1000 + nanoseconds / 1000000;
         }
         
-        // Fallback to Date.now()
+        // Fallback a Date.now()
         return Date.now();
     }
 }
 
-// Create and export singleton instance for convenience
+// Crea y exporta una instancia singleton por conveniencia
 const coreLogger = new CoreLogger();
 
 /**
- * Export individual methods for convenience (with proper binding)
+ * Exporta métodos individuales por conveniencia (con binding correcto).
  */
 export const debug = (...args: any[]) => coreLogger.debug(...args);
 export const info = (...args: any[]) => coreLogger.info(...args);
@@ -379,10 +402,10 @@ export const scope = (prefix: string) => coreLogger.scope(prefix);
 export const setVerbosity = (level: Verbosity) => coreLogger.setVerbosity(level);
 export const addHandler = (handler: ILogHandler) => coreLogger.addHandler(handler);
 
-// Export the singleton as default
+// Exporta el singleton como default
 export default coreLogger;
 
-// Re-export core types
+// Re-exporta tipos core
 export type {
     LogLevel,
     Verbosity,

@@ -1,7 +1,9 @@
 /**
- * @fileoverview TerminalBridge — CLI terminal integration.
- * Encapsulates TTY detection, CLI primitive rendering, and server-mode
- * fallback for non-TTY environments.
+ * @fileoverview TerminalBridge — integración de terminal CLI.
+ * Encapsula detección de TTY, renderizado de primitivas CLI y fallback a
+ * server-mode para entornos non-TTY.
+ *
+ * @internal
  */
 
 import type { CLILogLevel, ISpinnerHandle, IBoxOptions, ITableOptions } from '../types/index.js';
@@ -17,30 +19,32 @@ import type { LoggerConfig } from '../types/index.js';
 import type { Logger } from '../Logger.js';
 
 /**
- * Bridge for CLI terminal operations.
+ * Bridge para operaciones de terminal CLI.
+ *
+ * @internal
  */
 export interface TerminalBridge {
-    /** Displays a step progress indicator. */
+    /** Muestra un indicador de progreso tipo step. */
     step(current: number, total: number, message: string): void;
-    /** Displays a styled header. */
+    /** Muestra un header con estilo. */
     header(title: string, subtitle?: string): void;
-    /** Displays a horizontal divider. */
+    /** Muestra un divider horizontal. */
     divider(): void;
-    /** Outputs a blank line. */
+    /** Emite una línea en blanco. */
     blank(): void;
-    /** Renders content inside a bordered box. */
+    /** Renderiza contenido dentro de un box con border. */
     box(content: string, options?: IBoxOptions): void;
-    /** Renders an array of objects as an ASCII table. */
+    /** Renderiza un array de objetos como tabla ASCII. */
     cliTable(rows: Record<string, unknown>[], options?: ITableOptions): void;
-    /** Creates a spinner handle. */
+    /** Crea un handle de spinner. */
     spinner(message: string): ISpinnerHandle;
-    /** Whether CLI primitives should be shown. */
+    /** Indica si las primitivas CLI deben mostrarse. */
     getShowPrimitives(): boolean;
-    /** Sets whether CLI primitives should be shown. */
+    /** Define si las primitivas CLI deben mostrarse. */
     setShowPrimitives(show: boolean): void;
-    /** Returns the server fallback instance (lazy). */
+    /** Devuelve la instancia del server fallback (lazy). */
     getServerFallback(): ServerFallback;
-    /** Returns true if running in a TTY. */
+    /** Devuelve `true` si se ejecuta en un TTY. */
     isInTerminal(): boolean;
 }
 
@@ -50,7 +54,10 @@ interface ITerminalBridgeCtorOptions {
 }
 
 /**
- * Creates a TerminalBridge using a getter to avoid circular reference at construction.
+ * Crea un {@link TerminalBridge} usando un getter para evitar referencias
+ * circulares en la construcción.
+ *
+ * @internal
  */
 export function createTerminalBridge(options: ITerminalBridgeCtorOptions): TerminalBridge {
     let _showPrimitives = true;

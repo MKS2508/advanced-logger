@@ -8,54 +8,53 @@ import { LOG_LEVEL_TO_SEVERITY_NUMBER } from '../types/index.js';
 import { HttpTransport, type HttpTransportOptions } from './HttpTransport.js';
 
 /**
- * Options for {@link OtlpTransport}.
- *
+ * Opciones de configuración para {@link OtlpTransport}.
  */
 export interface OtlpTransportOptions {
     /**
-     * OTLP/HTTP collector base URL, e.g. `https://collector.example.com:4318`.
-     * The transport POSTs to `<endpoint>/v1/logs`.
+     * URL base del collector OTLP/HTTP, p.ej. `https://collector.example.com:4318`.
+     * El transport hace POST a `<endpoint>/v1/logs`.
      */
     endpoint: string;
-    /** `service.name` resource attribute. Required by OTel spec. */
+    /** Atributo de resource `service.name`. Requerido por la spec OTel. */
     serviceName: string;
-    /** `service.version` resource attribute. Recommended. */
+    /** Atributo de resource `service.version`. Recomendado. */
     serviceVersion?: string;
-    /** `deployment.environment` resource attribute (production/staging/dev). */
+    /** Atributo de resource `deployment.environment` (production/staging/dev). */
     environment?: string;
-    /** Extra resource attributes merged into the resource block. */
+    /** Atributos de resource adicionales que se merguean en el bloque `resource`. */
     resourceAttributes?: Record<string, string>;
     /**
-     * Name of an env var whose value is sent as the `signoz-ingestion-key`
-     * header. The transport reads `process.env[ingestKeyEnvVar]` at
-     * construction time — never from a string literal. If the env var is
-     * unset, the header is silently omitted (OTLP collector uses default
-     * no-auth path).
+     * Nombre de la env var cuyo valor se envía como header
+     * `signoz-ingestion-key`. El transport lee `process.env[ingestKeyEnvVar]`
+     * al construirse — nunca desde un string literal. Si la env var no está
+     * seteada, el header se omite silenciosamente (el collector OTLP usa el
+     * path default sin auth).
      */
     ingestKeyEnvVar?: string;
-    /** Extra headers merged in (Authorization, custom X-*). */
+    /** Headers extra que se merguean (Authorization, X-* custom). */
     headers?: Record<string, string>;
-    /** Batch size (records per POST). Default 50. */
+    /** Tamaño del batch (records por POST). Default 50. */
     batchSize?: number;
-    /** Flush interval in ms. */
+    /** Intervalo de flush en ms. */
     flushInterval?: number;
-    /** Hard cap on buffered records. Default 10_000. */
+    /** Tope duro de records bufferizados. Default 10_000. */
     maxBufferSize?: number;
-    /** Max retry attempts per batch. Default 3. */
+    /** Reintentos máximos por batch. Default 3. */
     maxRetries?: number;
-    /** Initial backoff in ms. Default 250. */
+    /** Backoff inicial en ms. Default 250. */
     initialBackoffMs?: number;
-    /** Backoff ceiling in ms. Default 5_000. */
+    /** Techo de backoff en ms. Default 5_000. */
     maxBackoffMs?: number;
-    /** Per-fetch timeout in ms. Default 10_000. */
+    /** Timeout por fetch en ms. Default 10_000. */
     fetchTimeoutMs?: number;
-    /** Hook fired on transport failure (drop, retry exhaustion, ...). */
+    /** Hook que se dispara ante falla del transport (drop, agotamiento de reintentos, ...). */
     onError?: (entry: HookLogEntry) => void | Promise<void>;
 }
 
 /**
- * Shape of the OTLP/HTTP JSON request body. Matches the `LogsData` proto
- * JSON mapping for `/v1/logs`. See
+ * Shape del body JSON de un request OTLP/HTTP. Coincide con el JSON mapping
+ * del proto `LogsData` para `/v1/logs`. Ver
  * https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding
  */
 interface OtlpLogsPayload {
@@ -73,6 +72,12 @@ interface OtlpLogsPayload {
     }>;
 }
 
+/**
+ * Registro individual de log dentro del payload OTLP. Mappea mensaje,
+ * severidad, timestamp (en nanosegundos), atributos y contexto de trace al
+ * formato `LogRecord` definido por la spec OTel Logs.
+ * @see https://opentelemetry.io/docs/specs/otel/logs/data-model/
+ */
 interface OtlpLogRecord {
     timeUnixNano: string;
     observedTimeUnixNano: string;
@@ -84,6 +89,12 @@ interface OtlpLogRecord {
     spanId?: string;
 }
 
+/**
+ * Unión discriminada que representa un `AnyValue` de OTel para atributos de
+ * log. Soporta string, int, double, bool y arrays anidados (homogéneos o
+ * mixtos).
+ * @see https://opentelemetry.io/docs/specs/otel/common/
+ */
 type OtlpAttributeValue =
     | { stringValue: string }
     | { intValue: number }
@@ -92,12 +103,13 @@ type OtlpAttributeValue =
     | { arrayValue: { values: OtlpAttributeValue[] } };
 
 /**
- * OTLP/HTTP transport for SigNoz (or any OTLP-compliant backend).
+ * Transport OTLP/HTTP para SigNoz (o cualquier backend compatible con OTLP).
  *
- * Extends {@link HttpTransport} — inherits retry, bounded buffer, status
- * check, async close, and the on-error hook. Overrides only the payload
- * shape and the request headers.
+ * Extiende {@link HttpTransport} — hereda retry, buffer acotado, status check,
+ * close asincrónico y el hook on-error. Overridea únicamente la shape del
+ * payload y los headers del request.
  *
+ * @example
  * ```ts
  * logger.addTransport({
  *   target: new OtlpTransport({
@@ -109,13 +121,12 @@ type OtlpAttributeValue =
  *   })
  * });
  * ```
- *
  */
 export class OtlpTransport extends HttpTransport {
     override readonly name = 'otlp';
 
     private readonly resource: ILogResource;
-    /** Resolved at construction. Never logged, never written to source. */
+    /** Resuelto al construir. Nunca se loguea, nunca se escribe a source. */
     private readonly ingestKeyValue: string | undefined;
 
     constructor(options: OtlpTransportOptions) {
@@ -156,10 +167,13 @@ export class OtlpTransport extends HttpTransport {
     }
 
     /**
-     * Builds the OTLP/HTTP JSON payload from the currently buffered records.
-     * One `resourceLogs` block per batch (matches OTel collector batching
-     * guidance). Exposed for tests + custom transport subclasses.
+     * Construye el payload JSON OTLP/HTTP a partir de los records bufferizados.
+     * Un bloque `resourceLogs` por batch (sigue la guía de batching del
+     * collector OTel). Expuesto para tests y para subclasses custom de transport.
      *
+     * @param records - Records de log a serializar dentro del payload.
+     * @returns Objeto `LogsData` listo para `JSON.stringify`.
+     * @see {@link OtlpLogsPayload}
      */
     buildPayload(records: TransportRecord[]): OtlpLogsPayload {
         const resourceAttrs = Object.entries(this.resource)
@@ -185,18 +199,21 @@ export class OtlpTransport extends HttpTransport {
     }
 
     /**
-     * Serialises a batch into the OTLP/HTTP JSON request body. Overrides
+     * Serializa un batch al body JSON del request OTLP/HTTP. Override de
      * {@link HttpTransport.serializeBody}.
      *
+     * @param records - Records del batch a serializar.
+     * @returns String JSON listo para usar como `body` del fetch POST.
      */
     protected override serializeBody(records: TransportRecord[]): string {
         return JSON.stringify(this.buildPayload(records));
     }
 
     /**
-     * Builds request headers. Adds `signoz-ingestion-key` from the value
-     * resolved at construction time (never logged, never written to source).
+     * Construye los headers del request. Agrega `signoz-ingestion-key` con el
+     * valor resuelto al construir (nunca se loguea, nunca se escribe a source).
      *
+     * @returns Record de headers a merguear en el fetch.
      */
     protected override buildHeaders(): Record<string, string> {
         return {
@@ -238,9 +255,14 @@ function stripTrailingSlash(value: string): string {
 }
 
 /**
- * Reads the ingest API key from `process.env[name]`. Returns undefined
- * silently if `process` is unavailable (strict browser bundles) or the
- * variable is unset. Never throws, never logs the value.
+ * Lee la ingest API key desde `process.env[name]`. Devuelve `undefined`
+ * silenciosamente si `process` no está disponible (bundles estrictos de
+ * browser) o si la variable no está seteada. Nunca throwea, nunca loguea
+ * el valor.
+ *
+ * @internal Helper del constructor de {@link OtlpTransport}; no es API pública.
+ * @param envVarName - Nombre de la env var a leer.
+ * @returns Valor de la key, o `undefined` si no está disponible.
  */
 function readIngestKey(envVarName: string | undefined): string | undefined {
     if (!envVarName) return undefined;

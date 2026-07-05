@@ -1,12 +1,51 @@
 /**
- * @fileoverview Theme presets for Advanced Logger
+ * @fileoverview Presets de themes visuales para Advanced Logger.
  */
 
 import type { ThemeVariant } from '../types/index.js';
 import type { LevelStyleConfig } from '../utils/index.js';
 
 /**
- * Theme configurations for different visual styles
+ * Catálogo de themes visuales para los badges de cada log level.
+ *
+ * Cada {@link ThemeVariant} mapea a un record de {@link LevelStyleConfig}
+ * indexado por nivel (`debug`, `info`, `warn`, `error`, `success`,
+ * `critical`). El {@link StyleManager} consume este mappeo para resolver
+ * los estilos CSS del badge que rodea al label del nivel en la consola
+ * del navegador.
+ *
+ * Un {@link LevelStyleConfig} por nivel define seis campos visuales:
+ *  - `emoji`      — glyph que precede al label (vacío en themes minimal).
+ *  - `label`      — texto en mayúsculas renderizado dentro del badge.
+ *  - `background` — CSS background (típicamente un `linear-gradient`).
+ *  - `color`      — color del texto interior del badge.
+ *  - `border`     — CSS border completo (`<width> <style> <color>`).
+ *  - `shadow`     — box-shadow alrededor del badge; `'none'` lo desactiva.
+ *
+ * Themes disponibles: `default` (gradientes vivos), `dark` (paleta oscura
+ * para DevTools oscuro), `neon` (glow neón sobre fondo oscuro), `minimal`
+ * (badges planos sin sombras ni emojis), `light` (paleta pastel para
+ * DevTools claro) y `cyberpunk` (cian/magenta con sombras extendidas).
+ *
+ * @example
+ * ```ts
+ * import { THEME_PRESETS } from '@mks2508/better-logger/styles';
+ *
+ * // Inspeccionar el badge `error` del theme `neon`
+ * const { emoji, label, background, color } = THEME_PRESETS.neon.error;
+ * console.log(`${emoji} ${label} → ${background}`);
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Aplicar un theme al logger entero
+ * import logger from '@mks2508/better-logger';
+ * logger.configure({ theme: 'cyberpunk' });
+ * logger.error('Algo se rompió'); // badge con glow magenta
+ * ```
+ *
+ * @see {@link ThemeVariant} para la lista de claves válidas.
+ * @see {@link LevelStyleConfig} para la shape exacta de cada entrada.
  */
 export const THEME_PRESETS: Record<ThemeVariant, Record<string, LevelStyleConfig>> = {
     default: {
@@ -155,7 +194,7 @@ export const THEME_PRESETS: Record<ThemeVariant, Record<string, LevelStyleConfig
             border: '2px solid #f56565', shadow: 'none',
         },
     },
-    // Additional theme variants can be added here
+    // Nuevas variantes de theme pueden añadirse aquí
     light: {
         debug: {
             emoji: '🔍', label: 'DEBUG',

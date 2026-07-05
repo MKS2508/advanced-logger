@@ -8,11 +8,47 @@ import { getANSIForeground, ANSI } from '../terminal/color-converter.js';
 import { getVisibleLength, padToWidth } from '../terminal/formatter.js';
 
 /**
- * Renders an array of objects as a formatted ASCII table
- * @param rows - Array of row objects
- * @param options - Table rendering options
- * @param colorCap - Terminal color capability
- * @returns Formatted table string
+ * Renderiza un array de objetos como tabla ASCII alineada, con headers en
+ * cian bold y separador (`─`) bajo la cabecera. Las columnas se autodetectan
+ * a partir de las keys del primer row salvo que `options.columns` las imponga,
+ * y los labels se toman de `options.head` (default: nombres de columna).
+ *
+ * El ancho de cada columna se calcula como `max(header, valor más largo) + 2`
+ * para garantizar padding horizontal consistente. Si `colorCap` es `'none'`,
+ * se omiten todas las secuencias ANSI (útil para logs plain-text o CI).
+ *
+ * @param rows - Array de row objects. Un array vacío devuelve string vacío.
+ * @param options - Ver {@link ITableOptions} para `columns` y `head`.
+ * @param colorCap - Capacidad de color del terminal destino.
+ * @returns String multilinea con la tabla (header + separator + data rows),
+ *   o `''` si `rows` está vacío.
+ *
+ * @example
+ * ```ts
+ * // Auto-detect columnas desde las keys del primer row
+ * const rows = [
+ *   { service: 'auth', status: 'healthy', latency: 12 },
+ *   { service: 'api',  status: 'degraded', latency: 245 }
+ * ];
+ * process.stdout.write(renderTable(rows) + '\n');
+ * // ┌─────────┬──────────┬─────────┐
+ * // │ service │ status   │ latency │
+ * // ─────────────────────────────────
+ * // │ auth    │ healthy  │ 12      │
+ * // │ api     │ degraded │ 245     │
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Forzar columnas y renombrar headers
+ * process.stdout.write(renderTable(rows, {
+ *   columns: ['service', 'latency'],
+ *   head:    ['Service', 'Latency (ms)']
+ * }, 'none') + '\n');
+ * ```
+ *
+ * @see {@link ITableOptions} para las opciones disponibles.
+ * @see {@link getVisibleLength} y {@link padToWidth} para el cálculo de ancho.
  */
 export function renderTable(
     rows: Record<string, unknown>[],

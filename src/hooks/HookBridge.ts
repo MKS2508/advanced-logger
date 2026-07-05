@@ -1,29 +1,35 @@
 /**
- * @fileoverview HookBridge — HookManager facade.
- * Encapsulates hook registration, middleware pipeline, and event emission.
+ * @fileoverview HookBridge — facade de HookManager.
+ * Encapsula registro de hooks, middleware pipeline y emisión de eventos.
+ *
+ * @internal
  */
 
 import type { HookEvent, HookCallback, MiddlewareFn } from '../types/index.js';
 import { HookManager } from './index.js';
 
 /**
- * Bridge for hook and middleware management.
+ * Bridge para la gestión de hooks y middleware.
+ *
+ * @internal
  */
 export interface HookBridge {
-    /** Registers a hook for an event. Returns unsubscribe function. */
+    /** Registra un hook para un evento. Devuelve función de unsubscribe. */
     on(event: HookEvent, callback: HookCallback, priority?: number): () => void;
-    /** Registers a one-time hook. Returns unsubscribe function. */
+    /** Registra un hook one-time. Devuelve función de unsubscribe. */
     once(event: HookEvent, callback: HookCallback, priority?: number): () => void;
-    /** Removes a registered hook. Returns true if removed. */
+    /** Elimina un hook registrado. Devuelve `true` si se eliminó. */
     off(event: HookEvent, callback: HookCallback): boolean;
-    /** Adds middleware to the pipeline. Returns unsubscribe function. */
+    /** Añade middleware al pipeline. Devuelve función de unsubscribe. */
     use(middleware: MiddlewareFn, priority?: number): () => void;
-    /** Returns the underlying HookManager. */
+    /** Devuelve el HookManager subyacente. */
     getHookManager(): HookManager;
 }
 
 /**
- * Creates a HookBridge instance.
+ * Crea una instancia de {@link HookBridge}.
+ *
+ * @internal
  */
 export function createHookBridge(): HookBridge {
     const hookManager = new HookManager();

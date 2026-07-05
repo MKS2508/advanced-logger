@@ -1,11 +1,34 @@
 /**
- * @fileoverview Banner configurations for Advanced Logger
+ * @fileoverview Configuraciones de banner para Advanced Logger.
  */
 
 import type { BannerType, ThemeVariant } from '../types/index.js';
 
 /**
- * Banner variants for different display capabilities
+ * Catálogo de variantes del banner de inicialización del logger.
+ *
+ * Cada variante es un par `{ text, style }` listo para pasar a
+ * `console.log(\`%c${text}\`, style)`. Las variantes escalan en complejidad
+ * visual según las capacidades del navegador:
+ *  - `simple`   — una sola línea con gradiente.
+ *  - `ascii`    — ASCII art multiníveles (Safari, sin SVG).
+ *  - `unicode`  — caja Unicode con gradiente de fondo.
+ *  - `svg`      — `background-image` SVG con texto vectorial.
+ *  - `animated` — gradiente animado vía `@keyframes gradientShift`.
+ *
+ * La función {@link detectBannerCapabilities} elige automáticamente la
+ * variante más rica soportada por el entorno actual.
+ *
+ * @example
+ * ```ts
+ * import { BANNER_VARIANTS } from '@mks2508/better-logger/styles';
+ *
+ * const { text, style } = BANNER_VARIANTS.unicode;
+ * console.log(`%c${text}`, style);
+ * ```
+ *
+ * @see {@link BannerType} para la unión de claves válidas.
+ * @see {@link displayInitBanner} para pintar el banner auto-detectado.
  */
 export const BANNER_VARIANTS = {
     simple: {
@@ -62,7 +85,23 @@ export const BANNER_VARIANTS = {
 };
 
 /**
- * Theme-specific banners for enhanced visual theming
+ * Banners de inicialización específicos por {@link ThemeVariant}.
+ *
+ * Cada theme trae su propio par `{ simple, style }` (banner de una línea
+ * + CSS) que combina con la paleta del theme. El texto del banner es
+ * siempre una sola línea (sin ASCII art), por lo que es la variante
+ * usada por defecto cuando el logger arranca con un theme concreto.
+ *
+ * @example
+ * ```ts
+ * import { THEME_BANNERS } from '@mks2508/better-logger/styles';
+ *
+ * const { simple, style } = THEME_BANNERS.cyberpunk;
+ * console.log(`%c${simple}`, style);
+ * ```
+ *
+ * @see {@link THEME_PRESETS} para los estilos de badge por nivel de cada theme.
+ * @see {@link ThemeVariant} para la lista de themes disponibles.
  */
 export const THEME_BANNERS: Record<ThemeVariant, { simple: string; style: string }> = {
     default: {
@@ -92,29 +131,45 @@ export const THEME_BANNERS: Record<ThemeVariant, { simple: string; style: string
 };
 
 /**
- * Feature detection for banner capabilities. Returns `'simple'` immediately
- * if neither `navigator` nor `document` exist (Node, SSR, workers).
+ * Detecta la variante de banner más rica que el entorno puede renderizar.
  *
+ * Usa `navigator.userAgent` y probes sobre `document` para decidir entre
+ * `animated` (Chrome con CSS animations), `svg` (Chrome/Firefox con SVG),
+ * `unicode` (Chrome/Firefox fallback), `ascii` (Safari) o `simple`
+ * (todo lo demás). En entornos sin `navigator` o `document` retorna
+ * `'simple'` inmediatamente (Node, SSR, Web Workers).
+ *
+ * @returns {BannerType} Variante de banner recomendada para el entorno.
+ *
+ * @example
+ * ```ts
+ * import { detectBannerCapabilities } from '@mks2508/better-logger/styles';
+ *
+ * const capable = detectBannerCapabilities();
+ * console.log(`Best banner for this env: ${capable}`);
+ * ```
+ *
+ * @see {@link BANNER_VARIANTS} para el catálogo que indexa este resultado.
  */
 export function detectBannerCapabilities(): BannerType {
     if (typeof navigator === 'undefined' || typeof document === 'undefined') {
         return 'simple';
     }
 
-    // Try to detect browser capabilities
+    // Detectar capacidades del navegador
     const userAgent = navigator.userAgent;
     const isChrome = /Chrome/.test(userAgent);
     const isFirefox = /Firefox/.test(userAgent);
     const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
 
-    // Check for SVG support (most modern browsers)
+    // SVG support (la mayoría de navegadores modernos)
     const supportsSVG = !!document.createElementNS &&
         !!document.createElementNS('http://www.w3.org/2000/svg', 'svg').createSVGRect;
 
-    // Check for CSS animation support
+    // CSS animation support
     const supportsAnimations = 'animationName' in document.createElement('div').style;
 
-    // Progressive enhancement
+    // Progressive enhancement: elegir la variante más rica soportada
     if (supportsAnimations && isChrome) {
         return 'animated';
     } else if (supportsSVG && (isChrome || isFirefox)) {
@@ -129,9 +184,30 @@ export function detectBannerCapabilities(): BannerType {
 }
 
 /**
- * Display initialization banner with advanced styling. No-op in Node,
- * SSR, or Web Workers (DOM-guard at the top).
+ * Pinta el banner de inicialización del logger en la consola del navegador.
  *
+ * Si no se pasa `bannerType`, se auto-detecta vía
+ * {@link detectBannerCapabilities}. Además del banner, abre un
+ * `console.group` con la lista de features soportadas (styling, stack
+ * traces, performance timers, handlers, ...).
+ *
+ * No-op cuando `document` no está disponible (Node, SSR, Web Workers),
+ * para evitar referencias a APIs inexistentes.
+ *
+ * @param {BannerType} [bannerType] - Variante de banner a pintar. Si se
+ *   omite, se detecta automáticamente la mejor soportada.
+ * @returns {void}
+ *
+ * @example
+ * ```ts
+ * import { displayInitBanner } from '@mks2508/better-logger/styles';
+ *
+ * displayInitBanner();          // auto-detecta
+ * displayInitBanner('ascii');   // fuerza ASCII art
+ * ```
+ *
+ * @see {@link BANNER_VARIANTS} para las variantes disponibles.
+ * @see {@link THEME_BANNERS} para banners específicos por theme.
  */
 export function displayInitBanner(bannerType?: BannerType): void {
     if (typeof document === 'undefined') return;
@@ -139,7 +215,7 @@ export function displayInitBanner(bannerType?: BannerType): void {
     const selectedType = bannerType || detectBannerCapabilities();
     const banner = BANNER_VARIANTS[selectedType];
 
-    // Add CSS animation keyframes if needed
+    // Añadir @keyframes CSS si hace falta
     if (selectedType === 'animated') {
         const style = document.createElement('style');
         style.textContent = `
@@ -154,7 +230,7 @@ export function displayInitBanner(bannerType?: BannerType): void {
 
     console.log(`%c${banner.text}`, banner.style);
 
-    // Show feature highlights
+    // Mostrar features destacadas
     const features = [
         '🎨 Advanced CSS Console Styling',
         '📍 Automatic Stack Trace Parsing',
@@ -173,5 +249,5 @@ export function displayInitBanner(bannerType?: BannerType): void {
     });
 
     console.groupEnd();
-    console.log(''); // Add spacing
+    console.log(''); // Espaciado final
 }

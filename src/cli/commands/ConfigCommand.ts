@@ -7,13 +7,48 @@ import type { Logger } from '../../Logger.js';
 import type { ThemeVariant, BannerType, Verbosity } from '../../types/index.js';
 
 /**
- * Configuration command handler
+ * Comando `/config` del CLI runtime del {@link Logger}. Inspecciona o muta
+ * la configuración del logger en vivo desde la DevTools console.
+ *
+ * Acepta tres modos de invocación:
+ * - Sin argumentos: vuelca el estado actual como tabla agrupada.
+ * - JSON completo (empieza con `{`): aplica un objeto de configuración parcial.
+ * - Pares `key=value` separados por coma: atajo para mutaciones puntuales.
+ *
+ * Solo se aplican las keys de la whitelist interna (`theme`, `verbosity`,
+ * `enableColors`, `enableTimestamps`, `enableStackTrace`, `globalPrefix`,
+ * `bannerType`); cualquier otra key se rechaza con un `warn` y se ignora.
+ *
+ * @example
+ * // Sin argumentos: ver estado actual
+ * // > /config
+ *
+ * @example
+ * // Objeto JSON completo
+ * // > /config {"theme":"neon","verbosity":"debug"}
+ *
+ * @example
+ * // Atajo key=value (múltiples pares separados por coma)
+ * // > /config theme=neon,verbosity=debug,globalPrefix=MiApp
+ *
+ * @see {@link ICommand} para el contrato que implementa este comando.
+ * @see {@link Logger.setTheme}, {@link Logger.setVerbosity},
+ *      {@link Logger.setBannerType}, {@link Logger.setGlobalPrefix}
+ *      para los setters subyacentes.
  */
 export class ConfigCommand implements ICommand {
     name = 'config';
     description = 'Show or update logger configuration';
     usage = '/config [json|key=value,...]';
 
+    /**
+     * Ejecuta el comando `/config` contra el logger dado.
+     *
+     * @param args - Argumentos crudos del usuario. Vacío = status; con `{`
+     *               inicial = parse JSON; resto = pares `key=value` separados
+     *               por coma.
+     * @param logger - Instancia destino cuyos setters se invocan.
+     */
     execute(args: string, logger: Logger): void {
         if (!args) {
             this.showStatus(logger);

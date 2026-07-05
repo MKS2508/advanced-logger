@@ -1,5 +1,9 @@
 /**
- * @fileoverview CLI system exports for Advanced Logger
+ * @fileoverview Punto de entrada del subsistema CLI del logger. Re-exporta el
+ * processor, los comandos estándar y expone {@link createDefaultCLI} como
+ * factory principal. El CLI no es un binario standalone — se invoca desde
+ * código vía `logger.cli()` o desde la devtools vía `window.cli()` (cuando el
+ * modo interactivo está activo).
  */
 
 // Core CLI system
@@ -21,7 +25,30 @@ import { ThemesCommand, BannersCommand, BannerCommand } from './commands/ThemeCo
 import { StatusCommand, ResetCommand, DemoCommand } from './commands/ExportCommand.js';
 
 /**
- * Create and configure default CLI processor
+ * Crea un {@link CommandProcessor} con los 8 comandos estándar ya registrados:
+ * `help`, `config`, `themes`, `banners`, `banner`, `status`, `reset` y
+ * `demo`. Es el factory canónico — los consumidores normalmente no construyen
+ * un `CommandProcessor` vacío a mano, ya que este no trae comandos cargados.
+ *
+ * @returns {CommandProcessor} Processor listo para usar, sin modo interactivo activo.
+ *
+ * @example
+ * ```ts
+ * const cli = createDefaultCLI();
+ * await cli.processCommand('/help', logger);
+ * await cli.processCommand('/config theme=neon', logger);
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Modo interactivo en el navegador: expone `window.cli`
+ * const cli = createDefaultCLI();
+ * cli.enterInteractiveMode(logger);
+ * // desde devtools: cli('themes')  →  procesa '/themes'
+ * ```
+ *
+ * @see {@link CommandProcessor}
+ * @see {@link HelpCommand}
  */
 export function createDefaultCLI(): CommandProcessor {
     const processor = new CommandProcessor();

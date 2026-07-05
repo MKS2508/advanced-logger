@@ -132,41 +132,42 @@ export class Logger {
     private hookBridge: HookBridge;
     private logContext: LogContext;
     private transportBridge: TransportBridge;
-    /** Set during success() so log() skips its own dispatch (N2 fix). */
+    /** Fijado por `success()` para que `log()` salte su propio dispatch. */
     private _successTagDispatched = false;
     private styleManager: StyleManager;
 
-    /** Whether CLI primitives (step, box, header, etc.) should be shown*/
+    /** Controla si las CLI primitives (step, box, header, ...) deben renderizarse. */
     private _showPrimitives = true;
     private terminalBridge: TerminalBridge;
 
     /**
-     * Active smart-preset reference (set by `preset()`). Typed as `unknown`
-     * to keep the public surface clean; consumed by `createStyledOutput`.
+     * Referencia activa al smart-preset (fijada por `preset()`). Tipada como
+     * `unknown` para mantener limpia la surface pública; la consume
+     * `createStyledOutput`.
      */
     private _activePreset?: unknown;
     /**
-     * Name of the active smart-preset. Stored separately so theme-change
-     * detection can re-render without re-running the preset body.
+     * Nombre del smart-preset activo. Se guarda aparte para que la detección
+     * de cambio de tema pueda re-renderizar sin re-ejecutar el body del preset.
      */
     private _activePresetName?: string;
     /**
-     * Last-applied `customize()` overrides. Stored for later read by
-     * `createStyledOutput`.
+     * Overrides aplicados por el último `customize()`. Se conservan para que
+     * `createStyledOutput` los lea después.
      */
     private _customization?: unknown;
 
     /**
-     * This logger's own context bindings (from child() calls).
-     * Single source of truth for this logger's contribution to the context chain.
+     * Bindings propios de este logger (provenientes de llamadas a `child()`).
+     * Source of truth única de la contribución de este logger a la cadena de contexto.
      * @private
      */
     private _bindings: Record<string, unknown> = {};
 
     /**
-     * Reference to the parent's merged context record at the time this logger
-     * was created. Together with _bindings, forms the context chain.
-     * Undefined for the root logger.
+     * Referencia al record de contexto mergueado del parent en el momento en
+     * que se creó este logger. Junto con `_bindings`, forma la cadena de
+     * contexto. `undefined` para el logger raíz.
      * @private
      */
     private _parentContextRecord: Record<string, unknown> | undefined;
@@ -191,39 +192,40 @@ export class Logger {
             ...config,
         };
 
-        // Initialize enterprise features
+        // Enterprise features
         this.serializerBridge = createSerializerBridge();
         this.hookBridge = createHookBridge();
 
-        // Initialize LogContext bridge
+        // LogContext bridge
         this.logContext = createLogContext({
             initialResource: this.config.resource,
             childLoggerFactory: (childConfig: Partial<LoggerConfig>): Logger => {
                 // eslint-disable-next-line @typescript-eslint/no-use-before-define
                 return new Logger({ ...this.config, ...childConfig });
             },
-            // F4.5.5 fix: capture the parent's full merged context at child-creation
-            // time so child loggers can build the chain correctly.
+            // Captura el contexto mergueado completo del parent en el momento
+            // de creación del child, para que los child loggers puedan construir
+            // la cadena correctamente.
             getParentContextRecord: () => this._captureMergedContext()
         });
 
-        // Initialize TransportBridge
+        // TransportBridge
         this.transportBridge = createTransportBridge();
 
-        // Initialize StyleManager bridge
+        // StyleManager bridge
         this.styleManager = createStyleManager();
 
-        // Initialize TerminalBridge (lazy — uses getter to avoid circular ref)
+        // TerminalBridge lazy — usa getter para evitar circular ref
         this.terminalBridge = createTerminalBridge({
             config: this.config,
             getLogger: () => this
         });
 
-        // Initialize CLI processor lazily.
-        // Consumers who use `logger.cli(...)` pay for setup at call time.
+        // CLI processor lazy.
+        // Los consumers que usan `logger.cli(...)` pagan el setup en el momento de la llamada.
         this.cliProcessor = createDefaultCLI();
 
-        // Set up theme change listener if auto-detection is enabled
+        // Set up theme change listener si auto-detection está habilitado
         if (this.config.autoDetectTheme) {
             this.setupAutoThemeDetection();
         }
@@ -237,16 +239,16 @@ export class Logger {
      * @description Detecta automáticamente si el navegador está en modo claro u oscuro
      */
     private setupAutoThemeDetection(): void {
-        // Clean up existing listener if any
+        // Limpia el listener existente si lo hay
         if (this.themeChangeListener) {
             this.themeChangeListener();
             this.themeChangeListener = null;
         }
 
-        // Set up new listener
+        // Set up nuevo listener
         this.themeChangeListener = setupThemeChangeListener((theme) => {
-            // Theme changed - logs will automatically use new colors on next call
-            // No need to update anything as colors are resolved dynamically
+            // Theme cambió — los logs usarán automáticamente los nuevos colores en la próxima llamada.
+            // No hace falta actualizar nada: los colores se resuelven dinámicamente.
             this.debug(`DevTools theme changed to: ${theme}`);
         });
     }
@@ -285,7 +287,7 @@ export class Logger {
         const previousAutoDetect = this.config.autoDetectTheme;
         this.config = { ...this.config, ...updates };
         
-        // Handle auto-detection changes
+        // Handle de cambios de auto-detection
         if (updates.autoDetectTheme !== undefined && updates.autoDetectTheme !== previousAutoDetect) {
             if (updates.autoDetectTheme) {
                 this.setupAutoThemeDetection();
@@ -337,20 +339,20 @@ export class Logger {
      * 
      */
     setTheme(theme: ThemeVariant): void {
-        // First check if it's a smart preset
+        // Primero comprueba si es un smart preset
         if (hasPreset(theme)) {
             this.preset(theme);
             return;
         }
 
-        // Fallback to old theme system — delegate to StyleManager to keep
-        // the module-level LEVEL_STYLES in sync with the bridge.
+        // Fallback al sistema de temas legacy — delega al StyleManager para
+        // mantener el LEVEL_STYLES module-level sincronizado con el bridge.
         const applied = this.styleManager.setTheme(theme);
         if (applied) {
             this.config.theme = theme;
 
-            // Show theme-specific banner through the centralised writer
-            // so silent/custom output modes are respected.
+            // Muestra el banner específico del theme a través del writer
+            // centralizado para respetar los outputMode silent/custom.
             const bannersRecord = THEME_BANNERS as Record<string, { simple: string; style: string }>;
             if (theme in bannersRecord) {
                 const themeBanner = bannersRecord[theme];
@@ -382,74 +384,75 @@ export class Logger {
     }
 
     /**
-     * Runs `fn` within an AsyncLocalStorage scope where `bindings` are
-     * merged into the context for all log calls inside `fn`.
+     * Ejecuta `fn` dentro de un scope AsyncLocalStorage donde `bindings` se
+     * merguean al contexto para todas las llamadas de log dentro de `fn`.
      *
-     * Without `fn` (the old setter shape): no-op for backwards compatibility.
-     * Prefer `child()` for persistent bindings or `withContextAsync()` for
-     * async callbacks.
+     * Sin `fn` (el shape legacy de setter): no-op por backwards compatibility.
+     * Preferir `child()` para bindings persistentes o `withContextAsync()`
+     * para callbacks async.
      *
-     * @param bindings - Key-value pairs to attach for the duration of `fn`
-     * @param fn - Optional synchronous function to run with scoped bindings
-     * @returns The return value of `fn`, or undefined if no fn provided
+     * @param bindings - Pares key-value a adjuntar durante la ejecución de `fn`
+     * @param fn - Función sincrónica opcional a ejecutar con los bindings en scope
+     * @returns El valor de retorno de `fn`, o `undefined` si no se pasa `fn`
      *
      * @example
-     * // Scoped synchronous callback
+     * // Callback sincrónico scoped
      * logger.withContext({ requestId: 'r-42' }, () => {
-     *   doWork(); // logs inside see requestId in attributes
+     *   doWork(); // los logs de aquí ven requestId en attributes
      * });
      *
      * @example
-     * // Persistent binding: use child()
+     * // Binding persistente: usar child()
      * const reqLog = logger.child({ requestId: 'r-42' });
-     * reqLog.info('handling request'); // attributes include requestId
+     * reqLog.info('handling request'); // attributes incluye requestId
      *
-     * @see {@link child} for an immutable copy with the merged context
-     * @see {@link withContextAsync} for async callback variant
+     * @see {@link child} para una copia inmutable con el contexto mergueado
+     * @see {@link withContextAsync} para la variante con callback async
      */
     withContext<R>(bindings: Record<string, unknown>, fn?: () => R): R | undefined {
         return this.logContext.withContext(bindings, fn);
     }
 
     /**
-     * Async variant of `withContext`. Runs `fn` within an AsyncLocalStorage
-     * scope so bindings are available to all async log calls inside `fn`.
+     * Variante async de `withContext`. Ejecuta `fn` dentro de un scope
+     * AsyncLocalStorage para que los bindings estén disponibles a todas las
+     * llamadas de log async dentro de `fn`.
      *
-     * @param bindings - Key-value pairs to attach for the duration of `fn`
-     * @param fn - Async function to run with the scoped bindings
-     * @returns The return value of `fn`
+     * @param bindings - Pares key-value a adjuntar durante la ejecución de `fn`
+     * @param fn - Función async a ejecutar con los bindings en scope
+     * @returns El valor de retorno de `fn`
      *
      * @example
      * await logger.withContextAsync({ requestId: 'r-42' }, async () => {
-     *   await fetchData(); // logs inside see requestId in attributes
+     *   await fetchData(); // los logs de aquí ven requestId en attributes
      * });
      *
-     * @see {@link child} for a persistent child logger
-     * @see {@link withContext} for synchronous callback variant
+     * @see {@link child} para un child logger persistente
+     * @see {@link withContext} para la variante con callback sincrónico
      */
     withContextAsync<R>(bindings: Record<string, unknown>, fn: () => Promise<R>): Promise<R> {
         return this.logContext.withContextAsync(bindings, fn);
     }
 
     /**
-     * Returns an immutable copy of this logger with the extra context bound.
-     * Future calls on the child emit with the merged context, without
-     * mutating the parent — the canonical MDC pattern.
+     * Devuelve una copia inmutable de este logger con el contexto extra bound.
+     * Las llamadas futuras sobre el child emiten con el contexto mergueado,
+     * sin mutar al parent — el patrón canónico de MDC.
      *
-     * @param extra - Key-value pairs to attach (requestId, userId, ...)
-     * @returns A new Logger with merged context
+     * @param extra - Pares key-value a adjuntar (requestId, userId, ...)
+     * @returns Un nuevo Logger con el contexto mergueado
      *
      * @example
      * const reqLog = logger.child({ requestId: req.id });
-     * reqLog.info('start');     // emits attributes: { requestId }
-     * logger.info('unrelated'); // NOT affected — parent's context untouched
+     * reqLog.info('start');     // emite attributes: { requestId }
+     * logger.info('unrelated'); // NO afectado — el contexto del parent queda intacto
      *
      */
     child(extra: Record<string, unknown>): Logger {
-        // LogContext.child() creates the child Logger via factory and captures
-        // the parent's _getContextRecord() snapshot (parent context + ALS) in
-        // __parentSnapshot on the child. We pick that up here and assign it to
-        // _parentContextRecord, then set the child's _bindings.
+        // LogContext.child() crea el child Logger vía factory y captura el
+        // snapshot de _getContextRecord() del parent (contexto parent + ALS)
+        // en __parentSnapshot sobre el child. Aquí lo recogemos y lo
+        // asignamos a _parentContextRecord, y luego fijamos los _bindings del child.
         const childLogger = this.logContext.child(extra) as unknown as Logger;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const snapshot = (childLogger as any)['__parentSnapshot'] as Record<string, unknown> | undefined;
@@ -461,11 +464,11 @@ export class Logger {
     }
 
     /**
-     * Drops every key from the bound context. After this call, emitted
-     * records no longer carry `attributes` until {@link withContext} or
-     * {@link child} re-establish one.
+     * Descarta todas las keys del contexto bound. Tras esta llamada, los
+     * records emitidos dejan de llevar `attributes` hasta que
+     * {@link withContext} o {@link child} restablezcan uno.
      *
-     * @returns The same logger instance, now context-free
+     * @returns La misma instancia del logger, ahora sin contexto
      */
     clearContext(): this {
         this.logContext.clearContext();
@@ -473,15 +476,15 @@ export class Logger {
     }
 
     /**
-     * Snapshot of the bound context. Returned object is a shallow copy:
-     * mutating it does NOT affect what subsequent log calls emit.
+     * Snapshot del contexto bound. El objeto devuelto es una shallow copy:
+     * mutarlo NO afecta lo que emiten las llamadas de log posteriores.
      *
-     * @returns A read-only snapshot of the current context
+     * @returns Un snapshot read-only del contexto actual
      */
     getContext(): Readonly<Record<string, unknown>> {
-        // Return the context chain (parent snapshot + own bindings), NOT including
-        // ALS scope (which is transient). This mirrors what dispatchToTransports
-        // uses for attributes, but without ALS overlay.
+        // Devuelve la cadena de contexto (snapshot del parent + bindings propios),
+        // SIN incluir el scope ALS (que es transitorio). Esto replica lo que usa
+        // dispatchToTransports para attributes, pero sin el overlay de ALS.
         let merged: Record<string, unknown> = this._parentContextRecord ?? {};
         if (this._bindings && Object.keys(this._bindings).length > 0) {
             merged = { ...merged, ...this._bindings };
@@ -490,12 +493,12 @@ export class Logger {
     }
 
     /**
-     * Updates the default OTel resource (service.name, version, env).
-     * Persisted into every emitted record's `resource` field unless the
-     * record itself overrides it.
+     * Actualiza el resource OTel por defecto (service.name, version, env).
+     * Se persiste en el campo `resource` de cada record emitido, salvo que
+     * el propio record lo override.
      *
-     * @param resource - Partial OTel resource to merge into the current one
-     * @returns The same logger instance, for chaining
+     * @param resource - Resource OTel parcial a merguear con el actual
+     * @returns La misma instancia del logger, para chaining
      *
      * @example
      * logger.setResource({ 'service.name': 'api', 'service.version': '1.2.3' });
@@ -516,16 +519,16 @@ export class Logger {
      * 
      */
     resetConfig(): void {
-        // Clean up theme listener
+        // Clean up del theme listener
         if (this.themeChangeListener) {
             this.themeChangeListener();
             this.themeChangeListener = null;
         }
-        
+
         this.config = { ...DEFAULT_CONFIG };
         this.styleManager.resetStyles();
-        
-        // Re-setup auto theme detection if enabled in default config
+
+        // Re-setup auto theme detection si está habilitado en la config por defecto
         if (this.config.autoDetectTheme) {
             this.setupAutoThemeDetection();
         }
@@ -534,20 +537,15 @@ export class Logger {
     }
 
     /**
-     * Método de limpieza para eliminar listeners y liberar recursos
-     * 
-     * @example
-     * // Antes de cerrar la aplicación
-     * logger.cleanup();
-     * 
-     */
-    /**
-     * Tears down every resource held by this Logger. Safe to call multiple
-     * times. Fixed in 5.1.0 to fully drain transports + clear timers +
-     * drop the legacy handler list + reset group depth + clear context.
+     * Método de limpieza para eliminar listeners y liberar recursos.
+     *
+     * Vacía los transports (drain), limpia timers, suelta la lista de
+     * handlers legacy, resetea el group depth y limpia el context.
+     * Seguro de invocar múltiples veces.
      *
      * @example
-     * await logger.cleanup(); // before process exit / hot reload
+     * // Antes de cerrar la aplicación
+     * await logger.cleanup();
      *
      */
     async cleanup(): Promise<void> {
@@ -555,17 +553,17 @@ export class Logger {
             try {
                 this.themeChangeListener();
             } catch {
-                // Listener cleanup is best-effort
+                // Listener cleanup es best-effort
             }
             this.themeChangeListener = null;
         }
 
-        // Drain transport queue (fixed: was fire-and-forget in 5.0.x — BUG-N14)
+        // Drain del queue de transports en cleanup.
         await this.transportBridge.closeTransports();
 
-        // Drop legacy handler refs so GC can collect them (BUG-N17)
+        // Suelta las refs de handlers para que el GC los pueda recolectar.
         this.handlers.length = 0;
-        // Reset mutable runtime state
+        // Reset del mutable runtime state
         this.timers.clear();
         this.badgeList = [];
         this.logContext.clearContext();
@@ -587,7 +585,7 @@ export class Logger {
      * logger.preset('glassmorphism'); // Efectos de blur modernos
      * logger.preset('minimal');       // Minimalista y elegante
      * logger.preset('debug');         // Modo desarrollo detallado
-     * logger.preset('production');    // Optimizado para producción
+     * logger.preset('production');    // Enfocado en producción
      * 
      */
     preset(name: string): void {
@@ -598,15 +596,15 @@ export class Logger {
 
         const presetConfig = getSmartPreset(name);
         if (presetConfig) {
-            // Apply the smart preset configuration
+            // Aplica la configuración del smart preset
             this.displaySettings.showTimestamp = presetConfig.timestamp?.show ?? true;
             this.displaySettings.showLocation = presetConfig.location?.show ?? true;
 
-            // Store the preset config for use in createStyledOutput
+            // Guarda la config del preset para que la use createStyledOutput
             this._activePreset = presetConfig;
             this._activePresetName = name;
 
-            // Only show success message in browser to avoid verbose terminal logs
+            // Solo muestra el mensaje de success en navegador para evitar verbose terminal logs
             if (getEnvironment() === 'browser') {
                 this.success(`Applied preset: ${name}`);
             }
@@ -758,14 +756,65 @@ export class Logger {
 
     // ===== SCOPED LOGGERS =====
 
+    /**
+     * Crea un logger scoped para un componente o módulo del dominio.
+     *
+     * El `ComponentLogger` resultante prepends un badge `[name]` a cada
+     * mensaje y comparte configuración, transports y hooks con el logger
+     * padre. Útil para trazar el origen de los logs en apps con muchos
+     * módulos (Auth, DB, Cache, ...).
+     *
+     * @param {string} name - Nombre del componente que aparecerá como badge
+     * @returns {ComponentLogger} Logger scoped para el componente
+     *
+     * @example
+     * const auth = logger.component('Auth');
+     * auth.info('Validando token');   // [Auth] Validando token
+     * auth.success('Token válido');
+     *
+     * @see {@link api} para loggers de endpoints REST/GraphQL
+     * @see {@link scope} para un scope genérico sin badge de componente
+     */
     component(name: string): ComponentLogger {
         return new ComponentLogger(this, name);
     }
 
+    /**
+     * Crea un logger scoped para un endpoint o surface de API.
+     *
+     * Como `component()` pero con styling orientado a APIs (badge `[API]`
+     * por defecto más el nombre del sub-scope). Útil para distinguir
+     * tráfico REST vs GraphQL vs WebSocket en los logs.
+     *
+     * @param {string} name - Nombre de la API o surface (p.ej. `'REST'`, `'GraphQL'`)
+     * @returns {APILogger} Logger scoped para la API
+     *
+     * @example
+     * const rest = logger.api('REST');
+     * rest.info('GET /users/42');     // [API] [REST] GET /users/42
+     *
+     * @see {@link component} para loggers de componentes de dominio
+     */
     api(name: string): APILogger {
         return new APILogger(this, name);
     }
 
+    /**
+     * Crea un logger scoped genérico con un prefijo.
+     *
+     * Variante minimal de `component()` / `api()`: solo aplica un prefijo
+     * de scope sin badges ni styling especial. Útil para sub-módulos que
+     * no encajan en las categorías de `component`/`api`.
+     *
+     * @param {string} name - Texto del prefijo de scope
+     * @returns {ScopedLogger} Logger con el scope aplicado
+     *
+     * @example
+     * const db = logger.scope('db');
+     * db.info('Pool conectado');      // [db] Pool conectado
+     *
+     * @see {@link component} y {@link api} para variantes con badges
+     */
     scope(name: string): ScopedLogger {
         return new ScopedLogger(this, name);
     }
@@ -799,7 +848,7 @@ export class Logger {
         prefix?: { show?: boolean; style?: string };
         spacing?: 'compact' | 'normal' | 'spacious';
     }): void {
-        // Apply simple overrides
+        // Aplica los overrides simples
         if (overrides.timestamp?.show !== undefined) {
             this.displaySettings.showTimestamp = overrides.timestamp.show;
         }
@@ -807,10 +856,10 @@ export class Logger {
             this.displaySettings.showLocation = overrides.location.show;
         }
         if (overrides.prefix?.show !== undefined) {
-            // Will be handled when we integrate with preset system
+            // Se manejará al integrar con el preset system
         }
 
-        // Store customization for use in createStyledOutput
+        // Guarda la customization para que la use createStyledOutput
         this._customization = overrides;
         this.success('Customization applied');
     }
@@ -1052,45 +1101,41 @@ export class Logger {
     }
 
     /**
-     * Builds and dispatches a `TransportRecord` to the {@link TransportManager}
-     * (no-op if no transports are registered). Shared by every log path —
-     * `log()`, `success()`, and visual methods like `table()` / `group()` /
-     * `time()` — so all emissions hit the same transport pipeline.
+     * Tag pendiente de inyectar en el siguiente `TransportRecord` emitido
+     * por `log()`. Lo fijan `success()` y `logWithBindingsAndTag()` antes
+     * de delegar; `log()` lo consume y lo resetea a `undefined`.
      *
-     * @param level - The canonical log level (trace/debug/info/warn/error/critical)
-     * @param message - Final, post-hook message text
-     * @param prefix - Effective prefix (global + scope)
-     * @param stackInfo - Optional caller location
-     * @param extra - Optional fields to merge into the record (e.g. `{ tag: 'success' }`)
+     * @internal
      */
     protected _dispatchTag: string | undefined;
 
     /**
-     * Computes the fully-merged context for this logger.
+     * Computa el contexto completamente mergueado para este logger.
      *
-     * The context chain is built at child-creation time: each child stores
-     * its parent's fully-merged context (at that moment) as _parentContextRecord.
-     * This means _parentContextRecord already contains all ancestors' bindings
-     * in the correct precedence order (root first, nearest child last).
+     * La cadena de contexto se construye en el momento de crear el child:
+     * cada child almacena el contexto fully-merged de su parent (en ese
+     * instante) como `_parentContextRecord`. Esto implica que
+     * `_parentContextRecord` ya contiene los bindings de todos los ancestros
+     * en el orden de precedencia correcto (root primero, child más cercano al final).
      *
-     * Merge order (later wins):
-     *   1. _parentContextRecord — parent's merged context snapshot at creation time
-     *   2. _bindings            — this logger's own bindings (child() calls)
-     *   3. ALS store            — withContext/withContextAsync scope (highest priority)
+     * Orden de merge (gana el último):
+     *   1. _parentContextRecord — snapshot del contexto mergueado del parent en la creación
+     *   2. _bindings            — bindings propios de este logger (llamadas a `child()`)
+     *   3. ALS store            — scope de `withContext`/`withContextAsync` (prioridad máxima)
      *
      * @internal
-     * @returns The merged context record
+     * @returns El record de contexto mergueado
      */
     private _getMergedContext(): Record<string, unknown> {
-        // Start with parent's snapshot (already contains all ancestors)
+        // Empieza con el snapshot del parent (ya contiene todos los ancestros)
         let merged: Record<string, unknown> = this._parentContextRecord ?? {};
 
-        // Layer in this logger's own bindings (nearest wins)
+        // Layer de los bindings propios de este logger (gana el más cercano)
         if (this._bindings && Object.keys(this._bindings).length > 0) {
             merged = { ...merged, ...this._bindings };
         }
 
-        // Layer in ALS scope (highest priority)
+        // Layer del scope ALS (prioridad máxima)
         const alsContext = this.logContext._getAlsStore?.() ?? {};
         if (alsContext && Object.keys(alsContext).length > 0) {
             merged = { ...merged, ...alsContext };
@@ -1099,10 +1144,10 @@ export class Logger {
         return merged;
     }
 
-    /** @internal Exposes base merged context (no ALS) to LogContext child factory closure. */
+    /** @internal Expone el contexto base mergueado (sin ALS) a la closure de la child factory de LogContext. */
     _captureMergedContext(): Record<string, unknown> {
-        // Return base context without ALS — ALS is transient and should not be
-        // baked into _parentContextRecord at child-creation time.
+        // Devuelve el contexto base sin ALS — ALS es transitorio y no debe
+        // quedar baked en _parentContextRecord en el momento de crear el child.
         let merged: Record<string, unknown> = this._parentContextRecord ?? {};
         if (this._bindings && Object.keys(this._bindings).length > 0) {
             merged = { ...merged, ...this._bindings };
@@ -1110,6 +1155,21 @@ export class Logger {
         return merged;
     }
 
+    /**
+     * Construye y despacha un `TransportRecord` al {@link TransportManager}
+     * (no-op si no hay transports registrados). Lo comparten todos los
+     * caminos de log — `log()`, `success()` y los métodos visuales como
+     * `table()` / `group()` / `time()` — para que toda emisión atraviese
+     * el mismo pipeline de transports.
+     *
+     * @protected
+     * @param {LogLevel} level - Nivel canónico (trace/debug/info/warn/error/critical)
+     * @param {string} message - Mensaje final, post-hook
+     * @param {string | undefined} prefix - Prefijo efectivo (global + scope)
+     * @param {StackInfo | null} stackInfo - Ubicación del caller, opcional
+     * @param {Partial<TransportRecord>} [extra] - Campos extra a mergear en el record
+     *        (p.ej. `{ tag: 'success' }` o `attributes` adicionales)
+     */
     protected dispatchToTransports(
         level: LogLevel,
         message: string,
@@ -1142,7 +1202,7 @@ export class Logger {
             ...extra
         };
 
-        // Fire-and-forget via bridge — never breaks the sync log path.
+        // Fire-and-forget vía bridge — nunca rompe el path de log sincrónico.
         this.transportBridge.writeRecord(record);
     }
 
@@ -1157,45 +1217,31 @@ export class Logger {
     }
 
     /**
-     * Método central de logging. Awaits the `beforeLog` hook pipeline
-     * synchronously (so redactions / enrichments are reflected in the
-     * emitted message before console + transport dispatch).
+     * Método central de logging. Espera el hook pipeline `beforeLog`
+     * antes de despachar a consola y transports, para que redacciones
+     * o enriquecimientos (PII, correlation IDs) se reflejen en el
+     * mensaje emitido.
      *
-     * Fire-and-forget callers (e.g. `logger.info(...)` without `await`)
-     * still work — the resulting `Promise<void>` is dropped on the floor.
-     * Awaiting is recommended when `beforeLog` hooks mutate `message`
-     * (e.g. PII redaction, correlation IDs).
+     * Los callers fire-and-forget (p.ej. `logger.info(...)` sin `await`)
+     * siguen funcionando: el `Promise<void>` resultante se descarta.
+     * Se recomienda `await` cuando los hooks `beforeLog` mutan `message`.
      *
-     * @protected
-     * @param level - Nivel del log
-     * @param args - Argumentos a loggear
-     * @returns Promise that resolves once the record has been dispatched
-     *
-     */
-    /**
-     * Protected logging method. Awaits the `beforeLog` hook pipeline
-     * synchronously (so redactions / enrichments are reflected in the
-     * emitted message before console + transport dispatch).
-     *
-     * Fire-and-forget callers (e.g. `logger.info(...)` without `await`)
-     * still work — the resulting `Promise<void>` is dropped on the floor.
-     * Awaiting is recommended when `beforeLog` hooks mutate `message`
-     * (e.g. PII redaction, correlation IDs).
+     * El tag opcional (`TransportRecord.tag`) NO se pasa como argumento:
+     * se establece vía `_dispatchTag` (ver `success()` y
+     * {@link logWithBindingsAndTag}) antes de invocar este método.
      *
      * @protected
-     * @param level - Nivel del log
-     * @param args - Argumentos a loggear
-     * @param tag - Optional tag forwarded to `dispatchToTransports` as
-     *              `TransportRecord.tag` (e.g. `'success'` for success records).
-     * @returns Promise that resolves once the record has been dispatched
+     * @param {LogLevel} level - Nivel del log
+     * @param {unknown[]} args - Argumentos a loggear (mensaje + datos)
+     * @returns {Promise<void>} Promesa que resuelve al completar el dispatch
      *
      */
     protected async log(level: LogLevel, ...args: unknown[]): Promise<void> {
         if (!this.shouldLog(level)) return;
 
-        // N2 fix: check _dispatchTag BEFORE processing args so the tag does
-        // NOT end up in additionalArgs. success() sets this instead of
-        // passing 'success' as an arg.
+        // Comprueba _dispatchTag ANTES de procesar los args para que el tag
+        // NO termine en additionalArgs. success() lo fija en vez de pasar
+        // 'success' como arg.
         const dispatchTag = this._dispatchTag;
         this._dispatchTag = undefined;
 
@@ -1221,14 +1267,14 @@ export class Logger {
             stackInfo: stackInfo ?? undefined
         };
 
-        // Await beforeLog hooks so redactions / enrichments are reflected
-        // in the emitted message. Fixed in 5.1.0 (BUG-N / F002).
+        // Await de los hooks beforeLog para que las redacciones / enriquecimientos
+        // se reflejen en el mensaje emitido.
         let processed;
         try {
             processed = await this.hookBridge.getHookManager().emit('beforeLog', hookEntry);
         } catch (error) {
-            // Hook manager already fires onError on its own; fall back to
-            // the pre-hook values to keep the log call from breaking.
+            // El Hook manager ya dispara onError por su cuenta; cae a los
+            // valores pre-hook para que la llamada de log no se rompa.
             // eslint-disable-next-line no-console
             console.error('HookManager beforeLog failed:', error);
             processed = hookEntry;
@@ -1267,18 +1313,34 @@ export class Logger {
             }
         });
 
-        // N2 fix: if dispatchTag was set (by success()), dispatch with it.
+        // Si se fijó dispatchTag (por success()), despacha con él.
         if (dispatchTag !== undefined) {
             this.dispatchToTransports(level, message, prefix, stackInfo, { tag: dispatchTag as LogTag });
         } else {
             this.dispatchToTransports(level, message, prefix, stackInfo);
         }
 
-        // Fire-and-forget afterLog — after-side mutations don't change the
-        // message that's already on screen, so we don't block on it.
+        // Fire-and-forget de afterLog — las mutaciones after-side no cambian
+        // el mensaje que ya está en pantalla, así que no bloqueamos con él.
         this.hookBridge.getHookManager().emit('afterLog', processed).catch(() => {});
     }
 
+    /**
+     * Emite un log aplicando bindings (badges, scope) al prefijo del
+     * mensaje antes de delegar en {@link Logger.log}.
+     *
+     * No es API pública de consumo: existe para que `ScopedLogger`
+     * (`component()` / `api()` / `scope()`) pueda reutilizar el pipeline
+     * central de `log()` sin duplicar la lógica de styling/badges.
+     *
+     * @internal
+     * @param {Bindings} bindings - Bindings de scope (badges, scope name, ...)
+     * @param {LogLevel} level - Nivel de log
+     * @param {unknown[]} args - Argumentos a loggear
+     * @returns {Promise<void>} Promesa del dispatch
+     *
+     * @see {@link logWithBindingsAndTag} para la variante con `tag`
+     */
     logWithBindings(bindings: Bindings, level: LogLevel, ...args: unknown[]): Promise<void> {
         if (!this.shouldLog(level)) return Promise.resolve();
 
@@ -1300,21 +1362,47 @@ export class Logger {
     }
 
     /**
-     * Like `logWithBindings()` but sets _dispatchTag first so that
-     * `log()` dispatches with the tag. Used by ScopedLogger.success()
-     * to propagate tag:'success' through the normal log() pipeline.
+     * Como {@link logWithBindings} pero fija `_dispatchTag` antes de
+     * delegar, para que `log()` despache el `TransportRecord` con el
+     * tag indicado. Lo usa `ScopedLogger.success()` para propagar
+     * `tag: 'success'` a través del pipeline normal de `log()`.
+     *
+     * @internal
+     * @param {Bindings} bindings - Bindings de scope (badges, scope name, ...)
+     * @param {LogLevel} level - Nivel de log
+     * @param {LogTag} tag - Tag a inyectar en el `TransportRecord`
+     * @param {unknown[]} args - Argumentos a loggear
+     * @returns {Promise<void>} Promesa del dispatch
      */
     logWithBindingsAndTag(bindings: Bindings, level: LogLevel, tag: LogTag, ...args: unknown[]): Promise<void> {
         this._dispatchTag = tag;
         return this.logWithBindings(bindings, level, ...args);
     }
 
+    /**
+     * Registra mensajes de debug (nivel más verboso junto a `trace`).
+     * Pensado para diagnóstico de desarrollo: valores intermedios, flags
+     * de control flow, estado interno. Devuelve `Promise<void>`.
+     *
+     * Filtrado por defecto cuando `verbosity > 'debug'` (ver `setVerbosity`).
+     *
+     * @param {unknown[]} args - Mensaje + datos a inspeccionar
+     * @returns {Promise<void>} Promesa del dispatch
+     *
+     * @example
+     * logger.debug('Estado interno:', { conn, queueSize });
+     * logger.debug('Entrando en branch X');
+     *
+     * @see {@link trace} para diagnósticos aún más granulares
+     * @see {@link setVerbosity} para controlar el nivel mínimo visible
+     */
     debug(...args: unknown[]): Promise<void> {
         return this.log('debug', ...args);
     }
 
     /**
-     * Registra mensajes informativos. Devuelve `Promise<void>` desde 5.1.0.
+     * Registra mensajes informativos. El `await` retorna cuando el hook
+     * `beforeLog` y el dispatch a transports han terminado.
      *
      * @param args - Mensajes y datos informativos
      *
@@ -1328,7 +1416,7 @@ export class Logger {
     }
 
     /**
-     * Registra mensajes de advertencia. Devuelve `Promise<void>` desde 5.1.0.
+     * Registra mensajes de advertencia.
      *
      * @param args - Mensajes de advertencia
      *
@@ -1338,7 +1426,7 @@ export class Logger {
     }
 
     /**
-     * Registra mensajes de error. Devuelve `Promise<void>` desde 5.1.0.
+     * Registra mensajes de error.
      *
      * @param args - Mensaje de error y stack traces
      *
@@ -1383,12 +1471,12 @@ export class Logger {
             stackInfo: stackInfo ?? undefined
         };
 
-        // Await beforeLog so redactions propagate (matches log())
+        // Await de beforeLog para que las redacciones se propaguen (match con log())
         try {
             const processed = await this.hookBridge.getHookManager().emit('beforeLog', hookEntry);
             message = processed.message;
         } catch {
-            // Hook manager has already fired onError
+            // El Hook manager ya disparó onError
         }
 
         const [format, ...styles] = createStyledOutput(
@@ -1427,8 +1515,8 @@ export class Logger {
             }
         });
 
-        // N2 fix: set _dispatchTag so log() dispatches with the tag.
-        // 'success' is NOT passed as an arg (avoids it appearing in additionalArgs).
+        // Fija _dispatchTag para que log() despache con el tag.
+        // 'success' NO se pasa como arg (evita que aparezca en additionalArgs).
         this._dispatchTag = 'success';
         await this.log('info', ...args);
 
@@ -1451,7 +1539,7 @@ export class Logger {
     }
 
     /**
-     * Registra errores críticos (prioridad más alta). Devuelve `Promise<void>` desde 5.1.0.
+     * Registra errores críticos (prioridad más alta).
      *
      * @param args - Errores críticos del sistema
      *
@@ -1485,12 +1573,12 @@ export class Logger {
         const format = `%c${headerLabel}`;
         const styles = [tableStyle];
 
-        // Emit header via centralised writer
+        // Emite el header vía el writer centralizado
         this.writeOutput(format, 'info', styles, []);
 
-        // console.table doesn't honour outputMode — but we still want the
-        // data to flow through to transports. Solution: serialise the data
-        // as the second argument so transports observe a structured payload.
+        // console.table no respeta outputMode — pero aún así queremos que
+        // los datos fluyan a los transports. Solución: serializa los datos
+        // como segundo argumento para que los transports observen un payload estructurado.
         const additionalArgs = [data, ...(columns ? [columns] : [])];
         if (this.config.outputMode !== 'silent') {
             if (columns) {
@@ -1548,7 +1636,7 @@ export class Logger {
 
         this.groupDepth++;
 
-        // Emit a synthetic info record marking the group boundary
+        // Emite un record sintético de info que marca el boundary del group
         const prefix = this.getEffectivePrefix();
         const stackInfo = this.config.enableStackTrace ? parseStackTrace() : null;
         this.dispatchToTransports('info', `group:start:${label}`, prefix, stackInfo, {
@@ -1620,7 +1708,7 @@ export class Logger {
      * Finaliza un temporizador y muestra el tiempo transcurrido
      *
      * @param {string} label - Etiqueta del temporizador a finalizar
-     * @returns {number} Elapsed milliseconds, or -1 if timer not found
+     * @returns {number} Milisegundos transcurridos, o `-1` si no se encuentra el timer
      *
      * @example
      * logger.time('consulta-db');
@@ -1742,7 +1830,7 @@ export class Logger {
     logAnimated(message: string, duration: number = 3): void {
         if (!this.shouldLog('info')) return;
 
-        // DOM-guard: animations only make sense in a real browser environment.
+        // DOM-guard: las animaciones solo tienen sentido en un entorno de navegador real.
         if (typeof document !== 'undefined') {
             if (!document.getElementById('logger-animations')) {
                 const style = document.createElement('style');
@@ -1786,11 +1874,11 @@ export class Logger {
     // ===== CLI PRIMITIVES (v5.0) =====
 
     /**
-     * Displays a step progress indicator in the terminal
+     * Muestra un indicador de progreso de pasos en la terminal
      *
-     * @param {number} current - Current step number
-     * @param {number} total - Total number of steps
-     * @param {string} message - Step description
+     * @param {number} current - Número de paso actual
+     * @param {number} total - Número total de pasos
+     * @param {string} message - Descripción del paso
      *
      * @example
      * logger.step(1, 5, 'Analyzing repository...');
@@ -1802,10 +1890,10 @@ export class Logger {
     }
 
     /**
-     * Displays a styled header with optional subtitle
+     * Muestra un header con estilo y subtítulo opcional
      *
-     * @param {string} title - Main title text
-     * @param {string} subtitle - Optional subtitle (rendered dimmed)
+     * @param {string} title - Texto del título principal
+     * @param {string} subtitle - Subtítulo opcional (se renderiza atenuado)
      *
      * @example
      * logger.header('Commit Wizard', 'v2.0.0');
@@ -1816,7 +1904,7 @@ export class Logger {
     }
 
     /**
-     * Displays a horizontal divider line
+     * Muestra una línea divisoria horizontal
      *
      * @example
      * logger.divider();
@@ -1827,7 +1915,7 @@ export class Logger {
     }
 
     /**
-     * Outputs a blank line
+     * Emite una línea en blanco
      *
      * @example
      * logger.blank();
@@ -1838,10 +1926,10 @@ export class Logger {
     }
 
     /**
-     * Renders content inside a bordered box
+     * Renderiza contenido dentro de un box con borde
      *
-     * @param {string} content - Content string (may contain newlines)
-     * @param {IBoxOptions} options - Box rendering options
+     * @param {string} content - String de contenido (puede contener newlines)
+     * @param {IBoxOptions} options - Opciones de renderizado del box
      *
      * @example
      * logger.box('3 commits generated\nProvider: Groq', { title: 'Done', borderColor: '#00ff00' });
@@ -1852,11 +1940,11 @@ export class Logger {
     }
 
     /**
-     * Renders an array of objects as a formatted ASCII table.
-     * Note: This is distinct from the existing table() method which uses console.table.
+     * Renderiza un array de objetos como una tabla ASCII formateada.
+     * Distinto del método `table()` existente, que usa `console.table`.
      *
-     * @param {Record<string, unknown>[]} rows - Array of row objects
-     * @param {ITableOptions} options - Table rendering options
+     * @param {Record<string, unknown>[]} rows - Array de objetos fila
+     * @param {ITableOptions} options - Opciones de renderizado de la tabla
      *
      * @example
      * logger.cliTable([
@@ -1870,11 +1958,11 @@ export class Logger {
     }
 
     /**
-     * Creates a spinner handle for showing progress during async operations.
-     * Returns a NoopSpinner in non-TTY environments.
+     * Crea un handle de spinner para mostrar progreso durante operaciones async.
+     * Devuelve un `NoopSpinner` en entornos non-TTY.
      *
-     * @param {string} message - Initial spinner text
-     * @returns {ISpinnerHandle} Spinner controller
+     * @param {string} message - Texto inicial del spinner
+     * @returns {ISpinnerHandle} Controller del spinner
      *
      * @example
      * const s = logger.spinner('Analyzing repository...');
@@ -1888,13 +1976,14 @@ export class Logger {
     }
 
     /**
-     * Sets the CLI verbosity level, controlling both log verbosity and primitive visibility
+     * Fija el nivel de verbosidad del CLI, controlando a la vez la verbosidad
+     * de logs y la visibilidad de las primitives
      *
-     * @param {CLILogLevel} level - CLI log level
+     * @param {CLILogLevel} level - Nivel de log del CLI
      *
      * @example
-     * logger.setCLILevel('quiet');   // Only errors, no CLI primitives
-     * logger.setCLILevel('verbose'); // Debug logs + all CLI primitives
+     * logger.setCLILevel('quiet');   // Solo errors, sin CLI primitives
+     * logger.setCLILevel('verbose'); // Debug logs + todas las CLI primitives
      *
      */
     setCLILevel(level: CLILogLevel): void {
@@ -1905,8 +1994,8 @@ export class Logger {
     }
 
     /**
-     * Returns the current CLI log level
-     * @returns {CLILogLevel} Current CLI log level
+     * Devuelve el nivel de log del CLI actual
+     * @returns {CLILogLevel} Nivel de log del CLI actual
      */
     get cliLevel(): CLILogLevel {
         return this.config.cliLevel ?? 'normal';
@@ -1915,14 +2004,14 @@ export class Logger {
     // ===== OUTPUT WRITER SYSTEM =====
 
     /**
-     * Writes formatted output to the configured destination.
-     * Respects outputMode configuration for console, silent, or custom output.
+     * Escribe output formateado al destino configurado.
+     * Respeta la configuración `outputMode` para output a consola, silencioso o custom.
      *
      * @private
-     * @param {string} message - Formatted log message
-     * @param {LogLevel} level - Log level
-     * @param {string[]} styles - CSS styles for browser console
-     * @param {unknown[]} additionalArgs - Additional arguments to log
+     * @param {string} message - Mensaje de log formateado
+     * @param {LogLevel} level - Nivel de log
+     * @param {string[]} styles - Estilos CSS para la consola del navegador
+     * @param {unknown[]} additionalArgs - Argumentos adicionales a loggear
      */
     private writeOutput(
         message: string,
@@ -1932,12 +2021,12 @@ export class Logger {
     ): void {
         const mode = this.config.outputMode ?? 'console';
 
-        // Silent mode: no output
+        // Silent mode: sin output
         if (mode === 'silent') {
             return;
         }
 
-        // Custom mode: use configured writer
+        // Custom mode: usa el writer configurado
         if (mode === 'custom' && this.config.outputWriter) {
             const fullMessage = additionalArgs.length > 0
                 ? `${message} ${additionalArgs.map(a => String(a)).join(' ')}`
@@ -1946,7 +2035,7 @@ export class Logger {
             return;
         }
 
-        // Default: console output
+        // Default: output a consola
         if (additionalArgs.length > 0) {
             console.log(message, ...styles, ...additionalArgs);
         } else {
@@ -1985,22 +2074,21 @@ export class Logger {
 }
 
 /**
- /**
- * Lazy singleton instance — initialised on first call to {@link getDefaultLogger},
- * not on module import. Fixes BUG-N11 (eager side-effect at import time).
+ * Instancia singleton lazy — se inicializa en la primera llamada a
+ * {@link getDefaultLogger}, no al importar el módulo.
  *
  * @private
  */
 let _defaultLogger: Logger | null = null;
 
 /**
- * Lazily creates the default Logger singleton.
+ * Crea el singleton del Logger por defecto de forma lazy.
  *
- * The singleton is only built on first call, so importing the module
- * never executes `new Logger(...)` or `displayInitBanner()`. This keeps
- * module imports side-effect free.
+ * El singleton se construye solo en la primera llamada, de modo que
+ * importar el módulo nunca ejecuta `new Logger(...)` ni
+ * `displayInitBanner()`. Así los imports del módulo quedan side-effect free.
  *
- * @returns The shared Logger instance
+ * @returns La instancia compartida de Logger
  */
 function getDefaultLogger(): Logger {
     if (!_defaultLogger) {
@@ -2012,28 +2100,28 @@ function getDefaultLogger(): Logger {
             cliLevel: 'normal'
         });
 
-        // Display the init banner only on first actual use, not on import.
+        // Muestra el init banner solo en el primer uso real, no en el import.
         try {
             if (typeof window !== 'undefined' || typeof document !== 'undefined') {
                 displayInitBanner();
             }
         } catch {
-            // Silent fail if banner cannot be displayed (SSR, workers, etc.)
+            // Fail silencioso si no se puede mostrar el banner (SSR, workers, etc.)
         }
     }
     return _defaultLogger;
 }
 
 /**
- * Resets the default singleton. Clears the cached instance so the next call
- * to `getDefaultLogger()` rebuilds it from defaults. Useful for tests and
- * hot reload scenarios.
+ * Resetea el singleton por defecto. Limpia la instancia cacheada para que la
+ * próxima llamada a `getDefaultLogger()` la reconstruya desde defaults. Útil
+ * para tests y escenarios de hot reload.
  *
  */
 export function resetDefaultLogger(): void {
     if (_defaultLogger) {
-        // Best-effort cleanup; the user may already have a reference and
-        // intentionally want to drain pending logs.
+        // Cleanup best-effort; el user puede tener ya una referencia y
+        // querer drenar logs pendientes a propósito.
         void _defaultLogger.cleanup().catch(() => {});
     }
     _defaultLogger = null;
@@ -2041,7 +2129,8 @@ export function resetDefaultLogger(): void {
 
 /**
  * Lazy default export — every property access defers to `getDefaultLogger()`.
- * Side-effect-free at module import (BUG-N11).
+ * Sin side-effects al importar el módulo (la primera llamada al singleton
+ * se produce en el primer acceso a una propiedad, no en el `import`).
  *
  * @example
  * import logger from 'better-logger';
@@ -2060,12 +2149,12 @@ export default loggerProxy;
 // ===== Internal converters =====
 
 /**
- * Narrow a free-form `Record<string, unknown>` context into a typed
- * `ILogAttributes` bag. Unknown shapes fall back to JSON-encoded strings,
- * which keeps the OTLP transport happy (every value lands in a typed slot).
+ * Estrecha un contexto free-form `Record<string, unknown>` a un bag tipado
+ * `ILogAttributes`. Los shapes desconocidos caen a strings JSON-encoded,
+ * lo que mantiene conforme al transport OTLP (cada valor cae en un slot tipado).
  *
- * @param input - The user-supplied context (typically `Logger.context`).
- * @returns A new attribute bag matching `ILogAttributes`.
+ * @param input - Contexto suministrado por el usuario (típicamente `Logger.context`).
+ * @returns Un nuevo bag de attributes que satisface `ILogAttributes`.
  */
 function toLogAttributes(input: Record<string, unknown>): ILogAttributes {
     const out: Record<string, LogAttributeValue> = {};
@@ -2091,7 +2180,7 @@ function toAttributeValue(value: unknown): LogAttributeValue | undefined {
         }
         return values;
     }
-    // Plain objects → JSON string fallback (OTLP transport handles this)
+    // Plain objects → fallback a string JSON (el transport OTLP lo maneja)
     try {
         return JSON.stringify(value);
     } catch {
