@@ -1,0 +1,612 @@
+/* Custom Jekyll theme — dossier / broadsheet aesthetic.
+ *
+ * Dark by default, hairline rules everywhere, zero border-radius. The
+ * subject is technical reference material for a developer tool, so the
+ * page reads like a documented specimen sheet rather than a marketing
+ * site: dense, sectioned, and quiet except for the single amber accent
+ * used on eyebrows, active nav state, and the link to the live demo.
+ *
+ * Typography is intentional: Fraunces (serif) for the title and section
+ * heads — used with restraint; IBM Plex Sans for body; JetBrains Mono
+ * for code and meta info. Same faces as the demo for cross-property
+ * consistency.
+ */
+
+:root {
+    --bg: #1a1814;
+    --surface: #25221e;
+    --surface-raised: #2c2924;
+    --border: #3a3631;
+    --border-strong: #4a4540;
+    --fg: #e8e3d8;
+    --fg-muted: #9b9486;
+    --fg-faint: #6b6557;
+    --accent: #d4a373;
+    --accent-strong: #e6b889;
+
+    --font-display: "Fraunces", "IBM Plex Serif", Georgia, serif;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --tracking-eyebrow: 0.14em;
+
+    --content-max: 760px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-padding-top: 90px;
+}
+
+body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.65;
+    font-feature-settings: "kern", "liga";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Eyebrow style (signature element) ─────────────────────────────── */
+
+.eyebrow {
+    font-family: var(--font-display);
+    font-feature-settings: "smcp", "c2sc";
+    font-variation-settings: "opsz" 9;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: lowercase;
+    color: var(--accent);
+    margin: 0 0 18px 0;
+}
+
+/* ─── Top bar ────────────────────────────────────────────────────────── */
+
+.topbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 32px;
+    align-items: baseline;
+    padding: 22px 36px 18px 36px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.topbar__brand {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.topbar__title {
+    font-family: var(--font-display);
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+    font-weight: 500;
+    font-size: 26px;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
+}
+
+.topbar__title:hover {
+    border-bottom-color: var(--accent);
+}
+
+.topbar__rule {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-variation-settings: "opsz" 14;
+    font-size: 14px;
+    color: var(--fg-muted);
+    font-weight: 400;
+}
+
+.topbar__nav {
+    display: flex;
+    gap: 26px;
+}
+
+.topbar__nav-link {
+    font-size: 13px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
+    transition: color 120ms ease, border-color 120ms ease;
+}
+
+.topbar__nav-link:hover {
+    color: var(--fg);
+    border-bottom-color: var(--accent);
+}
+
+.topbar__nav-link--accent {
+    color: var(--accent);
+}
+
+.topbar__nav-link--accent:hover {
+    color: var(--accent-strong);
+}
+
+/* ─── Layout ──────────────────────────────────────────────────────────── */
+
+.layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: calc(100vh - 76px);
+}
+
+@media (max-width: 880px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────── */
+
+.sidebar {
+    border-right: 1px solid var(--border);
+    padding: 32px 24px 32px 36px;
+    background: var(--surface);
+}
+
+.sidenav__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.sidenav__link {
+    display: block;
+    padding: 7px 10px 7px 12px;
+    font-size: 13px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.sidenav__link:hover {
+    color: var(--fg);
+    background: var(--surface-raised);
+}
+
+.sidenav__link--active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: var(--surface-raised);
+}
+
+/* ─── Main content area ───────────────────────────────────────────────── */
+
+.main {
+    padding: 40px 60px 60px 60px;
+    max-width: 100%;
+}
+
+@media (max-width: 880px) {
+    .main {
+        padding: 32px 24px 48px 24px;
+    }
+}
+
+.page {
+    max-width: var(--content-max);
+}
+
+/* ─── Headings ────────────────────────────────────────────────────────── */
+
+.page h1,
+.page h2,
+.page h3,
+.page h4 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--fg);
+    letter-spacing: -0.01em;
+    margin-top: 2em;
+}
+
+.page > h1:first-child {
+    margin-top: 0;
+}
+
+.page h1 {
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+    font-size: 38px;
+    margin-bottom: 0.5em;
+    padding-bottom: 0.4em;
+    border-bottom: 1px solid var(--border);
+}
+
+.page h2 {
+    font-variation-settings: "opsz" 60;
+    font-size: 26px;
+    padding-bottom: 0.25em;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.8em;
+}
+
+.page h3 {
+    font-variation-settings: "opsz" 36;
+    font-size: 20px;
+    color: var(--accent-strong);
+    margin-top: 1.8em;
+}
+
+.page h4 {
+    font-variation-settings: "opsz" 24;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--fg-muted);
+    margin-top: 1.4em;
+}
+
+/* ─── Body text ──────────────────────────────────────────────────────── */
+
+.page p {
+    margin: 1em 0;
+}
+
+.page strong {
+    color: var(--fg);
+    font-weight: 600;
+}
+
+.page em {
+    color: var(--fg);
+}
+
+.page blockquote {
+    margin: 1.4em 0;
+    padding: 0.4em 0 0.4em 1.2em;
+    border-left: 2px solid var(--accent);
+    color: var(--fg-muted);
+    font-style: italic;
+}
+
+.page hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5em 0;
+}
+
+.page ul,
+.page ol {
+    padding-left: 1.5em;
+    margin: 1em 0;
+}
+
+.page li {
+    margin: 0.3em 0;
+}
+
+.page li::marker {
+    color: var(--fg-faint);
+}
+
+/* ─── Links ──────────────────────────────────────────────────────────── */
+
+.page a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 120ms ease;
+}
+
+.page a:hover {
+    border-bottom-color: var(--accent);
+}
+
+/* ─── Inline code ────────────────────────────────────────────────────── */
+
+.page code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--surface);
+    color: var(--accent-strong);
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+}
+
+/* ─── Code blocks ────────────────────────────────────────────────────── */
+
+.page pre {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.55;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    padding: 18px 20px;
+    overflow-x: auto;
+    margin: 1.4em 0;
+    border-radius: 0;
+}
+
+.page pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--fg);
+    font-size: inherit;
+}
+
+/* Rouge syntax highlighting tokens — warm dark palette */
+
+.highlight .c,
+.highlight .c1,
+.highlight .cm,
+.highlight .cs {
+    color: var(--fg-faint);
+    font-style: italic;
+}
+
+.highlight .k,
+.highlight .kd,
+.highlight .kn,
+.highlight .kp,
+.highlight .kr,
+.highlight .kt {
+    color: #c4a484;
+}
+
+.highlight .s,
+.highlight .s1,
+.highlight .s2,
+.highlight .sb,
+.highlight .sc,
+.highlight .se,
+.highlight .sh,
+.highlight .si,
+.highlight .sr,
+.highlight .ss,
+.highlight .sx {
+    color: #a8b889;
+}
+
+.highlight .nb,
+.highlight .nc,
+.highlight .nf,
+.highlight .nn,
+.highlight .no,
+.highlight .nv {
+    color: #b8a887;
+}
+
+.highlight .mi,
+.highlight .mf,
+.highlight .mh,
+.highlight .mo {
+    color: #d4a373;
+}
+
+.highlight .n,
+.highlight .na,
+.highlight .ne {
+    color: var(--fg);
+}
+
+.highlight .o,
+.highlight .ow {
+    color: var(--fg-muted);
+}
+
+.highlight .p {
+    color: var(--fg-muted);
+}
+
+.highlight .err {
+    color: var(--accent);
+}
+
+.highlight .gd {
+    color: #c45a4a;
+}
+
+.highlight .gi {
+    color: #8aab7a;
+}
+
+.highlight .ge {
+    font-style: italic;
+}
+
+.highlight .gs {
+    font-weight: 600;
+}
+
+/* ─── Tables ─────────────────────────────────────────────────────────── */
+
+.page table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6em 0;
+    font-size: 14px;
+    border-top: 1px solid var(--border-strong);
+    border-bottom: 1px solid var(--border-strong);
+}
+
+.page th,
+.page td {
+    text-align: left;
+    padding: 10px 16px 10px 0;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.page th {
+    font-family: var(--font-display);
+    font-feature-settings: "smcp";
+    font-variation-settings: "opsz" 9;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    text-transform: lowercase;
+    border-bottom: 1px solid var(--border-strong);
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.page td {
+    color: var(--fg);
+}
+
+.page tr:last-child td {
+    border-bottom: none;
+}
+
+.page table code {
+    font-size: 0.85em;
+}
+
+/* ─── Definition list (kramdown) ─────────────────────────────────────── */
+
+.page dl {
+    margin: 1.4em 0;
+}
+
+.page dt {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-variation-settings: "opsz" 24;
+    font-weight: 500;
+    font-size: 16px;
+    color: var(--accent-strong);
+    margin-top: 1.2em;
+}
+
+.page dd {
+    margin: 0.4em 0 0 1.2em;
+    color: var(--fg);
+}
+
+/* ─── Images ─────────────────────────────────────────────────────────── */
+
+.page img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.6em auto;
+    border: 1px solid var(--border);
+}
+
+/* ─── Keyboard ───────────────────────────────────────────────────────── */
+
+.page kbd {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--surface);
+    color: var(--fg);
+    padding: 2px 6px;
+    border: 1px solid var(--border-strong);
+    border-bottom-width: 2px;
+    border-radius: 2px;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────── */
+
+.footer {
+    margin-top: 80px;
+    padding: 18px 0 0 0;
+    border-top: 1px solid var(--border);
+}
+
+.footer__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-faint);
+}
+
+.footer__brand {
+    color: var(--fg-muted);
+}
+
+.footer__meta {
+    flex: 1;
+}
+
+.footer__link {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.footer__link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* ─── Mobile refinements ─────────────────────────────────────────────── */
+
+@media (max-width: 880px) {
+    .topbar {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 24px;
+    }
+    .sidenav__list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+    }
+    .sidenav__link {
+        padding: 4px 8px;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+    }
+    .sidenav__link--active {
+        border-left: none;
+        border-bottom-color: var(--accent);
+    }
+}
+
+/* ─── Selection ──────────────────────────────────────────────────────── */
+
+::selection {
+    background: var(--accent);
+    color: var(--bg);
+}
+
+/* ─── Focus ring ─────────────────────────────────────────────────────── */
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ─── Anchored headings get an invisible offset so the hash lands below the sticky header ─ */
+
+.page h2,
+.page h3,
+.page h4 {
+    scroll-margin-top: 90px;
+}

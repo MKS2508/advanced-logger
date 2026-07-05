@@ -3,60 +3,88 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>@mks2508/better-logger demo</title>
+    <title>@mks2508/better-logger — specimen catalog</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet"
+    >
+
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
     <header class="topbar">
-        <div class="topbar__title">
+        <div class="topbar__brand">
             <h1>better-logger</h1>
-            <span class="topbar__subtitle">demo · renders the actual logger output to the page</span>
+            <span class="topbar__version" id="version-tag">v0.18.2</span>
         </div>
+        <span class="topbar__title-rule">a specimen catalog of structured log output</span>
         <nav class="topbar__nav">
-            <a href="https://mks2508.github.io/advanced-logger/docs/">docs</a>
-            <a href="https://github.com/MKS2508/advanced-logger">github</a>
+            <a href="https://mks2508.github.io/advanced-logger/docs/">documentation</a>
+            <a href="https://github.com/MKS2508/advanced-logger">repository</a>
         </nav>
     </header>
 
-    <section class="controls">
+    <section class="controls" aria-label="controls">
         <label class="control">
             <span class="control__label">theme</span>
-            <select id="theme-select"></select>
+            <select id="theme-select" aria-label="active theme"></select>
         </label>
         <label class="control">
             <span class="control__label">preset</span>
-            <select id="preset-select"></select>
+            <select id="preset-select" aria-label="active preset"></select>
         </label>
-        <button id="clear-output" class="control control--button">clear</button>
+        <button id="clear-output" class="control control--button" type="button">clear output</button>
     </section>
 
     <main class="grid">
         <aside class="snippets">
-            <h2 class="snippets__title">snippets</h2>
-            <ul id="snippet-list" class="snippets__list"></ul>
+            <div class="snippets__inner">
+                <h2 class="eyebrow">the collection</h2>
+                <ul id="snippet-list" class="snippets__list"></ul>
+            </div>
         </aside>
 
         <section class="output" aria-live="polite">
-            <h2 class="output__title">output</h2>
+            <header class="output__header">
+                <h2 class="eyebrow">display case</h2>
+                <span class="output__header-meta" id="output-meta">0 records</span>
+            </header>
             <div id="output-panel" class="output__panel"></div>
         </section>
     </main>
 
     <section class="repl">
-        <h2 class="repl__title">try your own</h2>
+        <header class="repl__header">
+            <h2 class="eyebrow">the bench</h2>
+            <span class="output__header-meta">live · try your own expressions</span>
+        </header>
         <p class="repl__hint">
-            <code>logger</code>, <code>info</code>, <code>warn</code>, <code>error</code>,
-            <code>api(name)</code>, <code>component(name)</code>, <code>setTheme(name)</code>
-            are in scope. Output renders below.
+            In scope: <code>logger</code>, <code>info</code>, <code>warn</code>, <code>error</code>,
+            <code>debug</code>, <code>critical</code>, <code>success</code>, <code>trace</code>,
+            <code>api(name)</code>, <code>component(name)</code>. Output renders to the panel above.
+            <kbd>⌘/Ctrl</kbd> + <kbd>Enter</kbd> to run.
         </p>
         <div class="repl__row">
-            <textarea id="repl-input" class="repl__input" rows="3" spellcheck="false">logger.info('hello from the demo');</textarea>
-            <button id="repl-run" class="repl__run">run</button>
+            <textarea
+                id="repl-input"
+                class="repl__input"
+                rows="3"
+                spellcheck="false"
+                aria-label="repl input"
+            >logger.api('Test').info('hello from the bench');</textarea>
+            <button id="repl-run" class="repl__run" type="button">run</button>
         </div>
     </section>
 
     <footer class="footer">
-        <span>runs against <code>../src/index.ts</code> via vite — pick up source changes on save</span>
+        <div class="footer__left">
+            <span>runs against <code>../src/index.ts</code> via vite</span>
+            <span id="environment-tag">— env: detecting</span>
+        </div>
+        <span class="footer__right">a working exhibit, not a marketing page</span>
     </footer>
 
     <script type="module" src="./main.js"></script>

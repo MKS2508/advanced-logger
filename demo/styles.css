@@ -1,24 +1,43 @@
-/* Demo styles — minimal, no chrome. The logger's own styles (applied via
-   %c format strings) handle their own colors; this stylesheet only sets the
-   page chrome so the demo reads as a tool, not a marketing page. */
+/* Demo styles — specimen catalog aesthetic.
+ *
+ * Subject grounding: a logger outputs structured, styled records.
+ * The demo frames each snippet as a specimen in a collection; the output
+ * panel is the display case, not the chrome.
+ *
+ * Palette is warm dark — moved off the GitHub-DevTools-by-accident template
+ * into something distinct: amber safelight tone with a single accent.
+ * Type does the personality: Fraunces (variable serif) anchors the labels,
+ * JetBrains Mono carries the output, IBM Plex Sans ties it together.
+ *
+ * Restraint: one accent, used sparingly on section eyebrows and active state.
+ * No rounded corners > 2px, no shadows, no gradients. Hairlines only.
+ */
 
 :root {
-    --bg: #0d1117;
-    --bg-elev: #161b22;
-    --border: #30363d;
-    --fg: #c9d1d9;
-    --fg-muted: #8b949e;
-    --accent: #58a6ff;
+    --bg: #1a1814;
+    --surface: #25221e;
+    --surface-raised: #2c2924;
+    --border: #3a3631;
+    --border-strong: #4a4540;
+    --fg: #e8e3d8;
+    --fg-muted: #9b9486;
+    --fg-faint: #6b6557;
+    --accent: #d4a373;
+    --accent-strong: #e6b889;
 
-    --severity-error: #f85149;
-    --severity-warn: #d29922;
-    --severity-info: #58a6ff;
-    --severity-debug: #8b949e;
-    --severity-success: #3fb950;
-    --severity-critical: #ff7b72;
+    --sev-error: #c45a4a;
+    --sev-warn: #d4a373;
+    --sev-info: #7a9cb5;
+    --sev-success: #8aab7a;
+    --sev-debug: #9b9486;
+    --sev-critical: #a04a3a;
+    --sev-trace: #7a7468;
 
-    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-display: "Fraunces", "IBM Plex Serif", Georgia, serif;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --tracking-eyebrow: 0.14em;
 }
 
 * {
@@ -34,86 +53,139 @@ body {
 body {
     background: var(--bg);
     color: var(--fg);
-    font-family: var(--font-sans);
+    font-family: var(--font-body);
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.55;
     min-height: 100vh;
+    font-feature-settings: "ss01", "ss02", "kern";
 }
 
-/* ── Header ─────────────────────────────────────────────────────────── */
+/* ─── Eyebrow style (section labels, signature element) ─────────────── */
+
+.eyebrow {
+    font-family: var(--font-display);
+    font-feature-settings: "smcp", "c2sc";
+    font-variation-settings: "opsz" 9;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: lowercase;
+    color: var(--accent);
+    margin: 0 0 16px 0;
+}
+
+/* ─── Top bar ────────────────────────────────────────────────────────── */
 
 .topbar {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: baseline;
-    padding: 14px 24px;
+    gap: 32px;
+    padding: 22px 32px 18px 32px;
     border-bottom: 1px solid var(--border);
 }
 
-.topbar__title {
+.topbar__brand {
     display: flex;
     align-items: baseline;
-    gap: 12px;
+    gap: 14px;
 }
 
-.topbar__title h1 {
+.topbar__brand h1 {
     margin: 0;
-    font-size: 15px;
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+    font-weight: 500;
+    font-size: 26px;
+    letter-spacing: -0.01em;
+    color: var(--fg);
 }
 
-.topbar__subtitle {
+.topbar__version {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-faint);
+    padding: 2px 7px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+}
+
+.topbar__title-rule {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-variation-settings: "opsz" 14;
+    font-size: 14px;
     color: var(--fg-muted);
-    font-size: 12px;
+    font-weight: 400;
+}
+
+.topbar__nav {
+    display: flex;
+    gap: 24px;
 }
 
 .topbar__nav a {
     color: var(--fg-muted);
     text-decoration: none;
-    margin-left: 16px;
     font-size: 13px;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
 }
 
 .topbar__nav a:hover {
     color: var(--fg);
+    border-bottom-color: var(--accent);
 }
 
-/* ── Controls bar ────────────────────────────────────────────────────── */
+/* ─── Controls bar ────────────────────────────────────────────────────── */
 
 .controls {
     display: flex;
-    gap: 16px;
+    gap: 28px;
     align-items: center;
-    padding: 10px 24px;
+    padding: 14px 32px;
     border-bottom: 1px solid var(--border);
-    background: var(--bg-elev);
-    flex-wrap: wrap;
+    background: var(--surface);
 }
 
 .control {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .control__label {
+    font-family: var(--font-display);
+    font-feature-settings: "smcp";
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: lowercase;
     color: var(--fg-muted);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 select,
 button,
 textarea {
-    background: var(--bg);
+    background: transparent;
     color: var(--fg);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     padding: 5px 10px;
     font-family: inherit;
     font-size: 13px;
-    border-radius: 3px;
+    border-radius: 2px;
     outline: none;
+    transition: border-color 120ms ease;
+}
+
+select {
+    padding-right: 24px;
+    cursor: pointer;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--fg-muted) 50%),
+        linear-gradient(135deg, var(--fg-muted) 50%, transparent 50%);
+    background-position: calc(100% - 12px) 50%, calc(100% - 7px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
 }
 
 select:focus,
@@ -124,144 +196,208 @@ textarea:focus {
 
 button {
     cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 5px 14px;
 }
 
 button:hover {
-    border-color: var(--fg-muted);
+    color: var(--accent-strong);
+    border-color: var(--accent);
 }
 
 .control--button {
     margin-left: auto;
 }
 
-/* ── Main grid ───────────────────────────────────────────────────────── */
+/* ─── Main grid ────────────────────────────────────────────────────────── */
 
 .grid {
     display: grid;
-    grid-template-columns: 240px 1fr;
-    min-height: 50vh;
+    grid-template-columns: 320px 1fr;
+    min-height: 60vh;
+    column-gap: 1px;
+    background: var(--border);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 880px) {
     .grid {
         grid-template-columns: 1fr;
     }
     .snippets {
         border-right: none;
         border-bottom: 1px solid var(--border);
+        max-height: 280px;
+        overflow-y: auto;
     }
 }
 
-/* ── Snippets ────────────────────────────────────────────────────────── */
+/* ─── Snippets (specimen list) ────────────────────────────────────────── */
 
 .snippets {
-    border-right: 1px solid var(--border);
-    padding: 14px 16px;
+    border-right: none;
+    padding: 28px 28px 32px 32px;
+    background: var(--surface);
 }
 
-.snippets__title,
-.output__title,
-.repl__title {
-    margin: 0 0 10px 0;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--fg-muted);
-    font-weight: 600;
+.snippets__inner {
+    position: sticky;
+    top: 0;
 }
 
 .snippets__list {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .snippet {
-    margin-bottom: 2px;
+    position: relative;
 }
 
 .snippet__btn {
     width: 100%;
     text-align: left;
-    padding: 7px 10px;
-    background: transparent;
-    border: 1px solid transparent;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    padding: 14px 12px 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 14px;
+    row-gap: 4px;
+    align-items: baseline;
+    transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 
 .snippet__btn:hover {
-    background: var(--bg-elev);
-    border-color: var(--border);
+    background: var(--surface-raised);
+    border-color: var(--accent);
+}
+
+.snippet__btn:hover .snippet__title {
+    color: var(--accent-strong);
+}
+
+.snippet__btn:active {
+    transform: translateX(2px);
 }
 
 .snippet__id {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
     font-family: var(--font-mono);
     font-size: 10px;
-    color: var(--fg-muted);
+    color: var(--fg-faint);
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.1em;
+    border: 1px solid var(--border-strong);
+    padding: 3px 6px;
+    border-radius: 2px;
+    min-width: 26px;
+    text-align: center;
 }
 
 .snippet__title {
-    font-size: 13px;
+    grid-column: 2;
+    grid-row: 1;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-variation-settings: "opsz" 24;
+    font-weight: 500;
+    font-size: 17px;
+    color: var(--fg);
+    line-height: 1.2;
 }
 
-/* ── Output panel ────────────────────────────────────────────────────── */
+.snippet__desc {
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 12px;
+    color: var(--fg-muted);
+    line-height: 1.4;
+}
+
+/* ─── Output panel (the display case) ─────────────────────────────────── */
 
 .output {
-    padding: 14px 24px;
+    padding: 28px 32px 36px 32px;
     overflow-y: auto;
-    max-height: 60vh;
+    max-height: 70vh;
+}
+
+.output__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.output__header-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-faint);
 }
 
 .output__panel {
     font-family: var(--font-mono);
     font-size: 12px;
-    line-height: 1.55;
+    line-height: 1.7;
 }
 
 .output__row {
-    padding: 4px 0 4px 10px;
-    border-left: 3px solid transparent;
+    padding: 6px 12px 6px 14px;
+    border-left: 2px solid transparent;
     white-space: pre-wrap;
     word-break: break-word;
+    color: var(--fg);
+}
+
+.output__row + .output__row {
+    border-top: 1px dashed var(--border);
 }
 
 .output__row--error {
-    border-left-color: var(--severity-error);
+    border-left-color: var(--sev-error);
 }
 .output__row--warn {
-    border-left-color: var(--severity-warn);
+    border-left-color: var(--sev-warn);
 }
 .output__row--info {
-    border-left-color: var(--severity-info);
+    border-left-color: var(--sev-info);
 }
 .output__row--log {
-    border-left-color: var(--severity-info);
+    border-left-color: var(--sev-info);
 }
 .output__row--debug {
-    border-left-color: var(--severity-debug);
+    border-left-color: var(--sev-debug);
 }
 .output__row--success {
-    border-left-color: var(--severity-success);
+    border-left-color: var(--sev-success);
 }
 .output__row--critical {
-    border-left-color: var(--severity-critical);
+    border-left-color: var(--sev-critical);
 }
 .output__row--trace {
-    border-left-color: var(--severity-debug);
+    border-left-color: var(--sev-trace);
 }
 
 .output__row--group {
     border-left-color: var(--accent);
-    margin-top: 6px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
     font-weight: 600;
 }
 
 .output__row--table {
-    padding: 10px 0 10px 10px;
+    padding: 12px 12px 12px 14px;
 }
 
 .output__obj {
@@ -271,91 +407,155 @@ button:hover {
 }
 
 .output__error {
-    color: var(--severity-error);
+    color: var(--sev-error);
     font-weight: 500;
+    display: block;
 }
 
 .output__stack {
-    margin: 6px 0 0 0;
-    padding: 6px 10px;
-    background: var(--bg-elev);
-    border-left: 2px solid var(--severity-error);
+    margin: 8px 0 0 0;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-left: 2px solid var(--sev-error);
     color: var(--fg-muted);
     font-size: 11px;
     white-space: pre;
     overflow-x: auto;
-    border-radius: 0 3px 3px 0;
 }
 
 .output__table {
     border-collapse: collapse;
-    margin: 6px 0;
+    margin: 8px 0;
     font-family: var(--font-mono);
     font-size: 11px;
+    width: 100%;
+    max-width: 720px;
 }
 
 .output__table th {
     text-align: left;
-    padding: 4px 16px 4px 0;
-    border-bottom: 1px solid var(--border);
+    padding: 6px 16px 6px 0;
+    border-bottom: 1px solid var(--border-strong);
     color: var(--fg-muted);
     font-weight: 600;
+    font-feature-settings: "tnum";
 }
 
 .output__table td {
-    padding: 4px 16px 4px 0;
+    padding: 6px 16px 6px 0;
     border-bottom: 1px solid var(--border);
     color: var(--fg);
+    font-feature-settings: "tnum";
 }
 
-/* ── REPL ────────────────────────────────────────────────────────────── */
+.output__table tr:last-child td {
+    border-bottom: none;
+}
+
+/* ─── Logger badge neutralization ───────────────────────────────────────
+   The logger emits styled spans with bright backgrounds via inline styles.
+   To keep the catalog aesthetic intact we override those colors so the
+   chips integrate with the warm-dark palette. Severity is still encoded
+   via the row's left border — the chip is just a label. */
+
+.output__panel span[style*="background"] {
+    background: var(--surface-raised) !important;
+    color: var(--fg) !important;
+    border: 1px solid var(--border-strong) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    font-family: var(--font-mono) !important;
+    font-size: 10px !important;
+    letter-spacing: 0.06em !important;
+    padding: 1px 6px !important;
+    border-radius: 2px !important;
+    text-transform: uppercase !important;
+}
+
+.output__panel span[style*="font-weight"] {
+    font-weight: 500 !important;
+}
+
+/* ─── Empty state ─────────────────────────────────────────────────────── */
+
+.output__empty {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--fg-faint);
+    padding: 60px 0;
+    text-align: center;
+}
+
+/* ─── REPL ────────────────────────────────────────────────────────────── */
 
 .repl {
     border-top: 1px solid var(--border);
-    padding: 14px 24px 18px 24px;
-    background: var(--bg-elev);
+    padding: 24px 32px 28px 32px;
+    background: var(--surface);
+}
+
+.repl__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
 }
 
 .repl__hint {
-    margin: 0 0 10px 0;
-    font-size: 12px;
+    margin: 0 0 12px 0;
+    font-size: 13px;
     color: var(--fg-muted);
+    font-family: var(--font-body);
 }
 
 .repl__hint code,
 .footer code {
     background: var(--bg);
+    color: var(--accent);
     padding: 1px 5px;
     border-radius: 2px;
     font-family: var(--font-mono);
     font-size: 11px;
+    border: 1px solid var(--border);
 }
 
 .repl__row {
     display: flex;
-    gap: 8px;
+    gap: 12px;
+    align-items: stretch;
 }
 
 .repl__input {
     flex: 1;
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 13px;
     resize: vertical;
-    min-height: 60px;
+    min-height: 70px;
     line-height: 1.5;
+    background: var(--bg);
 }
 
 .repl__run {
-    align-self: flex-end;
-    padding: 8px 18px;
+    align-self: flex-start;
+    padding: 8px 22px;
+    letter-spacing: 0.04em;
 }
 
-/* ── Footer ──────────────────────────────────────────────────────────── */
+/* ─── Footer ─────────────────────────────────────────────────────────── */
 
 .footer {
     border-top: 1px solid var(--border);
-    padding: 10px 24px;
+    padding: 14px 32px;
+    font-family: var(--font-mono);
     font-size: 11px;
-    color: var(--fg-muted);
-    text-align: center;
+    color: var(--fg-faint);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer__left {
+    display: flex;
+    gap: 18px;
 }

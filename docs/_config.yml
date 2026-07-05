@@ -1,6 +1,5 @@
-title: "Better Logger Documentation"
-description: "Logger avanzado para consola con estilos CSS, MDC, transports (File/HTTP/OTLP→SigNoz), hooks, serializers y CLI integrado"
-theme: minima
+title: "better-logger documentation"
+description: "TypeScript logger with CSS styling, MDC context propagation, transports (File/HTTP/OTLP→SigNoz), hooks, serializers, and integrated CLI primitives."
 url: "https://mks2508.github.io"
 baseurl: "/advanced-logger/docs"
 
@@ -10,10 +9,9 @@ kramdown:
   syntax_highlighter: rouge
   input: GFM
 
+# Custom theme — layouts live in _layouts/, no `theme:` key.
 plugins:
-  - jekyll-feed
   - jekyll-sitemap
-  - jekyll-seo-tag
 
 exclude:
   - Gemfile
@@ -24,40 +22,33 @@ exclude:
   - vendor/gems/
   - vendor/ruby/
 
-header_pages:
-  - index.md
-  - transports.md
-  - context.md
-  - hooks.md
-  - serializers.md
-  - styles.md
-  - cli.md
-  - playground.md
-  - core.md
-  - migration-v0.18.md
+defaults:
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: default
 
 navigation:
-  - title: Inicio
-    url: /advanced-logger/docs/
+  - title: Overview
+    url: /
   - title: Transports
-    url: /advanced-logger/docs/transports/
+    url: /transports/
   - title: Context (MDC)
-    url: /advanced-logger/docs/context/
+    url: /context/
   - title: Hooks
-    url: /advanced-logger/docs/hooks/
+    url: /hooks/
   - title: Serializers
-    url: /advanced-logger/docs/serializers/
+    url: /serializers/
   - title: Styling
-    url: /advanced-logger/docs/styles/
-  - title: CLI
-    url: /advanced-logger/docs/cli/
+    url: /styles/
+  - title: CLI primitives
+    url: /cli/
   - title: Playground
-    url: /advanced-logger/docs/playground/
-  - title: Core
-    url: /advanced-logger/docs/core/
-  - title: Migración 0.18
-    url: /advanced-logger/docs/migration/
-  - title: API Reference
-    url: /advanced-logger/docs/api/
-  - title: Live Demo
-    url: /advanced-logger/
+    url: /playground/
+  - title: Core API
+    url: /core/
+  - title: Node migration
+    url: /migration/
+  - title: API reference
+    url: /api/

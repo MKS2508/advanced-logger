@@ -48,6 +48,21 @@ const original = {
 } satisfies Record<string, ConsoleFn>;
 
 const outputPanel = document.getElementById('output-panel') as HTMLDivElement;
+const outputMeta = document.getElementById('output-meta') as HTMLSpanElement;
+
+let recordCount = 0;
+const updateMeta = () => {
+    outputMeta.textContent = `${recordCount} ${recordCount === 1 ? 'record' : 'records'}`;
+    if (recordCount === 0 && !outputPanel.querySelector('.output__empty')) {
+        const empty = document.createElement('div');
+        empty.className = 'output__empty';
+        empty.textContent = 'no specimens on display — choose one from the collection';
+        outputPanel.appendChild(empty);
+    } else if (recordCount > 0) {
+        outputPanel.querySelector('.output__empty')?.remove();
+    }
+};
+updateMeta();
 
 /**
  * Render one argument into a DOM node. Strings are text nodes; objects become
@@ -84,8 +99,14 @@ function argToNode(arg: unknown): Node {
 /**
  * Parse a `%c...` format string and apply each CSS argument to the
  * corresponding segment. Mirrors how `console.log(format, css1, css2, ...)`
- * is interpreted by the browser.
+ * is interpreted by the browser. Styled badge segments get their leading
+ * emoji stripped — the logger emits e.g. "ℹ️ INFO" as one styled span, and
+ * the default emoji set (✅ ℹ️ ⚠️ ❌ 🔥) reads as templated AI chrome in
+ * the catalog frame. The label alone keeps severity encoded by the row's
+ * left border.
  */
+const EMOJI_PREFIX_RE = /^[\s\u{FE00}-\u{FE0F}\u{200D}\u{2139}\p{Extended_Pictographic}]+/u;
+
 function renderArgs(args: unknown[]): DocumentFragment {
     const frag = document.createDocumentFragment();
     let argIdx = 0;
@@ -101,9 +122,10 @@ function renderArgs(args: unknown[]): DocumentFragment {
                 continue;
             }
             const css = String(args[argIdx++] ?? '');
+            const cleaned = text.replace(EMOJI_PREFIX_RE, '');
             const span = document.createElement('span');
             if (css) span.style.cssText = css;
-            span.textContent = text;
+            span.textContent = cleaned;
             frag.appendChild(span);
         }
     }
@@ -166,6 +188,8 @@ function pushRow(level: string, args: unknown[], builder: (row: HTMLDivElement) 
     row.className = `output__row output__row--${level}`;
     builder(row);
     outputPanel.appendChild(row);
+    recordCount += 1;
+    updateMeta();
     outputPanel.scrollTop = outputPanel.scrollHeight;
 }
 
@@ -246,13 +270,24 @@ const themeSelect = document.getElementById('theme-select') as HTMLSelectElement
 const presetSelect = document.getElementById('preset-select') as HTMLSelectElement;
 
 const themes = Object.keys(THEME_PRESETS) as ThemeVariant[];
+
+/** Default theme for the demo — `minimal` has the calmest palette so the
+ *  catalog frame isn't competing with the logger's own badge styles. */
+const DEMO_DEFAULT_THEME: ThemeVariant = 'minimal';
+
 for (const theme of themes) {
     const opt = document.createElement('option');
     opt.value = theme;
     opt.textContent = theme;
     themeSelect.appendChild(opt);
 }
-themeSelect.value = (logger.getConfig().theme as string | undefined) ?? themes[0];
+
+try {
+    logger.setTheme(DEMO_DEFAULT_THEME);
+} catch {
+    /* fall through — keep whatever theme the package shipped with */
+}
+themeSelect.value = DEMO_DEFAULT_THEME;
 themeSelect.addEventListener('change', () => {
     try {
         logger.setTheme(themeSelect.value as ThemeVariant);
@@ -283,6 +318,8 @@ presetSelect.addEventListener('change', () => {
 
 document.getElementById('clear-output')?.addEventListener('click', () => {
     outputPanel.replaceChildren();
+    recordCount = 0;
+    updateMeta();
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -328,9 +365,36 @@ replInput.addEventListener('keydown', (e) => {
 // Welcome banner
 // ────────────────────────────────────────────────────────────────────────────
 
-info('better-logger demo ready', {
+info('better-logger ready', {
     snippets: snippets.length,
     themes: themes.length,
     presets: presets.length,
 });
-info('click a snippet on the left, or try the REPL below');
+info('pick a specimen from the collection, or write your own at the bench');
+
+// Auto-run the first specimen so the display case isn't empty on load.
+const initialSpecimen = snippets[0];
+if (initialSpecimen) {
+    window.setTimeout(() => {
+        try {
+            initialSpecimen.run();
+        } catch (err) {
+            error('initial specimen failed', err instanceof Error ? err : new Error(String(err)));
+        }
+    }, 300);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Decorate header with version + detected environment
+// ────────────────────────────────────────────────────────────────────────────
+
+const versionTag = document.getElementById('version-tag');
+if (versionTag) {
+    versionTag.textContent = `v0.18.2-alpha.1`;
+}
+
+const environmentTag = document.getElementById('environment-tag');
+if (environmentTag) {
+    const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+    environmentTag.textContent = `— env: ${isBrowser ? 'browser' : 'node'}`;
+}

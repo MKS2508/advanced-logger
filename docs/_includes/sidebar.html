@@ -1,0 +1,22 @@
+<nav class="sidenav" aria-label="documentation navigation">
+    <h2 class="eyebrow">catalog</h2>
+    <ul class="sidenav__list">
+        {% for item in site.navigation %}
+            {% assign item_path = item.url %}
+            {% assign page_path = page.url | replace: site.baseurl, '' %}
+            {% if page_path == item_path or page_path == item_path | append: 'index.html' %}
+                {% assign active = true %}
+            {% elsif item_path == '/' and page_path == '/index.html' %}
+                {% assign active = true %}
+            {% else %}
+                {% assign active = false %}
+            {% endif %}
+            <li>
+                <a
+                    href="{{ item.url | relative_url }}"
+                    class="sidenav__link{% if active %} sidenav__link--active{% endif %}"
+                >{{ item.title }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</nav>
