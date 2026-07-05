@@ -92,7 +92,14 @@ export function createStyledOutput(
     presetStyles?: LogStyles,
     presetName?: string
 ): [string, ...string[]] {
-    const levelConfig = levelStyles[level];
+    const levelConfig = levelStyles[level] ?? {
+        emoji: '📝',
+        label: level.toUpperCase(),
+        background: '#6c757d',
+        color: '#ffffff',
+        border: '1px solid #6c757d',
+        shadow: 'none'
+    };
     const timestamp = formatTimestamp();
     const environment = getEnvironment();
 

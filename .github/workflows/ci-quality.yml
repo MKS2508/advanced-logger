@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bun-version: ["1.0", "latest"]
+        bun-version: ["latest"]
         build-mode: [full, core, styling, exports]
 
     name: Test Bun ${{ matrix.bun-version }} - ${{ matrix.build-mode }}

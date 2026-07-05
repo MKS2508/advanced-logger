@@ -49,6 +49,12 @@ import type { LevelStyleConfig } from '../utils/index.js';
  */
 export const THEME_PRESETS: Record<ThemeVariant, Record<string, LevelStyleConfig>> = {
     default: {
+        trace: {
+            emoji: '🔬', label: 'TRACE',
+            background: 'linear-gradient(135deg, #b2bec3 0%, #636e72 100%)',
+            color: '#ffffff', border: '1px solid #b2bec3',
+            shadow: '0 1px 2px rgba(178, 190, 195, 0.3)',
+        },
         debug: {
             emoji: '🐞', label: 'DEBUG',
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -87,6 +93,12 @@ export const THEME_PRESETS: Record<ThemeVariant, Record<string, LevelStyleConfig
         },
     },
     dark: {
+        trace: {
+            emoji: '🔬', label: 'TRACE',
+            background: 'linear-gradient(135deg, #4a5568 0%, #2d3748 100%)',
+            color: '#cbd5e0', border: '1px solid #4a5568',
+            shadow: '0 1px 3px rgba(74, 85, 104, 0.8)',
+        },
         debug: {
             emoji: '🌙', label: 'DEBUG',
             background: 'linear-gradient(135deg, #2d3748 0%, #4a5568 100%)',
@@ -125,6 +137,12 @@ export const THEME_PRESETS: Record<ThemeVariant, Record<string, LevelStyleConfig
         },
     },
     neon: {
+        trace: {
+            emoji: '🔬', label: 'TRACE',
+            background: 'linear-gradient(135deg, #16213e 0%, #0a0a23 100%)',
+            color: '#00ffff', border: '1px solid #00ffff',
+            shadow: '0 0 10px rgba(0, 255, 255, 0.5)',
+        },
         debug: {
             emoji: '⚡', label: 'DEBUG',
             background: 'linear-gradient(135deg, #0f3460 0%, #e94560 100%)',
@@ -163,6 +181,11 @@ export const THEME_PRESETS: Record<ThemeVariant, Record<string, LevelStyleConfig
         },
     },
     minimal: {
+        trace: {
+            emoji: '', label: 'TRACE',
+            background: '#fafafa', color: '#9e9e9e',
+            border: '1px solid #eeeeee', shadow: 'none',
+        },
         debug: {
             emoji: '', label: 'DEBUG',
             background: '#f7fafc', color: '#4a5568',
@@ -196,6 +219,12 @@ export const THEME_PRESETS: Record<ThemeVariant, Record<string, LevelStyleConfig
     },
     // Nuevas variantes de theme pueden añadirse aquí
     light: {
+        trace: {
+            emoji: '🔬', label: 'TRACE',
+            background: 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
+            color: '#616161', border: '1px solid #bdbdbd',
+            shadow: '0 1px 3px rgba(189, 189, 189, 0.2)',
+        },
         debug: {
             emoji: '🔍', label: 'DEBUG',
             background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
@@ -234,6 +263,12 @@ export const THEME_PRESETS: Record<ThemeVariant, Record<string, LevelStyleConfig
         },
     },
     cyberpunk: {
+        trace: {
+            emoji: '🔬', label: 'TRACE',
+            background: 'linear-gradient(135deg, #1b263b 0%, #0d1b2a 100%)',
+            color: '#48bfe3', border: '1px solid #48bfe3',
+            shadow: '0 0 15px rgba(72, 191, 227, 0.4)',
+        },
         debug: {
             emoji: '🤖', label: 'DEBUG',
             background: 'linear-gradient(135deg, #0d1b2a 0%, #415a77 100%)',
