@@ -72,6 +72,9 @@ jobs:
           source: ./docs
           destination: ./_site/docs
 
+      - name: "🔓 Ensure _site/docs is writable"
+        run: chmod -R u+w _site/docs && chmod -R u+rwX _site/docs
+
       - name: "📄 Serve raw .md pages + generate llms.txt"
         run: bun scripts/build-md-serve.ts
 
