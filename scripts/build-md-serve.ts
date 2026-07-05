@@ -117,7 +117,9 @@ async function ensureWritable(dir: string): Promise<void> {
 }
 
 /**
- * Copy a `.md` file to the site output, with front-matter stripped. If writing
+ * Copy a `.md` file to the site output, with front-matter stripped. Case is
+ * preserved so URLs in `llms.txt` match the files Jekyll also renders (e.g.,
+ * typedoc's CamelCase `CoreLogger.md`, GitHub-style `README.md`). If writing
  * fails for any reason (e.g., a stale Jekyll artifact blocked the path), log
  * the failure and continue so the rest of the build still ships.
  */
