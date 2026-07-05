@@ -268,7 +268,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_tests != 'true'
         run: |
           echo "🧪 === PASO 2: EJECUTANDO TESTS Y VALIDACIONES ==="
-          bun run type-check
+          bun run typecheck
           bun run test
           echo "✅ Tests completados exitosamente"
 

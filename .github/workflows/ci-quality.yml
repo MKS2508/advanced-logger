@@ -50,7 +50,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: 🔍 Type checking
-        run: bun run type-check
+        run: bun run typecheck
 
       - name: "🏗️ Build ${{ matrix.build-mode }}"
         run: |
@@ -84,11 +84,10 @@ jobs:
       - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: "📦 Setup Node.js"
-        uses: actions/setup-node@v4
+      - name: "📦 Setup Bun"
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          bun-version: latest
 
       - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
@@ -141,11 +140,10 @@ jobs:
       - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: "📦 Setup Node.js"
-        uses: actions/setup-node@v4
+      - name: "📦 Setup Bun"
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          bun-version: latest
 
       - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
@@ -157,7 +155,7 @@ jobs:
           path: dist/
 
       - name: 🎭 Install Playwright
-        run: npx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium
 
       - name: "🖼️ Run visual tests"
         run: bun run test:visual
@@ -231,11 +229,10 @@ jobs:
       - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: "📦 Setup Node.js"
-        uses: actions/setup-node@v4
+      - name: "📦 Setup Bun"
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          bun-version: latest
 
       - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
@@ -248,7 +245,7 @@ jobs:
           echo "## 📊 Code Quality Report" > quality-report.md
           echo "### TypeScript Analysis" >> quality-report.md
           echo "\`\`\`" >> quality-report.md
-          bun run type-check >> quality-report.md 2>&1 || echo "TypeScript issues detected" >> quality-report.md
+          bun run typecheck >> quality-report.md 2>&1 || echo "TypeScript issues detected" >> quality-report.md
           echo "\`\`\`" >> quality-report.md
 
           echo "### File Statistics" >> quality-report.md
@@ -271,11 +268,10 @@ jobs:
       - name: "📥 Checkout code"
         uses: actions/checkout@v4
 
-      - name: "📦 Setup Node.js"
-        uses: actions/setup-node@v4
+      - name: "📦 Setup Bun"
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          bun-version: latest
 
       - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
