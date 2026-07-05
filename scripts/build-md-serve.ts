@@ -17,7 +17,7 @@
  * - Generate `llms-full.txt` concatenating the full content of every indexed
  *   page for agents that cannot follow links.
  */
-import { readdir, readFile, writeFile, mkdir, stat } from 'node:fs/promises';
+import { readdir, readFile, writeFile, mkdir, stat, chmod } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 
@@ -104,20 +104,41 @@ async function walk(dir: string): Promise<string[]> {
     return out.sort();
 }
 
-/** Copy a `.md` file to the site output, with front-matter stripped. */
-async function serveFile(src: string, destRel: string): Promise<IDocEntry> {
-    const { title, description, body } = parseMarkdown(await readFile(src, 'utf-8'));
-    const destAbs = join(SITE_OUT, destRel);
-    await mkdir(dirname(destAbs), { recursive: true });
-    await writeFile(destAbs, body);
-    return {
-        relPath: destRel,
-        url: destRel,
-        title,
-        description,
-        body,
-        section: '', // filled in by caller
-    };
+/** chmod every directory under `dir` to 0o755 so subsequent writes succeed. */
+async function ensureWritable(dir: string): Promise<void> {
+    if (!existsSync(dir)) return;
+    await chmod(dir, 0o755).catch(() => undefined);
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+        if (e.isDirectory()) {
+            await ensureWritable(join(dir, e.name));
+        }
+    }
+}
+
+/**
+ * Copy a `.md` file to the site output, with front-matter stripped. If writing
+ * fails for any reason (e.g., a stale Jekyll artifact blocked the path), log
+ * the failure and continue so the rest of the build still ships.
+ */
+async function serveFile(src: string, destRel: string): Promise<IDocEntry | null> {
+    try {
+        const { title, description, body } = parseMarkdown(await readFile(src, 'utf-8'));
+        const destAbs = join(SITE_OUT, destRel);
+        await mkdir(dirname(destAbs), { recursive: true });
+        await writeFile(destAbs, body);
+        return {
+            relPath: destRel,
+            url: destRel,
+            title,
+            description,
+            body,
+            section: '',
+        };
+    } catch (err) {
+        console.error(`  ✗ ${destRel}: ${(err as Error).message}`);
+        return null;
+    }
 }
 
 async function main(): Promise<void> {
@@ -130,6 +151,12 @@ async function main(): Promise<void> {
     }
     await mkdir(SITE_OUT, { recursive: true });
 
+    // Jekyll writes into _site/docs/ via `actions/jekyll-build-pages` which on
+    // GH Actions can leave the directory tree read-only for subsequent steps
+    // running as the same user but via a different process. Walk the tree and
+    // chmod every directory to 0o755 so the .md copies below can land.
+    await ensureWritable(SITE_OUT);
+
     const docEntries: IDocEntry[] = [];
     const apiEntries: IDocEntry[] = [];
     const subPageCount = { served: 0 };
@@ -139,6 +166,7 @@ async function main(): Promise<void> {
         .filter(f => f.endsWith('.md') && !f.startsWith('_'));
     for (const file of topLevel.sort()) {
         const entry = await serveFile(join(DOCS_SRC, file), file);
+        if (!entry) continue;
         entry.section = 'Docs';
         docEntries.push(entry);
         console.log(`  ✓ ${entry.relPath}`);
@@ -156,9 +184,11 @@ async function main(): Promise<void> {
         const pkgReadme = join(apiSrc, 'README.md');
         if (existsSync(pkgReadme)) {
             const entry = await serveFile(pkgReadme, 'api/README.md');
-            entry.section = 'API · @mks2508/better-logger';
-            apiEntries.push(entry);
-            console.log(`  ✓ ${entry.relPath}`);
+            if (entry) {
+                entry.section = 'API · @mks2508/better-logger';
+                apiEntries.push(entry);
+                console.log(`  ✓ ${entry.relPath}`);
+            }
         }
 
         // Module READMEs
@@ -170,6 +200,7 @@ async function main(): Promise<void> {
             const modReadme = join(apiSrc, mod, 'README.md');
             if (!existsSync(modReadme)) continue;
             const entry = await serveFile(modReadme, `api/${mod}/README.md`);
+            if (!entry) continue;
             entry.section = `API · ${mod}`;
             apiEntries.push(entry);
             console.log(`  ✓ ${entry.relPath}`);
