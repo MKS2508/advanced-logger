@@ -72,6 +72,9 @@ jobs:
           source: ./docs
           destination: ./_site/docs
 
+      - name: "📄 Serve raw .md pages + generate llms.txt"
+        run: bun scripts/build-md-serve.ts
+
       - name: "📤 Upload docs artifacts"
         uses: actions/upload-artifact@v4
         with:

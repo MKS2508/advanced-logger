@@ -112,6 +112,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "docs:api": "typedoc",
+    "docs:md-serve": "bun scripts/build-md-serve.ts",
     "test": "bunx vitest run",
     "test:watch": "bunx vitest",
     "test:performance": "bunx vitest bench",
