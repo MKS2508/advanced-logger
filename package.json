@@ -96,7 +96,9 @@
   },
   "homepage": "https://mks2508.github.io/advanced-logger/",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --config vite.config.demo.ts",
+    "demo:dev": "vite --config vite.config.demo.ts",
+    "demo:build": "vite build --config vite.config.demo.ts",
     "build": "rolldown --config rolldown.config.ts && tsc --emitDeclarationOnly",
     "build:full": "rolldown --config rolldown.config.ts && tsc --emitDeclarationOnly",
     "build:core": "BUILD_MODE=core rolldown --config rolldown.config.ts && tsc --emitDeclarationOnly --project tsconfig.node.json",
@@ -143,14 +145,7 @@
     "release:major": "bun project-utils/auto-release-ui.ts --major",
     "workflow:full": "npm run commit:auto && npm run release:full",
     "workflow:commit": "npm run commit:auto",
-    "workflow:release": "npm run version:auto && npm run build:all && npm run release:github",
-    "play": "bun playground/demo-all.ts",
-    "play:spinner": "bun playground/demo-spinner.ts",
-    "play:box": "bun playground/demo-box.ts",
-    "play:table": "bun playground/demo-table.ts",
-    "play:steps": "bun playground/demo-steps.ts",
-    "play:levels": "bun playground/demo-levels.ts",
-    "play:real": "bun playground/demo-real-world.ts"
+    "workflow:release": "npm run version:auto && npm run build:all && npm run release:github"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>@mks2508/better-logger demo</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar__title">
+            <h1>better-logger</h1>
+            <span class="topbar__subtitle">demo · renders the actual logger output to the page</span>
+        </div>
+        <nav class="topbar__nav">
+            <a href="https://mks2508.github.io/advanced-logger/docs/">docs</a>
+            <a href="https://github.com/MKS2508/advanced-logger">github</a>
+        </nav>
+    </header>
+
+    <section class="controls">
+        <label class="control">
+            <span class="control__label">theme</span>
+            <select id="theme-select"></select>
+        </label>
+        <label class="control">
+            <span class="control__label">preset</span>
+            <select id="preset-select"></select>
+        </label>
+        <button id="clear-output" class="control control--button">clear</button>
+    </section>
+
+    <main class="grid">
+        <aside class="snippets">
+            <h2 class="snippets__title">snippets</h2>
+            <ul id="snippet-list" class="snippets__list"></ul>
+        </aside>
+
+        <section class="output" aria-live="polite">
+            <h2 class="output__title">output</h2>
+            <div id="output-panel" class="output__panel"></div>
+        </section>
+    </main>
+
+    <section class="repl">
+        <h2 class="repl__title">try your own</h2>
+        <p class="repl__hint">
+            <code>logger</code>, <code>info</code>, <code>warn</code>, <code>error</code>,
+            <code>api(name)</code>, <code>component(name)</code>, <code>setTheme(name)</code>
+            are in scope. Output renders below.
+        </p>
+        <div class="repl__row">
+            <textarea id="repl-input" class="repl__input" rows="3" spellcheck="false">logger.info('hello from the demo');</textarea>
+            <button id="repl-run" class="repl__run">run</button>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <span>runs against <code>../src/index.ts</code> via vite — pick up source changes on save</span>
+    </footer>
+
+    <script type="module" src="./main.js"></script>
+</body>
+</html>

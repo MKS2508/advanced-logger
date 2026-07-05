@@ -25,16 +25,14 @@ jobs:
       - name: "🔧 Install dependencies"
         run: bun install --frozen-lockfile
 
-      - name: "🏗️ Build library for demo"
-        run: bun run build:full
+      - name: "🏗️ Build demo (vite)"
+        run: bun run demo:build
 
       - name: "🏗️ Setup demo structure"
         run: |
-          mkdir -p _site/docs
-          # Copy demo as root
-          cp demo.html _site/index.html
-          cp index.html _site/dev.html
-          cp -r dist/ _site/dist/
+          mkdir -p _site
+          # Copy built demo (vite outputs to dist-demo/) as site root
+          cp -r dist-demo/. _site/
 
           # Create demo metadata
           echo "## 📦 Demo Build Info" > _site/build-info.md
@@ -126,5 +124,4 @@ jobs:
           echo "## 📝 Documentation & Demo Deployed!" >> $GITHUB_STEP_SUMMARY
           echo "- **Demo URL**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Docs URL**: ${{ steps.deployment.outputs.page_url }}docs/" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dev Demo**: ${{ steps.deployment.outputs.page_url }}dev.html" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Info**: ${{ steps.deployment.outputs.page_url }}build-info.md" >> $GITHUB_STEP_SUMMARY
