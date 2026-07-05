@@ -75,9 +75,8 @@ jobs:
       - name: "🔓 Ensure _site/docs is writable"
         # Jekyll's actions/jekyll-build-pages runs in a Docker container as root,
         # so the output tree is owned by root and unwritable for the runner.
-        # Open it up: chmod -R a+rwX makes everything user-writable recursively.
-        run: chmod -R a+rwX _site/docs && chmod a+rwX _site/docs
-        continue-on-error: false
+        # `chmod` requires ownership so sudo is mandatory.
+        run: sudo -n chmod -R a+rwX _site/docs
 
       - name: "📄 Serve raw .md pages + generate llms.txt"
         run: bun scripts/build-md-serve.ts
