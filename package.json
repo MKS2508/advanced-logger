@@ -26,38 +26,38 @@
       "types": "./dist/cli-module.d.ts"
     },
     "./transports": {
-      "import": "./dist/transports-module.js",
-      "require": "./dist/transports-module.cjs",
+      "import": "./dist/transports.js",
+      "require": "./dist/transports.cjs",
       "types": "./dist/transports-module.d.ts"
     },
     "./context": {
-      "import": "./dist/context-module.js",
-      "require": "./dist/context-module.cjs",
+      "import": "./dist/context.js",
+      "require": "./dist/context.cjs",
       "types": "./dist/context-module.d.ts"
     },
     "./hooks": {
-      "import": "./dist/hooks-module.js",
-      "require": "./dist/hooks-module.cjs",
+      "import": "./dist/hooks.js",
+      "require": "./dist/hooks.cjs",
       "types": "./dist/hooks-module.d.ts"
     },
     "./serializers": {
-      "import": "./dist/serializers-module.js",
-      "require": "./dist/serializers-module.cjs",
+      "import": "./dist/serializers.js",
+      "require": "./dist/serializers.cjs",
       "types": "./dist/serializers-module.d.ts"
     },
     "./styles": {
-      "import": "./dist/styles-module.js",
-      "require": "./dist/styles-module.cjs",
+      "import": "./dist/styles.js",
+      "require": "./dist/styles.cjs",
       "types": "./dist/styles-module.d.ts"
     },
     "./playground": {
-      "import": "./dist/playground-module.js",
-      "require": "./dist/playground-module.cjs",
+      "import": "./dist/playground.js",
+      "require": "./dist/playground.cjs",
       "types": "./dist/playground-module.d.ts"
     },
     "./node": {
-      "import": "./dist/node-module.js",
-      "require": "./dist/node-module.cjs",
+      "import": "./dist/node.js",
+      "require": "./dist/node.cjs",
       "types": "./dist/node-module.d.ts"
     }
   },
