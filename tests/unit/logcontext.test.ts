@@ -219,6 +219,46 @@ describe('LogContext', () => {
         });
     });
 
+    describe('withContext / withContextAsync — real ALS propagation (node/bun)', () => {
+        // Regression coverage for the broken `typeof AsyncLocalStorage !== 'undefined'`
+        // feature-detect: AsyncLocalStorage is not a global in node/bun, so the old
+        // code always resolved `alsInstance = undefined` and every withContext/
+        // withContextAsync call silently skipped ALS scoping. `_getContextRecord()`
+        // is the mechanism that actually receives the ALS overlay (`getContext()`
+        // deliberately excludes it — see docs/context.md "No incluye el overlay ALS
+        // transitorio" and Logger.ts:493-502), so these tests assert against it.
+
+        it('withContext binds requestId visible via _getContextRecord() inside fn', () => {
+            expect(logCtx._getContextRecord()).not.toHaveProperty('requestId');
+            logCtx.withContext({ requestId: 'x' }, () => {
+                expect(logCtx._getContextRecord()).toMatchObject({ requestId: 'x' });
+            });
+            expect(logCtx._getContextRecord()).not.toHaveProperty('requestId');
+        });
+
+        it('withContextAsync keeps the binding visible across an await boundary', async () => {
+            await logCtx.withContextAsync({ requestId: 'x' }, async () => {
+                expect(logCtx._getContextRecord()).toMatchObject({ requestId: 'x' });
+                await Promise.resolve();
+                expect(logCtx._getContextRecord()).toMatchObject({ requestId: 'x' });
+            });
+            expect(logCtx._getContextRecord()).not.toHaveProperty('requestId');
+        });
+
+        it('nested withContext merges bindings with the active outer scope', () => {
+            logCtx.withContext({ outer: 'a' }, () => {
+                expect(logCtx._getContextRecord()).toMatchObject({ outer: 'a' });
+                logCtx.withContext({ inner: 'b' }, () => {
+                    expect(logCtx._getContextRecord()).toMatchObject({ outer: 'a', inner: 'b' });
+                });
+                // Back in the outer scope: inner binding is gone, outer persists.
+                expect(logCtx._getContextRecord()).toMatchObject({ outer: 'a' });
+                expect(logCtx._getContextRecord()).not.toHaveProperty('inner');
+            });
+            expect(logCtx._getContextRecord()).not.toHaveProperty('outer');
+        });
+    });
+
     describe('_getResource', () => {
         it('returns undefined when no resource is set', () => {
             expect(logCtx._getResource()).toBeUndefined();

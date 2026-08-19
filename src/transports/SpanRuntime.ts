@@ -18,62 +18,21 @@
  */
 
 import type { Span, SpanAttributes, SpanRecord } from '../types/index.js';
+import { resolveAsyncLocalStorage, type AsyncLocalStorageLike } from '../utils/asyncLocalStorage.js';
 
 /**
  * Forma mínima del `AsyncLocalStorage` de `node:async_hooks` que usa el
  * runtime. Undefined en browser sin polyfill.
  */
-interface SpanALS {
-    run<R>(store: SpanRecord, fn: () => R): R;
-    getStore(): SpanRecord | undefined;
-}
+type SpanALS = AsyncLocalStorageLike<SpanRecord>;
 
-/**
- * Resuelve `AsyncLocalStorage` por capas:
- *   1. global `AsyncLocalStorage` (runtimes/polyfills que lo exponen),
- *   2. `process.getBuiltinModule('async_hooks')` (Node >= 22.3, Bun),
- *   3. `require('node:async_hooks')` (CJS interop),
- *   4. `undefined` → browser estricto: spans sin correlación (degradación
- *      documentada; `span(fn)`/`startSpan()` siguen funcionando).
+/** ALS singleton del módulo — compartido por todas las instancias de Logger.
  *
- * Nota: NO basta con `typeof AsyncLocalStorage !== 'undefined'` — en Node y
- * Bun el constructor NO es global y hay que ir a `node:async_hooks`.
- */
-function resolveSpanALS(): SpanALS | undefined {
-    const globalCtor = (globalThis as { AsyncLocalStorage?: new () => SpanALS }).AsyncLocalStorage;
-    if (typeof globalCtor === 'function') {
-        return new globalCtor();
-    }
-
-    const proc = globalThis as {
-        process?: { getBuiltinModule?: (id: string) => { AsyncLocalStorage?: new () => SpanALS } | undefined };
-    };
-    try {
-        const asyncHooks = proc.process?.getBuiltinModule?.('async_hooks');
-        if (asyncHooks?.AsyncLocalStorage) {
-            return new asyncHooks.AsyncLocalStorage();
-        }
-    } catch {
-        // getBuiltinModule no disponible — siguiente capa
-    }
-
-    try {
-        if (typeof require === 'function') {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const asyncHooks = require('node:async_hooks') as { AsyncLocalStorage?: new () => SpanALS };
-            if (asyncHooks?.AsyncLocalStorage) {
-                return new asyncHooks.AsyncLocalStorage();
-            }
-        }
-    } catch {
-        // ESM puro sin require ni builtin accessor — browser
-    }
-
-    return undefined;
-}
-
-/** ALS singleton del módulo — compartido por todas las instancias de Logger. */
-const activeSpanStore: SpanALS | undefined = resolveSpanALS();
+ * Resolución por capas (global → `process.getBuiltinModule` → `require`,
+ * undefined en browser) delegada al helper compartido
+ * {@link resolveAsyncLocalStorage} — ver su doc para el detalle de capas.
+ * `context/LogContext.ts` usa el mismo helper para su ALS de MDC. */
+const activeSpanStore: SpanALS | undefined = resolveAsyncLocalStorage<SpanRecord>();
 
 /**
  * Span activo en el call stack corriente (dentro de `span(fn)`), si lo hay.

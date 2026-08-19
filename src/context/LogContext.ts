@@ -15,6 +15,7 @@
 
 import type { ILogResourceRef } from '../types/index.js';
 import type { LoggerConfig } from '../types/index.js';
+import { resolveAsyncLocalStorage, type AsyncLocalStorageLike } from '../utils/asyncLocalStorage.js';
 
 /**
  * Snapshot del contexto bound. Lo retorna {@link LogContext.getContext}.
@@ -229,15 +230,16 @@ export interface LogContext {
 }
 
 // AsyncLocalStorage type (Node 14+, undefined in browser)
-type ALS = {
-    run<R>(store: Record<string, unknown>, fn: () => R): R;
-    getStore(): Record<string, unknown> | undefined;
-};
-declare const AsyncLocalStorage: new () => ALS;
+type ALS = AsyncLocalStorageLike<Record<string, unknown>>;
 
-// Feature-detect AsyncLocalStorage
-const hasALS = typeof AsyncLocalStorage !== 'undefined';
-const alsInstance: ALS | undefined = hasALS ? new AsyncLocalStorage() : undefined;
+// ALS singleton del módulo. Resolución por capas (global →
+// `process.getBuiltinModule` → `require`, undefined en browser) delegada al
+// helper compartido `resolveAsyncLocalStorage` — el mismo que usa el ALS de
+// spans en `transports/SpanRuntime.ts`. Antes esto era
+// `typeof AsyncLocalStorage !== 'undefined'`, un feature-detect roto: ese
+// constructor no es global en node/bun, así que siempre resolvía `undefined`
+// y `withContext`/`withContextAsync` eran no-op silenciosos fuera del browser.
+const alsInstance: ALS | undefined = resolveAsyncLocalStorage<Record<string, unknown>>();
 
 /**
  * Factory que crea una instancia de {@link LogContext}.
@@ -275,21 +277,23 @@ export function createLogContext(options: ILogContextOptions): LogContext {
         },
 
         withContext<R>(bindings: Record<string, unknown>, fn?: () => R): R | undefined {
-            // No-op without AsyncLocalStorage (browser) — warn once
+            // No-op without AsyncLocalStorage (browser fallback)
             if (!als) {
                 if (fn) return fn();
                 return undefined;
             }
             // No fn: backwards-compat no-op setter shim
             if (!fn) return undefined;
-            // Run fn within AsyncLocalStorage scope
-            const merged = { ...context, ...bindings };
+            // Run fn within AsyncLocalStorage scope, merged with the active
+            // outer scope (if any) so nested withContext calls accumulate
+            // bindings instead of replacing them.
+            const merged = { ...context, ...als.getStore(), ...bindings };
             return als.run(merged, fn);
         },
 
         async withContextAsync<R>(bindings: Record<string, unknown>, fn: () => Promise<R>): Promise<R> {
             if (!als) return fn();
-            const merged = { ...context, ...bindings };
+            const merged = { ...context, ...als.getStore(), ...bindings };
             return als.run(merged, fn);
         },
 

@@ -151,7 +151,7 @@ El soporte browser depende de qué forma uses:
 - ✅ **`child()`** — funciona en browser sin configuración extra. No depende de `AsyncLocalStorage`.
 - ⚠️ **`withContext(bindings, fn)` / `withContextAsync()`** — en browser **sin ALS** (Polyfill deshabilitado), `fn` se ejecuta directamente sin scoping: los bindings **no se mergean** al contexto. Si no se pasa `fn`, retorna `undefined`.
 
-El feature-detect es interno (`typeof AsyncLocalStorage !== 'undefined'`), sin configuración del caller.
+La resolución de `AsyncLocalStorage` es interna y por capas (`globalThis.AsyncLocalStorage` → `process.getBuiltinModule('async_hooks')` → `require('node:async_hooks')`), sin configuración del caller — por eso `withContext*` funciona en node y bun (donde el constructor **no** es global) y solo degrada a no-op en browser puro sin ALS.
 
 ```typescript
 // Browser-safe — usar child() para bindings por request/componente
