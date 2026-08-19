@@ -4,13 +4,16 @@ import type {
     TransportOptions,
     ITransport,
     ITransportManager,
-    LogLevel
+    LogLevel,
+    SpanRecord,
+    TransportDispatchRecord
 } from '../types/index.js';
 import { LOG_LEVELS } from '../types/index.js';
 import { ConsoleTransport } from './ConsoleTransport.js';
 import { FileTransport } from './FileTransport.js';
 import { HttpTransport } from './HttpTransport.js';
 import { OtlpTransport } from './OtlpTransport.js';
+import { OtlpTraceTransport } from './OtlpTraceTransport.js';
 
 /**
  * Genera un id opaco y estable en el tiempo para cada transport añadido al
@@ -37,11 +40,12 @@ export type TransportConstructor = new (options?: TransportOptions) => ITranspor
  * se añaden al registry por-instancia vía {@link TransportManager.register}
  * (no a este Map módulo-nivel).
  *
- * Los cuatro built-ins registrados automáticamente:
- *   - `'console'` → {@link ConsoleTransport}
- *   - `'file'`    → {@link FileTransport}
- *   - `'http'`    → {@link HttpTransport}
- *   - `'otlp'`    → {@link OtlpTransport}
+ * Los cinco built-ins registrados automáticamente:
+ *   - `'console'`     → {@link ConsoleTransport} (logs)
+ *   - `'file'`        → {@link FileTransport} (logs)
+ *   - `'http'`        → {@link HttpTransport} (logs)
+ *   - `'otlp'`        → {@link OtlpTransport} (logs → `/v1/logs`)
+ *   - `'otlp-trace'`  → {@link OtlpTraceTransport} (spans → `/v1/traces`)
  *
  * @internal No exportado — los callers externos usan
  *   {@link TransportManager.register} / {@link TransportManager.listRegistered}.
@@ -50,8 +54,17 @@ const BUILTIN_REGISTRY: Map<string, TransportConstructor> = new Map([
     ['console', ConsoleTransport as unknown as TransportConstructor],
     ['file', FileTransport as unknown as TransportConstructor],
     ['http', HttpTransport as unknown as TransportConstructor],
-    ['otlp', OtlpTransport as unknown as TransportConstructor]
+    ['otlp', OtlpTransport as unknown as TransportConstructor],
+    ['otlp-trace', OtlpTraceTransport as unknown as TransportConstructor]
 ]);
+
+/** `accepts` efectivo cuando el transport no lo declara: log-only. */
+const DEFAULT_ACCEPTS: readonly ('log' | 'span')[] = ['log'];
+
+/** Estrecha un record del pipeline a su kind: todo lo que no es span es log. */
+function recordKind(record: TransportDispatchRecord): 'log' | 'span' {
+    return (record as SpanRecord).kind === 'span' ? 'span' : 'log';
+}
 
 /**
  * Entrada interna del set de transports activos. Guarda la instancia, las
@@ -278,16 +291,22 @@ export class TransportManager implements ITransportManager {
     }
 
     /**
-     * Dispatcha un {@link TransportRecord} a todos los transports activos
-     * que pasen el filtro de nivel.
+     * Dispatcha un {@link TransportRecord} o {@link SpanRecord} a todos los
+     * transports activos que acepten su kind.
      *
      * Por cada transport, en orden:
-     *   1. **Filtro de nivel**: si `record.levelValue < entry.levelValue`,
-     *      se skipa (ese transport no recibe este record).
-     *   2. **Transform**: si `entry.options.transform` está seteado, se
-     *      aplica al record. Si devuelve `null`, el record se droppea para
-     *      este transport (no para los demás).
-     *   3. **Write**: se llama a `transport.write(transformedRecord)`. Si
+     *   1. **Routing por kind**: el kind del record (`'log'` o `'span'`)
+     *      debe estar en el `accepts` del transport (default `['log']` cuando
+     *      no lo declara). Un `SpanRecord` JAMÁS llega a un transport
+     *      log-only, y viceversa — esto evita que un `OtlpTransport` serialice
+     *      spans como `logRecords` hacia `/v1/logs`.
+     *   2. **Filtro de nivel** (solo logs): si `record.levelValue <
+     *      entry.levelValue`, se skipa. Los spans no tienen nivel.
+     *   3. **Transform** (solo logs): si `entry.options.transform` está
+     *      seteado, se aplica al record. Si devuelve `null`, el record se
+     *      droppea para este transport. Los spans NO pasan por transform —
+     *      su contrato asume shape de log (muta `record.message`).
+     *   4. **Write**: se llama a `transport.write(record)`. Si
      *      devuelve una Promise, se añade al batch await. Toda excepción
      *      sincrónica o rechazo de Promise se captura y se loguea por
      *      consola — el log call original del caller nunca rompe por un
@@ -297,7 +316,7 @@ export class TransportManager implements ITransportManager {
      * resuelto (o fallado) su write. Para fire-and-forget desde el Logger,
      * el caller puede ignorar la Promise.
      *
-     * @param {TransportRecord} record - Record a dispatchar.
+     * @param {TransportDispatchRecord} record - Record (log o span) a dispatchar.
      * @returns {Promise<void>} Resuelve cuando todos los writes terminaron
      *   (exitosos o fallidos). Nunca rechaza.
      *
@@ -308,24 +327,34 @@ export class TransportManager implements ITransportManager {
      * });
      *
      * @see {@link TransportRecord}
+     * @see {@link SpanRecord}
      */
-    async write(record: TransportRecord): Promise<void> {
+    async write(record: TransportDispatchRecord): Promise<void> {
         const promises: Promise<unknown>[] = [];
+        const kind = recordKind(record);
 
         for (const entry of this.transports.values()) {
-            if (record.levelValue < entry.levelValue) {
+            const accepts = entry.transport.accepts ?? DEFAULT_ACCEPTS;
+            if (!accepts.includes(kind)) {
                 continue;
             }
 
-            let transformedRecord: TransportRecord = record;
-            if (entry.options.transform) {
-                const result = entry.options.transform(record);
-                if (result === null) continue;
-                transformedRecord = result;
+            let dispatchRecord: TransportDispatchRecord = record;
+
+            if (kind === 'log') {
+                const logRecord = record as TransportRecord;
+                if (logRecord.levelValue < entry.levelValue) {
+                    continue;
+                }
+                if (entry.options.transform) {
+                    const result = entry.options.transform(logRecord);
+                    if (result === null) continue;
+                    dispatchRecord = result;
+                }
             }
 
             try {
-                const result = entry.transport.write(transformedRecord);
+                const result = entry.transport.write(dispatchRecord);
                 if (result instanceof Promise) {
                     promises.push(
                         result.catch(err => {

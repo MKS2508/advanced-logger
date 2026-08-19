@@ -95,7 +95,7 @@ interface OtlpLogRecord {
  * mixtos).
  * @see https://opentelemetry.io/docs/specs/otel/common/
  */
-type OtlpAttributeValue =
+export type OtlpAttributeValue =
     | { stringValue: string }
     | { intValue: number }
     | { doubleValue: number }
@@ -250,7 +250,12 @@ export class OtlpTransport extends HttpTransport {
 
 // ===== Internal helpers =====
 
-function stripTrailingSlash(value: string): string {
+/**
+ * Quita la barra final de un endpoint si la lleva.
+ *
+ * @internal Compartido con {@link OtlpTraceTransport}; no es API pública.
+ */
+export function stripTrailingSlash(value: string): string {
     return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
@@ -260,11 +265,12 @@ function stripTrailingSlash(value: string): string {
  * browser) o si la variable no está seteada. Nunca throwea, nunca loguea
  * el valor.
  *
- * @internal Helper del constructor de {@link OtlpTransport}; no es API pública.
+ * @internal Helper del constructor de {@link OtlpTransport} y
+ *   {@link OtlpTraceTransport}; no es API pública.
  * @param envVarName - Nombre de la env var a leer.
  * @returns Valor de la key, o `undefined` si no está disponible.
  */
-function readIngestKey(envVarName: string | undefined): string | undefined {
+export function readIngestKey(envVarName: string | undefined): string | undefined {
     if (!envVarName) return undefined;
     if (typeof process === 'undefined') return undefined;
     const proc = process as { env?: Record<string, string | undefined> };
@@ -300,7 +306,14 @@ function collectAttributes(record: TransportRecord): Array<{ key: string; value:
     return out;
 }
 
-function toOtlpAttribute(value: unknown): OtlpAttributeValue | null {
+/**
+ * Convierte un valor JS a un `AnyValue` de OTel. Compartido con
+ * {@link OtlpTraceTransport} para serializar attributes de span con el mismo
+ * mapping.
+ *
+ * @internal Exportado para reuse entre transports OTLP; no es API pública.
+ */
+export function toOtlpAttribute(value: unknown): OtlpAttributeValue | null {
     if (value === null || value === undefined) return null;
     if (typeof value === 'string') return { stringValue: value };
     if (typeof value === 'number') {

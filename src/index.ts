@@ -17,6 +17,8 @@ import type {
     CLILogLevel,
     IBoxOptions,
     ITableOptions,
+    Span,
+    SpanAttributes,
 } from './types/index.js';
 
 // Lazy singleton - se inicializa solo cuando se necesita
@@ -56,6 +58,23 @@ export const group = (label: string, collapsed?: boolean) => getLogger().group(l
 export const groupEnd = () => getLogger().groupEnd();
 export const time = (label: string) => getLogger().time(label);
 export const timeEnd = (label: string) => getLogger().timeEnd(label);
+export const event = (name: string, attributes?: SpanAttributes): void =>
+    getLogger().event(name, attributes);
+export const startSpan = (name: string, attributes?: SpanAttributes): Span =>
+    getLogger().startSpan(name, attributes);
+export function span<T>(name: string, fn: (s: Span) => T | Promise<T>): Promise<T>;
+export function span<T>(name: string, attributes: SpanAttributes, fn: (s: Span) => T | Promise<T>): Promise<T>;
+export function span<T>(
+    name: string,
+    fnOrAttributes: SpanAttributes | ((s: Span) => T | Promise<T>),
+    maybeFn?: (s: Span) => T | Promise<T>
+): Promise<T> {
+    return getLogger().span(
+        name,
+        fnOrAttributes as SpanAttributes,
+        maybeFn as (s: Span) => T | Promise<T>
+    );
+}
 export const setGlobalPrefix = (prefix: string) => getLogger().setGlobalPrefix(prefix);
 export const scope = (name: string) => getLogger().scope(name);
 export const component = (name: string) => getLogger().component(name);

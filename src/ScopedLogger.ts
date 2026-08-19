@@ -1,5 +1,14 @@
-import { Logger } from './Logger.js';
-import type { TimerEntry, Bindings, ISpinnerHandle, IBoxOptions, ITableOptions, CLILogLevel } from './types/index.js';
+import { Logger, resolveSpanArgs } from './Logger.js';
+import type {
+    TimerEntry,
+    Bindings,
+    ISpinnerHandle,
+    IBoxOptions,
+    ITableOptions,
+    CLILogLevel,
+    Span,
+    SpanAttributes
+} from './types/index.js';
 
 /**
  * Logger prefijado por un scope nominal. Mantiene su propio stack de badges
@@ -298,6 +307,60 @@ export class ScopedLogger {
      */
     trace(...args: unknown[]): void {
         this.parent.logWithBindings(this.getBindings(), 'trace', ...args);
+    }
+
+    // ===== SPANS / TRACES (delegation to Logger) =====
+
+    /**
+     * Emite un point-span con el scope de este logger como
+     * `SpanRecord.scope`. Ver {@link Logger.event}.
+     *
+     * @param {string} name - Nombre del evento.
+     * @param {SpanAttributes} [attributes] - Attributes del span.
+     *
+     * @example
+     * logger.scope('BUILD').event('step.done', { step: 'compile' });
+     */
+    event(name: string, attributes?: SpanAttributes): void {
+        this.parent._emitSpanEvent(name, attributes, this.getScopePrefix());
+    }
+
+    /**
+     * Ejecuta `fn` dentro de un span activo etiquetado con el scope de este
+     * logger. Los logs dentro de `fn` correlacionan con el span vía
+     * `traceId`/`spanId`. Ver {@link Logger.span}.
+     *
+     * @typeParam T - Tipo resuelto por `fn`.
+     * @param {string} name - Nombre de la operación.
+     * @param {(s: Span) => T | Promise<T>} fn - Work-block a medir.
+     * @returns {Promise<T>} Lo que resuelve `fn`.
+     *
+     * @example
+     * await logger.scope('DB').span('migrate', async (s) => {
+     *   await runMigrations();
+     * });
+     */
+    span<T>(name: string, fn: (s: Span) => T | Promise<T>): Promise<T>;
+    span<T>(name: string, attributes: SpanAttributes, fn: (s: Span) => T | Promise<T>): Promise<T>;
+    span<T>(
+        name: string,
+        fnOrAttributes: ((s: Span) => T | Promise<T>) | SpanAttributes,
+        maybeFn?: (s: Span) => T | Promise<T>
+    ): Promise<T> {
+        const { attributes, fn } = resolveSpanArgs(fnOrAttributes, maybeFn);
+        return this.parent._runSpan(name, attributes, this.getScopePrefix(), fn);
+    }
+
+    /**
+     * Inicia un span externally-ended etiquetado con el scope de este
+     * logger. Ver {@link Logger.startSpan}.
+     *
+     * @param {string} name - Nombre de la operación.
+     * @param {SpanAttributes} [attributes] - Attributes iniciales.
+     * @returns {Span} Handle con `set`/`end`/`fail`.
+     */
+    startSpan(name: string, attributes?: SpanAttributes): Span {
+        return this.parent._startSpan(name, attributes, this.getScopePrefix());
     }
 
     // ===== CLI PRIMITIVES (delegation to Logger) =====

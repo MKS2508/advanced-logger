@@ -28,7 +28,9 @@ import type {
     StackInfo,
     LogStyles,
     ILogAttributes,
-    LogAttributeValue
+    LogAttributeValue,
+    Span,
+    SpanAttributes
 } from './types/index.js';
 
 import { LOG_LEVELS } from './types/index.js';
@@ -77,6 +79,13 @@ import type { CLILogLevel, ISpinnerHandle, IBoxOptions, ITableOptions } from './
 // Bridge imports
 import { createLogContext, type LogContext } from './context/LogContext.js';
 import { createTransportBridge, type TransportBridge } from './transports/TransportBridge.js';
+import {
+    getActiveSpan,
+    runWithActiveSpan,
+    createSpan,
+    emitEventSpan,
+    forceCloseOpenSpans
+} from './transports/SpanRuntime.js';
 import { createHookBridge, type HookBridge } from './hooks/HookBridge.js';
 import { createSerializerBridge, type SerializerBridge } from './serializers/SerializerBridge.js';
 import { createTerminalBridge, type TerminalBridge } from './playground/TerminalBridge.js';
@@ -558,7 +567,9 @@ export class Logger {
             this.themeChangeListener = null;
         }
 
-        // Drain del queue de transports en cleanup.
+        // Drain del queue de transports en cleanup. Los spans aún abiertos se
+        // fuerzan a cerrar (incomplete) para no perderlos en el drain.
+        forceCloseOpenSpans();
         await this.transportBridge.closeTransports();
 
         // Suelta las refs de handlers para que el GC los pueda recolectar.
@@ -1059,22 +1070,28 @@ export class Logger {
     }
 
     /**
-     * Fuerza el flush de todos los transports
+     * Fuerza el flush de todos los transports. Antes de flushear, cierra los
+     * spans aún abiertos (`incomplete: true`) y los encola para export — un
+     * span abierto nunca se tira en un flush.
      *
      * @returns Promise que resuelve cuando todos los buffers están vaciados
      *
      */
     async flushTransports(): Promise<void> {
+        forceCloseOpenSpans();
         await this.transportBridge.flushTransports();
     }
 
     /**
-     * Cierra todos los transports
+     * Cierra todos los transports. Como en {@link flushTransports}, primero
+     * fuerza el cierre de los spans abiertos para que viajen en el flush
+     * final del close.
      *
      * @returns Promise que resuelve cuando todos están cerrados
      *
      */
     async closeTransports(): Promise<void> {
+        forceCloseOpenSpans();
         await this.transportBridge.closeTransports();
     }
 
@@ -1201,6 +1218,15 @@ export class Logger {
                 : undefined,
             ...extra
         };
+
+        // Correlación log→span: si hay un span activo en el ALS del módulo,
+        // el record hereda su traceId/spanId (los campos ya existían en
+        // TransportRecord; ahora se pueblan → correlación gratis en backends).
+        const activeSpan = getActiveSpan();
+        if (activeSpan && !record.traceId) {
+            record.traceId = activeSpan.traceId;
+            record.spanId = activeSpan.spanId;
+        }
 
         // Fire-and-forget vía bridge — nunca rompe el path de log sincrónico.
         this.transportBridge.writeRecord(record);
@@ -1549,6 +1575,149 @@ export class Logger {
      */
     critical(...args: unknown[]): Promise<void> {
         return this.log('critical', ...args);
+    }
+
+    // ===== SPANS / TRACES (trio API) =====
+
+    /**
+     * Emite un **point-span**: un span con `start = end` para completion
+     * signals y eventos puntuales (una operación instantánea, un hito).
+     * No registra contexto activo ni puede leakear — se exporta de inmediato.
+     *
+     * El nombre `event` (y no `trace`) es deliberado: `trace` es un log level
+     * (el -1) y está reservado.
+     *
+     * @param {string} name - Nombre del evento (`job.completed`, `cache.flushed`, ...).
+     * @param {SpanAttributes} [attributes] - Attributes del span.
+     *
+     * @example
+     * logger.event('build.finished', { status: 'ok', durationMs: 4200 });
+     *
+     * @see {@link span} para intervalos con work-block
+     * @see {@link startSpan} para intervalos externally-ended
+     */
+    event(name: string, attributes?: SpanAttributes): void {
+        emitEventSpan(name, attributes, this._spanScopeName(), record => {
+            this.transportBridge.writeRecord(record);
+        });
+    }
+
+    /**
+     * Ejecuta `fn` dentro de un span de intervalo. El span queda **activo en
+     * el AsyncLocalStorage del módulo** mientras `fn` corre: los logs emitidos
+     * dentro heredan su `traceId`/`spanId`, y los spans hijos lo toman como
+     * `parentSpanId`.
+     *
+     * Al retornar `fn` el span se cierra automáticamente; si `fn` lanza, se
+     * marca `status {code: 2}` con el mensaje del error (`fail`) y la
+     * excepción se relanza intacta.
+     *
+     * @typeParam T - Tipo resuelto por `fn`.
+     * @param {string} name - Nombre de la operación.
+     * @param {(s: Span) => T | Promise<T>} fn - Work-block a medir.
+     * @returns {Promise<T>} Lo que resuelve `fn`.
+     * @throws {unknown} Relanza cualquier error de `fn` tras marcar el span fallido.
+     *
+     * @example
+     * await logger.span('db.migrate', { target: 'v2' }, async (s) => {
+     *   await runMigrations();
+     *   s.set('tables', 14);
+     * });
+     *
+     * @see {@link event} para point-spans
+     * @see {@link startSpan} para spans externally-ended (poll/callback)
+     */
+    span<T>(name: string, fn: (s: Span) => T | Promise<T>): Promise<T>;
+    span<T>(name: string, attributes: SpanAttributes, fn: (s: Span) => T | Promise<T>): Promise<T>;
+    span<T>(
+        name: string,
+        fnOrAttributes: ((s: Span) => T | Promise<T>) | SpanAttributes,
+        maybeFn?: (s: Span) => T | Promise<T>
+    ): Promise<T> {
+        const { attributes, fn } = resolveSpanArgs(fnOrAttributes, maybeFn);
+        return this._runSpan(name, attributes, this._spanScopeName(), fn);
+    }
+
+    /**
+     * Inicia un span de intervalo **externally-ended**: devuelve el handle y
+     * NO fija contexto ALS (el cierre ocurre fuera del bloque léxico — p.ej.
+     * un `cli.spawn` que se cierra desde un poll o callback externo).
+     *
+     * Si el span no se cierra antes de `flushTransports()` / shutdown, el
+     * flush lo fuerza a cerrar con `incomplete: true` y lo exporta — nunca
+     * se tira.
+     *
+     * @param {string} name - Nombre de la operación.
+     * @param {SpanAttributes} [attributes] - Attributes iniciales.
+     * @returns {Span} Handle con `set`/`end`/`fail` y los ids del span.
+     *
+     * @example
+     * const s = logger.startSpan('spawn.build', { cmd: 'make' });
+     * proc.on('exit', code => {
+     *   if (code === 0) s.end({ exitCode: code });
+     *   else s.fail(new Error(`exit ${code}`));
+     * });
+     *
+     * @see {@link span} para el caso con work-block
+     */
+    startSpan(name: string, attributes?: SpanAttributes): Span {
+        return this._startSpan(name, attributes, this._spanScopeName());
+    }
+
+    /**
+     * Scope por defecto de los spans emitidos por este logger (el
+     * `globalPrefix`, o `'root'`).
+     * @internal
+     */
+    _spanScopeName(): string {
+        return this.config.globalPrefix || 'root';
+    }
+
+    /**
+     * Emite un point-span con scope explícito. Lo consume
+     * {@link ScopedLogger.event}, que pasa su scope compuesto.
+     * @internal
+     */
+    _emitSpanEvent(name: string, attributes: SpanAttributes | undefined, scope: string): void {
+        emitEventSpan(name, attributes, scope, record => {
+            this.transportBridge.writeRecord(record);
+        });
+    }
+
+    /**
+     * Crea un span externally-ended con scope explícito. Lo consume
+     * {@link ScopedLogger.startSpan}.
+     * @internal
+     */
+    _startSpan(name: string, attributes: SpanAttributes | undefined, scope: string): Span {
+        const { span } = createSpan(name, attributes, scope, record => {
+            this.transportBridge.writeRecord(record);
+        });
+        return span;
+    }
+
+    /**
+     * Corre `fn` dentro de un span activo en el ALS con scope explícito.
+     * Lo consume {@link ScopedLogger.span}.
+     * @internal
+     */
+    async _runSpan<T>(
+        name: string,
+        attributes: SpanAttributes | undefined,
+        scope: string,
+        fn: (s: Span) => T | Promise<T>
+    ): Promise<T> {
+        const { record, span } = createSpan(name, attributes, scope, r => {
+            this.transportBridge.writeRecord(r);
+        });
+        try {
+            const result = await runWithActiveSpan(record, () => fn(span));
+            span.end();
+            return result;
+        } catch (error) {
+            span.fail(error);
+            throw error;
+        }
     }
 
     // ===== ADVANCED LOGGING FEATURES =====
@@ -2189,6 +2358,25 @@ function toAttributeValue(value: unknown): LogAttributeValue | undefined {
 }
 
 /**
+ * Resuelve los argumentos del overload `span(name, fn?)` /
+ * `span(name, attributes, fn)` a `{ attributes, fn }`.
+ *
+ * @internal Compartido con `ScopedLogger.span`; no es API pública.
+ */
+export function resolveSpanArgs<T>(
+    fnOrAttributes: ((s: Span) => T | Promise<T>) | SpanAttributes,
+    maybeFn?: (s: Span) => T | Promise<T>
+): { attributes: SpanAttributes | undefined; fn: (s: Span) => T | Promise<T> } {
+    if (typeof fnOrAttributes === 'function') {
+        return { attributes: undefined, fn: fnOrAttributes };
+    }
+    if (typeof maybeFn === 'function') {
+        return { attributes: fnOrAttributes, fn: maybeFn };
+    }
+    throw new TypeError('span(name, …): se requiere una función fn');
+}
+
+/**
  * Métodos individuales exportados para conveniencia
  * @description Todos los métodos están correctamente enlazados al singleton lazy
  */
@@ -2204,6 +2392,23 @@ export const group = (label: string, collapsed?: boolean) => getDefaultLogger().
 export const groupEnd = () => getDefaultLogger().groupEnd();
 export const time = (label: string) => getDefaultLogger().time(label);
 export const timeEnd = (label: string) => getDefaultLogger().timeEnd(label);
+export const event = (name: string, attributes?: SpanAttributes): void =>
+    getDefaultLogger().event(name, attributes);
+export const startSpan = (name: string, attributes?: SpanAttributes): Span =>
+    getDefaultLogger().startSpan(name, attributes);
+export function span<T>(name: string, fn: (s: Span) => T | Promise<T>): Promise<T>;
+export function span<T>(name: string, attributes: SpanAttributes, fn: (s: Span) => T | Promise<T>): Promise<T>;
+export function span<T>(
+    name: string,
+    fnOrAttributes: SpanAttributes | ((s: Span) => T | Promise<T>),
+    maybeFn?: (s: Span) => T | Promise<T>
+): Promise<T> {
+    return getDefaultLogger().span(
+        name,
+        fnOrAttributes as SpanAttributes,
+        maybeFn as (s: Span) => T | Promise<T>
+    );
+}
 export const setGlobalPrefix = (prefix: string) => getDefaultLogger().setGlobalPrefix(prefix);
 export const setVerbosity = (level: Verbosity) => getDefaultLogger().setVerbosity(level);
 export const addHandler = (handler: ILogHandler) => getDefaultLogger().addHandler(handler);

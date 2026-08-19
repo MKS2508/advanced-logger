@@ -3,3 +3,4 @@ export { ConsoleTransport } from './ConsoleTransport.js';
 export { FileTransport, type FileTransportOptions } from './FileTransport.js';
 export { HttpTransport, type HttpTransportOptions } from './HttpTransport.js';
 export { OtlpTransport, type OtlpTransportOptions } from './OtlpTransport.js';
+export { OtlpTraceTransport, type OtlpTraceTransportOptions } from './OtlpTraceTransport.js';

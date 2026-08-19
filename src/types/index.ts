@@ -76,6 +76,13 @@ export type {
     ILogResource,
     ILogAttributes,
     LogAttributeValue,
+    TransportRecordKind,
+    TransportDispatchRecord,
+    SpanRecord,
+    Span,
+    SpanAttributes,
+    SpanAttributeValue,
+    SpanStatus,
 } from './transports.js';
 
 export {

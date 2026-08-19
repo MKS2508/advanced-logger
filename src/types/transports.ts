@@ -95,6 +95,115 @@ export interface TransportRecord {
 }
 
 /**
+ * Kind de record que circula por el pipeline de transports. Los transports
+ * declaran cuáles aceptan vía {@link ITransport.accepts}; el
+ * {@link ITransportManager} enruta cada record solo a los transports cuyo
+ * `accepts` lo incluye.
+ */
+export type TransportRecordKind = 'log' | 'span';
+
+/**
+ * Valor admitido en los attributes de un {@link SpanRecord}. Deliberadamente
+ * más estrecho que {@link LogAttributeValue}: el JSON mapping de OTLP traces
+ * solo acepta primitivos en `span.attributes` sin schema extra.
+ */
+export type SpanAttributeValue = string | number | boolean;
+
+/**
+ * Bag de attributes de un span (compatible con el modelo de attributes de
+ * OpenTelemetry para traces).
+ */
+export interface SpanAttributes {
+    [key: string]: SpanAttributeValue;
+}
+
+/**
+ * Status de finalización de un span, conforme al proto OTel `Status`.
+ * `code: 2` = `STATUS_CODE_ERROR`.
+ *
+ * @see https://opentelemetry.io/docs/specs/otel/trace/api/#set-status
+ */
+export interface SpanStatus {
+    code: number;
+    message?: string;
+}
+
+/**
+ * Record de span (trace) que emite el trio API `event`/`span`/`startSpan`.
+ * A diferencia de {@link TransportRecord}, NO atraviesa el hook path de logs:
+ * el {@link ITransportManager} lo despacha solo a transports cuyo
+ * {@link ITransport.accepts} incluye `'span'`.
+ *
+ * `traceId` son 16 bytes en hex (32 chars) y `spanId` 8 bytes en hex
+ * (16 chars), conforme a la spec W3C Trace Context que exige OTLP/HTTP.
+ */
+export interface SpanRecord {
+    kind: 'span';
+    /** Trace id hex de 32 chars. Se hereda del span activo si existe. */
+    traceId: string;
+    /** Span id hex de 16 chars. */
+    spanId: string;
+    /** Span id del padre, tomado del span activo en el ALS al crearse. */
+    parentSpanId?: string;
+    /** Nombre de la operación (`db.query`, `http.request`, ...). */
+    name: string;
+    /** Span kind OTel numérico. 1 = SPAN_KIND_INTERNAL. */
+    spanKind: number;
+    /** Instante de inicio en nanosegundos (string decimal). */
+    startTimeUnixNano: string;
+    /** Instante de fin en nanosegundos (string decimal). `'0'` hasta end(). */
+    endTimeUnixNano: string;
+    /** Attributes del span. Mutables vía {@link Span.set} hasta el end(). */
+    attributes: SpanAttributes;
+    /** Status de finalización. Presente si el span terminó con `fail()`. */
+    status?: SpanStatus;
+    /** `true` cuando el span se cerró por flush sin `end()` explícito. */
+    incomplete?: boolean;
+    /** Scope del logger que emitió el span (nombre del scoped logger). */
+    scope: string;
+}
+
+/**
+ * Handle de un span externally-ended. Lo devuelven `startSpan()` y el
+ * callback de `span(fn)`.
+ */
+export interface Span {
+    /**
+     * Añade o actualiza un attribute del span.
+     *
+     * @param key - Nombre del attribute.
+     * @param value - Valor primitivo (string | number | boolean).
+     * @returns `this`, para encadenar.
+     */
+    set(key: string, value: SpanAttributeValue): this;
+    /**
+     * Finaliza el span: fija `endTimeUnixNano` y encola el
+     * {@link SpanRecord} para export. Llamadas posteriores son no-op.
+     *
+     * @param attributes - Attributes finales a mergear antes del export.
+     */
+    end(attributes?: SpanAttributes): void;
+    /**
+     * Marca el span como fallido (`status.code = 2` con el mensaje del
+     * error) y luego lo finaliza como {@link end}.
+     *
+     * @param err - Error (o valor) que causó el fallo.
+     */
+    fail(err: unknown): void;
+    /** Trace id hex de 32 chars del span. */
+    readonly traceId: string;
+    /** Span id hex de 16 chars del span. */
+    readonly spanId: string;
+}
+
+/**
+ * Unión de todo record que puede atravesar el {@link ITransportManager}:
+ * un log ({@link TransportRecord}) o un span ({@link SpanRecord}).
+ * El routing por kind lo hace el manager vía {@link ITransport.accepts}.
+ */
+export type TransportDispatchRecord = TransportRecord | SpanRecord;
+
+/**
  * Opciones aceptadas por cualquier transport al registrarse.
  */
 export interface TransportOptions {
@@ -123,10 +232,23 @@ export interface TransportTarget {
 
 /**
  * Contrato mínimo que todo transport debe satisfacer.
+ *
+ * Un transport declara qué kinds de record acepta vía {@link accepts}:
+ * ausente o `['log']` → log-only (default, comportamiento de todos los
+ * transports históricos); `['span']` → solo spans (p.ej. `OtlpTraceTransport`);
+ * `['log', 'span']` → ambos. El {@link ITransportManager} garantiza que un
+ * transport jamás recibe un record de un kind que no declaró — un
+ * `SpanRecord` nunca llega a un transport de logs.
  */
 export interface ITransport {
     readonly name: string;
-    write(record: TransportRecord): void | Promise<void>;
+    /**
+     * Kinds de record que este transport acepta. **Default `['log']` cuando
+     * está ausente** — los transports existentes siguen siendo log-only sin
+     * cambios.
+     */
+    readonly accepts?: readonly TransportRecordKind[];
+    write(record: TransportDispatchRecord): void | Promise<void>;
     flush?(): void | Promise<void>;
     close?(): void | Promise<void>;
     isReady?(): boolean;
@@ -148,7 +270,11 @@ export interface IBufferedTransport extends ITransport {
 export interface ITransportManager {
     add(target: TransportTarget): string;
     remove(id: string): boolean;
-    write(record: TransportRecord): Promise<void>;
+    /**
+     * Dispatcha un record (log o span) a los transports que acepten su kind
+     * y (para logs) pasen el filtro de nivel del transport.
+     */
+    write(record: TransportDispatchRecord): Promise<void>;
     flush(): Promise<void>;
     close(): Promise<void>;
 }
