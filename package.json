@@ -1,6 +1,6 @@
 {
   "name": "@mks2508/better-logger",
-  "version": "0.18.3",
+  "version": "0.18.4",
   "type": "module",
   "files": [
     "dist",
