@@ -239,7 +239,14 @@ type ALS = AsyncLocalStorageLike<Record<string, unknown>>;
 // `typeof AsyncLocalStorage !== 'undefined'`, un feature-detect roto: ese
 // constructor no es global en node/bun, así que siempre resolvía `undefined`
 // y `withContext`/`withContextAsync` eran no-op silenciosos fuera del browser.
-const alsInstance: ALS | undefined = resolveAsyncLocalStorage<Record<string, unknown>>();
+//
+// Se resuelve lazy en el primer `withContext(fn)`: cargar `node:async_hooks`
+// cuesta ~2,2 MB de RSS en bun, y `_getContextRecord` consulta el store en
+// cada dispatch de log — resolverlo al importar se lo cobraría a todo
+// proceso que loguea, use MDC o no. Sin `run()` previo `getStore()` devuelve
+// `undefined`, así que el guard por flag es observable-identico.
+let alsInstance: ALS | undefined;
+let alsActivated = false;
 
 /**
  * Factory que crea una instancia de {@link LogContext}.
@@ -268,8 +275,17 @@ export function createLogContext(options: ILogContextOptions): LogContext {
         ? { ...options.initialResource }
         : undefined;
 
-    // Use provided ALS instance or fall back to module-level (browser fallback)
-    const als = options.alsInstance ?? alsInstance;
+    // Provided instance wins; otherwise the module singleton resolves on
+    // first real use (see the note on `alsInstance` above). The module
+    // instance stays shared across LogContexts: nested `withContext` de
+    // loggers distintos se ven entre sí vía el mismo store.
+    const activateAls = (): ALS | undefined => {
+        if (!alsActivated) {
+            alsActivated = true;
+            alsInstance = resolveAsyncLocalStorage<Record<string, unknown>>();
+        }
+        return options.alsInstance ?? alsInstance;
+    };
 
     return {
         getContext(): ContextSnapshot {
@@ -277,24 +293,23 @@ export function createLogContext(options: ILogContextOptions): LogContext {
         },
 
         withContext<R>(bindings: Record<string, unknown>, fn?: () => R): R | undefined {
-            // No-op without AsyncLocalStorage (browser fallback)
-            if (!als) {
-                if (fn) return fn();
-                return undefined;
-            }
-            // No fn: backwards-compat no-op setter shim
+            // No fn: backwards-compat no-op setter shim — never activates ALS
             if (!fn) return undefined;
+            const store = activateAls();
+            // No AsyncLocalStorage (browser fallback): run fn as-is
+            if (!store) return fn();
             // Run fn within AsyncLocalStorage scope, merged with the active
             // outer scope (if any) so nested withContext calls accumulate
             // bindings instead of replacing them.
-            const merged = { ...context, ...als.getStore(), ...bindings };
-            return als.run(merged, fn);
+            const merged = { ...context, ...store.getStore(), ...bindings };
+            return store.run(merged, fn);
         },
 
         async withContextAsync<R>(bindings: Record<string, unknown>, fn: () => Promise<R>): Promise<R> {
-            if (!als) return fn();
-            const merged = { ...context, ...als.getStore(), ...bindings };
-            return als.run(merged, fn);
+            const store = activateAls();
+            if (!store) return fn();
+            const merged = { ...context, ...store.getStore(), ...bindings };
+            return store.run(merged, fn);
         },
 
         clearContext(): typeof this {
@@ -323,8 +338,12 @@ export function createLogContext(options: ILogContextOptions): LogContext {
         _getContextRecord(): Record<string, unknown> {
             // Returns the full merged context for dispatch purposes.
             // Base (parent snapshot + own context) plus ALS overlay if active.
+            // An injected instance is read as-is (external runs count); the
+            // module singleton only after activation — pre-activation its
+            // store would be empty anyway.
             const base = this._getBaseContextRecord();
-            const alsContext = als?.getStore();
+            const store = options.alsInstance ?? (alsActivated ? alsInstance : undefined);
+            const alsContext = store?.getStore();
             if (alsContext && Object.keys(alsContext).length > 0) {
                 return { ...base, ...alsContext };
             }
@@ -352,7 +371,7 @@ export function createLogContext(options: ILogContextOptions): LogContext {
         },
 
         _getAlsStore(): Record<string, unknown> | undefined {
-            return als?.getStore();
+            return (options.alsInstance ?? (alsActivated ? alsInstance : undefined))?.getStore();
         }
     };
 }
