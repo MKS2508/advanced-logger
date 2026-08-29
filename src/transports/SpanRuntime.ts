@@ -26,20 +26,40 @@ import { resolveAsyncLocalStorage, type AsyncLocalStorageLike } from '../utils/a
  */
 type SpanALS = AsyncLocalStorageLike<SpanRecord>;
 
-/** ALS singleton del módulo — compartido por todas las instancias de Logger.
+/**
+ * ALS singleton del módulo — compartido por todas las instancias de Logger.
  *
  * Resolución por capas (global → `process.getBuiltinModule` → `require`,
  * undefined en browser) delegada al helper compartido
  * {@link resolveAsyncLocalStorage} — ver su doc para el detalle de capas.
- * `context/LogContext.ts` usa el mismo helper para su ALS de MDC. */
-const activeSpanStore: SpanALS | undefined = resolveAsyncLocalStorage<SpanRecord>();
+ * `context/LogContext.ts` usa el mismo helper para su ALS de MDC.
+ *
+ * Se crea lazy en el primer `runWithActiveSpan`: cargar `node:async_hooks`
+ * cuesta ~2,2 MB de RSS en bun, y `getActiveSpan` se consulta en cada
+ * dispatch de log — resolverlo al importar se lo cobraría a todo proceso
+ * que loguea, use spans o no.
+ */
+let activeSpanStore: SpanALS | undefined;
+let spanStoreActivated = false;
+
+function activateSpanStore(): SpanALS | undefined {
+    if (!spanStoreActivated) {
+        spanStoreActivated = true;
+        activeSpanStore = resolveAsyncLocalStorage<SpanRecord>();
+    }
+    return activeSpanStore;
+}
 
 /**
  * Span activo en el call stack corriente (dentro de `span(fn)`), si lo hay.
  * Lo consumen la correlación log→span (`TransportRecord.traceId/spanId`) y la
  * resolución de `parentSpanId` en spans hijos.
+ *
+ * Sin `run()` previo el store estaría vacío igual, así que el guard por
+ * flag es observable-identico a consultar el ALS real.
  */
 export function getActiveSpan(): SpanRecord | undefined {
+    if (!spanStoreActivated) return undefined;
     return activeSpanStore?.getStore();
 }
 
@@ -48,7 +68,8 @@ export function getActiveSpan(): SpanRecord | undefined {
  * ejecuta `fn` directamente — sin correlación pero funcional.
  */
 export function runWithActiveSpan<R>(record: SpanRecord, fn: () => R): R {
-    return activeSpanStore ? activeSpanStore.run(record, fn) : fn();
+    const store = activateSpanStore();
+    return store ? store.run(record, fn) : fn();
 }
 
 /** Nanosegundos Unix actuales como string decimal (formato OTLP). */

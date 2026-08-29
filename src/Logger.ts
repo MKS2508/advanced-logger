@@ -1126,41 +1126,6 @@ export class Logger {
      */
     protected _dispatchTag: string | undefined;
 
-    /**
-     * Computa el contexto completamente mergueado para este logger.
-     *
-     * La cadena de contexto se construye en el momento de crear el child:
-     * cada child almacena el contexto fully-merged de su parent (en ese
-     * instante) como `_parentContextRecord`. Esto implica que
-     * `_parentContextRecord` ya contiene los bindings de todos los ancestros
-     * en el orden de precedencia correcto (root primero, child más cercano al final).
-     *
-     * Orden de merge (gana el último):
-     *   1. _parentContextRecord — snapshot del contexto mergueado del parent en la creación
-     *   2. _bindings            — bindings propios de este logger (llamadas a `child()`)
-     *   3. ALS store            — scope de `withContext`/`withContextAsync` (prioridad máxima)
-     *
-     * @internal
-     * @returns El record de contexto mergueado
-     */
-    private _getMergedContext(): Record<string, unknown> {
-        // Empieza con el snapshot del parent (ya contiene todos los ancestros)
-        let merged: Record<string, unknown> = this._parentContextRecord ?? {};
-
-        // Layer de los bindings propios de este logger (gana el más cercano)
-        if (this._bindings && Object.keys(this._bindings).length > 0) {
-            merged = { ...merged, ...this._bindings };
-        }
-
-        // Layer del scope ALS (prioridad máxima)
-        const alsContext = this.logContext._getAlsStore?.() ?? {};
-        if (alsContext && Object.keys(alsContext).length > 0) {
-            merged = { ...merged, ...alsContext };
-        }
-
-        return merged;
-    }
-
     /** @internal Expone el contexto base mergueado (sin ALS) a la closure de la child factory de LogContext. */
     _captureMergedContext(): Record<string, unknown> {
         // Devuelve el contexto base sin ALS — ALS es transitorio y no debe
