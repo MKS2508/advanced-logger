@@ -31,3 +31,7 @@ _site
 
 # Claude conversation transcripts dropped at repo root on session continuation
 *-this-session-is-being-continued-from-a-previous-*.txt
+
+# npm publish artifacts
+*.tgz
+.siblings.toml
