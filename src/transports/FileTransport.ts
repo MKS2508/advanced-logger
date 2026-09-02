@@ -31,9 +31,10 @@ const LOCAL_STORAGE_KEY_PREFIX = 'better-logger:';
  */
 export interface FileTransportOptions extends TransportOptions {
     /**
-     * Destino de escritura. En Node es una ruta de fichero (resuelta relativa
-     * a `process.cwd()` y saneada contra path traversal). En el browser es una
-     * clave de `localStorage` (saneada a alfanumérico + `-_`).
+     * Destino de escritura. En Node es una ruta de fichero — relativa a
+     * `process.cwd()` o absoluta (POSIX `/...` o Windows `C:/...`), ambas
+     * saneadas contra path traversal (`..`) y tilde sin expandir (`~`). En
+     * el browser es una clave de `localStorage` (saneada a alfanumérico + `-_`).
      * @default 'app.log' (Node) | 'better-logger:default' (browser)
      */
     destination?: string;
@@ -59,7 +60,11 @@ export interface FileTransportOptions extends TransportOptions {
  * que un pico de tráfico sostenido no agota memoria.
  *
  * El `destination` se sanea antes de usarse:
- * - Node: se rechazan rutas con segmentos `..`, `~` o absolutas (path traversal).
+ * - Node: se rechazan rutas con segmento `..` o `~` (path traversal / tilde
+ *   sin expandir). Una ruta absoluta explícita (POSIX o Windows) se acepta
+ *   tal cual — es al dueño del proceso a quien le toca decidir dónde
+ *   escribe. Si se rechaza, ese flush no escribe nada (no hay fallback
+ *   silencioso a otra ubicación); se reporta vía `onError` si está cableado.
  * - Browser: se colapsa a `[a-zA-Z0-9_-]` recortado a 64 caracteres.
  *
  * @implements {IBufferedTransport}
@@ -200,6 +205,7 @@ export class FileTransport implements IBufferedTransport {
 
     private async flushNode(payload: string): Promise<void> {
         const destination = this.resolveNodeDestination();
+        if (destination === null) return;
         try {
             // Dynamic import para no mandar código Node-only al bundle del
             // browser y para que los consumidores ESM no lidien con un
@@ -241,12 +247,12 @@ export class FileTransport implements IBufferedTransport {
         await this.flush();
     }
 
-    private resolveNodeDestination(): string {
+    private resolveNodeDestination(): string | null {
         const requested = this.options.destination ?? 'app.log';
         const sanitised = sanitiseNodePath(requested);
         if (sanitised === null) {
             this.emitError(`FileTransport: refusing destination with traversal segment: ${requested}`, null);
-            return 'app.log';
+            return null;
         }
         return sanitised;
     }
@@ -287,23 +293,27 @@ function isNodeLike(): boolean {
 // ===== Saneadores =====
 
 /**
- * Rechaza rutas que escapan del working directory. Permite rutas relativas
- * bajo `cwd/`. Las rutas absolutas se rechazan a propósito — si un caller
- * necesita una ubicación absoluta, debe usar un escape hatch documentado
- * (no expuesto aquí).
+ * Sanea la ruta pedida por el caller: colapsa backslashes a `/`, descarta
+ * segmentos `.` y rechaza traversal (`..`) o tilde sin expandir (`~`). Una
+ * ruta absoluta explícita (POSIX `/...` o Windows `C:/...`) es una elección
+ * legítima del dueño del proceso y se preserva intacta — el guard existe
+ * para sanear input no confiable, no para impedir que el caller elija dónde
+ * escribe su propio log.
  *
  * @internal
  * @param {string} input - Ruta cruda pedida por el caller.
- * @returns {string | null} Ruta saneada, o `null` si se rechaza por traversal.
+ * @returns {string | null} Ruta saneada (con el prefijo absoluto intacto si
+ *   lo tenía), o `null` si contiene un segmento `..` o `~`.
  */
 function sanitiseNodePath(input: string): string | null {
     if (!input) return null;
     const normalised = input.replace(/\\/g, '/').trim();
     if (normalised.length === 0) return null;
-    if (normalised.startsWith('/') || /^[a-zA-Z]:\//.test(normalised)) return null;
+    const isPosixAbsolute = normalised.startsWith('/');
     const segments = normalised.split('/').filter(s => s.length > 0 && s !== '.');
     if (segments.some(s => s === '..' || s === '~')) return null;
-    return segments.join('/');
+    const joined = segments.join('/');
+    return isPosixAbsolute ? '/' + joined : joined;
 }
 
 /**

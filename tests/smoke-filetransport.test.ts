@@ -18,16 +18,17 @@ const sampleRecord: TransportRecord = {
 
 describe('FileTransport', () => {
     it('sanitises path-traversal in destination (Node)', () => {
-        // BUG-N4: must reject `..`, abs paths, etc.
+        // BUG-N4: must reject `..` — construction alone doesn't sanitise
+        // (that happens at flush time); see tests/unit/transports.test.ts
+        // for the behavioural test that actually flushes and asserts no
+        // write happens.
         const transport = new FileTransport({ destination: '../../etc/passwd' });
-        // Trigger one flush path by checking the internal sanitiser behaviour:
-        // destination === '../../etc/passwd' is rewritten to 'app.log' fallback.
         expect(transport.name).toBe('file');
         expect(transport.maxBufferSize).toBeGreaterThan(0);
     });
 
-    it('rejects absolute paths in destination', () => {
-        const transport = new FileTransport({ destination: '/etc/passwd' });
+    it('accepts absolute paths in destination (lock waxin 2026-09-02: owner-chosen absolute path is legitimate)', () => {
+        const transport = new FileTransport({ destination: '/tmp/bl-smoke-abs.log' });
         expect(transport.name).toBe('file');
     });
 

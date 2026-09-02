@@ -6,12 +6,16 @@
  *
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { existsSync, readFileSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { ConsoleTransport } from '../../src/transports/ConsoleTransport.js';
 import { FileTransport } from '../../src/transports/FileTransport.js';
 import { HttpTransport } from '../../src/transports/HttpTransport.js';
 import { OtlpTransport } from '../../src/transports/OtlpTransport.js';
 import { cleanup } from '../setup.js';
-import type { TransportRecord } from '../../src/types/index.js';
+import type { TransportRecord, HookLogEntry } from '../../src/types/index.js';
 
 const sampleRecord: TransportRecord = {
     level: 'info',
@@ -70,19 +74,53 @@ describe('ConsoleTransport', () => {
 // FileTransport
 // ============================================================
 describe('FileTransport', () => {
+    const cwdAppLog = join(process.cwd(), 'app.log');
+
     afterEach(() => {
         cleanup();
+        if (existsSync(cwdAppLog)) unlinkSync(cwdAppLog);
     });
 
-    it('rejects path traversal in destination (Node)', () => {
-        const transport = new FileTransport({ destination: '../../etc/passwd' });
-        expect(transport.name).toBe('file');
-        expect(transport.maxBufferSize).toBeGreaterThan(0);
+    it('rejects path traversal (..) in destination and writes nothing (no silent app.log fallback)', async () => {
+        const errors: HookLogEntry[] = [];
+        const transport = new FileTransport({
+            destination: '../fuera.log',
+            onError: (e) => { errors.push(e); }
+        });
+        transport.write(sampleRecord);
+        await transport.flush();
+
+        expect(errors.some(e => e.message.includes('refusing destination'))).toBe(true);
+        expect(existsSync(join(process.cwd(), '..', 'fuera.log'))).toBe(false);
+        expect(existsSync(cwdAppLog)).toBe(false);
     });
 
-    it('rejects absolute paths', () => {
-        const transport = new FileTransport({ destination: '/etc/passwd' });
-        expect(transport.name).toBe('file');
+    it('rejects unexpanded tilde (~) in destination and writes nothing (no silent app.log fallback)', async () => {
+        const errors: HookLogEntry[] = [];
+        const transport = new FileTransport({
+            destination: '~/x.log',
+            onError: (e) => { errors.push(e); }
+        });
+        transport.write(sampleRecord);
+        await transport.flush();
+
+        expect(errors.some(e => e.message.includes('refusing destination'))).toBe(true);
+        expect(existsSync(cwdAppLog)).toBe(false);
+    });
+
+    it('accepts an explicit absolute path and writes to it, not to app.log', async () => {
+        const absPath = join(tmpdir(), `bl-guard-${randomUUID()}.log`);
+        const transport = new FileTransport({ destination: absPath });
+        transport.write(sampleRecord);
+        await transport.flush();
+
+        try {
+            expect(existsSync(absPath)).toBe(true);
+            expect(readFileSync(absPath, 'utf8')).toContain('transport test');
+            expect(existsSync(cwdAppLog)).toBe(false);
+        } finally {
+            if (existsSync(absPath)) unlinkSync(absPath);
+        }
     });
 
     it('keeps relative subdirectory destinations intact', () => {
